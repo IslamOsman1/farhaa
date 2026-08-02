@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+
 export default async function InvitationPage({ params }) {
   const resolvedParams = await params;
   const { slug } = resolvedParams;

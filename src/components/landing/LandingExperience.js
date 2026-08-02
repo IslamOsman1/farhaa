@@ -10,6 +10,7 @@ import HowItWorks from '@/components/landing/HowItWorks';
 import Contact from '@/components/landing/Contact';
 import Footer from '@/components/landing/Footer';
 import SplashScreen from '@/components/landing/SplashScreen';
+import FloatingWhatsApp from '@/components/landing/FloatingWhatsApp';
 
 export default function LandingExperience({ settings, whatsappNumber }) {
   const [showSplash, setShowSplash] = useState(true);
@@ -37,6 +38,7 @@ export default function LandingExperience({ settings, whatsappNumber }) {
           <Contact whatsapp={whatsappNumber} />
         </main>
         <Footer settings={settings} />
+        <FloatingWhatsApp whatsapp={whatsappNumber} />
       </div>
     </>
   );
