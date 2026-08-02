@@ -1,0 +1,409 @@
+/* ============================================================
+   قالب disney «ديزني» — خطوبة سحرية بروح القصر الحالم
+   الدخول: بوّابة سحرية تُفتح ← توهّج كبير ← الانتقال
+   الهيرو: قصر ديزني بغيوم وردية + بريق وفراشات
+   ============================================================ */
+:root {
+  --bg: #fbf1f7;
+  --warm: #fbf1f7;
+  --cream: #fbf1f7;
+  --ivory: #fff7fb;
+  --blush: #f7d9e8;
+  --pink: #efb9d6;
+  --lav: #ded0f2;
+  --gold: #d29b4f;
+  --gold-2: #e6bd74;
+  --mauve: #a877a0;
+  --ink: #6a4763;
+  --ink-soft: #8c6a86;
+  --taupe: #a98db0;
+  --line: rgba(168, 119, 160, 0.28);
+  --font-display: "Aref Ruqaa", "El Messiri", serif;
+  --font-ar: "El Messiri", "Aref Ruqaa", serif;
+  --font-en: "Cormorant Garamond", "Times New Roman", serif;
+  --font-ui: "Tajawal", system-ui, -apple-system, sans-serif;
+  --font-fun: "Marhey", "El Messiri", cursive;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ar);
+  font-size: 1.05rem;
+  line-height: 1.8;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body.locked { height: 100vh; overflow: hidden; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+img, video, svg { display: block; }
+img { max-width: 100%; }
+::selection { background: var(--pink); color: #fff; }
+
+/* ============ شاشة الدخول: البوّابة + شريط التحميل ============ */
+#preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #26123a url("assets/door-poster.jpg") center / cover no-repeat;
+  transition: opacity 900ms cubic-bezier(0.7, 0, 0.3, 1);
+}
+#preloader.fade-out { opacity: 0; pointer-events: none; }
+#preloader.hidden { display: none; }
+
+#preloaderPoster {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  padding: 0 1.25rem 4.25rem;
+  border: 0;
+  background: linear-gradient(180deg, rgba(40,15,55,0.05), rgba(40,15,55,0.12) 46%, rgba(40,15,55,0.55));
+  color: white;
+  transition: opacity 700ms ease;
+}
+#preloaderPoster.hidden { opacity: 0; pointer-events: none; }
+#preloaderPoster:disabled { cursor: progress; }
+#preloaderPoster.loading .preloader-cta { animation: none; }
+#preloaderPoster.loading .preloader-cta::after { opacity: 0.15; animation: none; }
+#preloaderPoster.is-ready .preloader-cta { border-color: rgba(246, 210, 240, 0.9); }
+#preloaderPoster.is-ready .preloader-progress__bar { box-shadow: 0 0 18px rgba(255, 210, 240, 0.6); }
+
+.preloader-cta {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: min(21rem, calc(100vw - 2.5rem));
+  min-height: 9rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.68rem;
+  overflow: hidden;
+  padding: 1.15rem 1.35rem 1.2rem;
+  border: 1px solid rgba(240, 190, 225, 0.7);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 245, 251, 0.24), rgba(255, 255, 255, 0.08)),
+    rgba(50, 25, 60, 0.34);
+  box-shadow: 0 24px 54px rgba(60, 20, 60, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(12px);
+  text-align: center;
+  text-shadow: 0 2px 18px rgba(50, 15, 50, 0.5);
+  animation: ctaFloat 2.8s ease-in-out infinite;
+}
+.preloader-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0.42rem;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.9rem;
+}
+.preloader-cta::after {
+  content: "";
+  position: absolute;
+  top: -35%; bottom: -35%; left: -80%;
+  z-index: -1;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: rotate(18deg);
+  animation: ctaShine 3.8s ease-in-out infinite;
+}
+.preloader-text { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1.25; color: #fff; }
+.preloader-cta__label, .preloader-cta__hint { font-family: var(--font-ui); font-weight: 500; line-height: 1.4; }
+.preloader-cta__label { color: rgba(255, 224, 244, 0.86); font-size: 0.94rem; }
+.preloader-cta__hint { color: rgba(255, 255, 255, 0.78); font-size: 0.95rem; font-family: var(--font-display); }
+.preloader-progress {
+  position: relative; display: block;
+  width: min(13.5rem, 100%); height: 0.36rem;
+  margin-top: 0.5rem; overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px; background: rgba(255, 255, 255, 0.18);
+}
+.preloader-progress__bar {
+  display: block; width: var(--progress, 0%); height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #e59ac8, #ffd9ee 55%, #fff2fb);
+  transition: width 260ms ease;
+}
+/* وميض متحرّك أثناء التحميل — يبقى الشريط "حيّاً" ولا يبدو متجمّداً */
+.preloader-progress::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: translateX(-120%);
+  animation: progShimmer 1.25s ease-in-out infinite;
+}
+#preloaderPoster.is-ready .preloader-progress::after { opacity: 0; animation: none; }
+@keyframes progShimmer { 0% { transform: translateX(-120%); } 55%, 100% { transform: translateX(240%); } }
+.preloader-progress__meta {
+  margin-top: 0.1rem; color: rgba(255, 236, 248, 0.82);
+  font-family: var(--font-ui); font-size: 0.72rem; font-weight: 600;
+}
+@keyframes ctaFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.3rem); } }
+@keyframes ctaShine { 0%, 42% { left: -80%; } 74%, 100% { left: 138%; } }
+
+#preloaderVideo {
+  position: absolute; inset: 0; z-index: 1;
+  width: 100%; height: 100%; object-fit: cover;
+  background: #26123a url("assets/door-poster.jpg") center / cover no-repeat;
+  opacity: 0; transition: opacity 260ms ease;
+}
+#preloaderVideo.is-ready { opacity: 1; }
+
+/* التوهّج السحري الكبير — ينفجر من مركز البوّابة عند الفتح */
+.cover__glow {
+  position: absolute; inset: 0; z-index: 15; pointer-events: none;
+  background: radial-gradient(circle at 50% 47%,
+    rgba(255, 255, 255, 0.98),
+    rgba(255, 244, 214, 0.9) 16%,
+    rgba(255, 214, 240, 0.5) 38%,
+    rgba(222, 208, 242, 0.2) 58%,
+    transparent 72%);
+  opacity: 0; transform: scale(0.15);
+  transition: opacity 0.55s ease, transform 1.15s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+#preloader.glow .cover__glow { opacity: 1; transform: scale(2.1); }
+
+#preloaderWhite {
+  position: absolute; inset: 0; z-index: 20;
+  background: #fff; opacity: 0; pointer-events: none;
+  transition: opacity 620ms ease-out;
+}
+#preloader.whiteout #preloaderWhite { opacity: 1; }
+
+/* ============ الموقع + الهيرو (قصر ديزني) ============ */
+#site { opacity: 0; transition: opacity 1200ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+#site.visible { opacity: 1; }
+
+.hero {
+  position: relative; min-height: 100svh; overflow: hidden;
+  background: #efd9ec url("assets/hero-poster.jpg") center / cover no-repeat;
+}
+.hero__video, .hero__overlay, .hero__fade { position: absolute; inset: 0; }
+.hero__video {
+  width: 100%; height: 100%; object-fit: cover;
+  background: #efd9ec url("assets/hero-poster.jpg") center / cover no-repeat;
+  opacity: 0; transition: opacity 360ms ease;
+}
+.hero__video.is-ready { opacity: 1; }
+/* حجاب خفيف (الفيديو فاتح باستيل) — يعتّم الأعلى والأسفل قليلاً كي يظهر النص */
+.hero__overlay {
+  background: linear-gradient(180deg, rgba(70,35,70,0.42), rgba(70,35,70,0.06) 26%, rgba(70,35,70,0.06) 52%, rgba(70,35,70,0.5));
+}
+.hero__fade { top: auto; height: 11rem; background: linear-gradient(0deg, var(--warm), transparent); }
+
+.hero__content {
+  position: relative; z-index: 2;
+  display: flex; height: 100svh;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 2.5rem 1.25rem 5rem; color: white; text-align: center;
+}
+.hero__eyebrow {
+  margin: 0; color: rgba(255, 240, 250, 0.92);
+  font-family: var(--font-ui); font-size: 1rem; font-weight: 600;
+  text-shadow: 0 2px 14px rgba(70, 30, 70, 0.7);
+}
+.ornament {
+  display: flex; align-items: center; gap: 0.8rem;
+  width: min(16rem, 70vw); margin: 0.8rem auto;
+  color: rgba(255, 236, 248, 0.75);
+}
+.ornament span { height: 1px; flex: 1; background: currentColor; }
+.ornament b { font-size: 0.9rem; font-weight: 400; }
+.mask-reveal { overflow: visible; padding: 0.25rem 0.5rem; }
+.hero__name {
+  margin: 0; font-family: var(--font-display); font-size: 4.6rem; font-weight: 700; line-height: 1.1;
+  color: #fff;
+  text-shadow: 0 3px 26px rgba(90, 35, 85, 0.85), 0 0 34px rgba(255, 220, 245, 0.45);
+}
+.hero__amp {
+  margin: -0.2rem 0; color: rgba(255, 226, 244, 0.95);
+  font-family: var(--font-en); font-size: 3rem; line-height: 1;
+  text-shadow: 0 2px 18px rgba(90, 35, 85, 0.7);
+}
+.hero__invite {
+  max-width: 28rem; margin: 1rem auto 0;
+  color: rgba(255, 244, 251, 0.94); font-family: var(--font-ui);
+  font-size: 0.82rem; line-height: 2;
+  text-shadow: 0 1px 12px rgba(70, 30, 70, 0.7);
+}
+.hero__date {
+  margin: 0.25rem 0; color: #fff;
+  font-family: var(--font-ui); font-size: 0.98rem;
+  text-shadow: 0 2px 14px rgba(70, 30, 70, 0.7);
+}
+.hero__caption {
+  margin: 0.35rem 0 0; color: rgba(255, 236, 248, 0.96);
+  font-family: var(--font-display); font-size: 1.75rem;
+  text-shadow: 0 2px 18px rgba(90, 35, 85, 0.7);
+}
+.hero__scroll {
+  position: absolute; bottom: 2rem; left: 50%;
+  display: inline-flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  color: rgba(255, 244, 251, 0.96); font-family: var(--font-ui); font-size: 0.86rem; font-weight: 600;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45), 0 2px 14px rgba(70, 30, 70, 0.55);
+  transform: translateX(-50%);
+}
+.hero__scroll svg {
+  width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.8;
+  animation: bob 1.8s ease-in-out infinite;
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); opacity: 0.85; }
+  50% { transform: translateY(0.45rem); opacity: 1; }
+}
+
+/* ظهور نصّ الهيرو */
+.reveal, .reveal-mask {
+  opacity: 0; transform: translateY(1rem);
+  transition: opacity 900ms ease, transform 900ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal-mask { transform: translateY(1.7rem); }
+.reveal.is-in, .reveal-mask.is-in { opacity: 1; transform: translateY(0); }
+.hero__scroll.reveal { transform: translateX(-50%) translateY(1rem); }
+.hero__scroll.reveal.is-in { transform: translateX(-50%) translateY(0); }
+
+@media (min-width: 700px) {
+  .preloader-text { font-size: 2.8rem; }
+  .hero__name { font-size: 6rem; }
+  .hero__amp { font-size: 3.4rem; }
+}
+
+/* ============ بريق + فراشات + بتلات سحرية ============ */
+.sparkles, .butterflies { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.sparkles { z-index: 5; }
+.butterflies { position: absolute; z-index: 2; }
+.spark {
+  position: absolute; color: #fff;
+  text-shadow: 0 0 6px rgba(255, 226, 246, 0.9);
+  animation: twinkle var(--tw, 3s) ease-in-out infinite;
+  opacity: 0;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 0.95; transform: scale(1.15); }
+}
+.bfly {
+  position: absolute; will-change: transform;
+  animation: flutter var(--fl, 16s) linear infinite;
+  opacity: 0;
+}
+@keyframes flutter {
+  0% { transform: translate(0, 0) rotate(-6deg); opacity: 0; }
+  10% { opacity: 0.9; }
+  50% { transform: translate(calc(var(--fx, 40vw) * 0.5), -18vh) rotate(8deg); }
+  90% { opacity: 0.9; }
+  100% { transform: translate(var(--fx, 40vw), -42vh) rotate(-6deg); opacity: 0; }
+}
+.petals { position: fixed; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.petal { position: absolute; top: -6%; animation: petalFall linear infinite; opacity: 0.75; will-change: transform; }
+@keyframes petalFall {
+  0% { transform: translateY(-10vh) rotate(0); opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { transform: translateY(112vh) rotate(300deg); opacity: 0; }
+}
+
+/* ============ البطاقة والأقسام ============ */
+.card {
+  position: relative; max-width: 33rem; margin: -2px auto 0;
+  background: linear-gradient(180deg, var(--ivory), var(--cream));
+  padding: 42px 22px 8px; z-index: 1;
+  font-family: var(--font-ar);
+}
+.card__frame { position: absolute; inset: 14px; border: 1px solid var(--line); pointer-events: none; border-radius: 6px; }
+.card__frame .corner { position: absolute; color: var(--pink); font-size: 0.9rem; line-height: 1; background: var(--ivory); padding: 3px; }
+.corner--tr { top: -8px; right: -8px; } .corner--tl { top: -8px; left: -8px; }
+.corner--br { bottom: -8px; right: -8px; } .corner--bl { bottom: -8px; left: -8px; }
+
+.section { text-align: center; padding: 22px 6px; }
+.section__title {
+  font-family: var(--font-display); font-size: 1.5rem; color: var(--mauve);
+  margin-bottom: 16px; position: relative; display: inline-block;
+}
+.section__title::after {
+  content: ""; display: block; width: 46px; height: 1px; margin: 8px auto 0;
+  background: linear-gradient(90deg, transparent, var(--pink), transparent);
+}
+.flourish { display: block; color: var(--pink); font-size: 1.4rem; margin: 4px 0 12px; }
+.verse__text { font-family: "Amiri", serif; font-size: 1.3rem; line-height: 2.1; color: var(--ink); max-width: 26rem; margin: 0 auto; }
+.divider { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--pink); font-size: 0.75rem; padding: 4px 0; }
+.divider span { height: 1px; width: 56px; background: linear-gradient(90deg, transparent, var(--line)); }
+.divider span:last-child { background: linear-gradient(90deg, var(--line), transparent); }
+.invitation__text { color: var(--ink-soft); font-size: 1.05rem; max-width: 27rem; margin: 0 auto; }
+.families { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.family { flex: 1; min-width: 120px; }
+.family__label { display: block; font-size: 0.78rem; color: var(--taupe); margin-bottom: 4px; }
+.family__names { font-family: var(--font-display); font-weight: 600; color: var(--ink); font-size: 0.98rem; }
+.families__heart { color: var(--pink); font-size: 0.9rem; }
+
+.countdown { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.cd__cell {
+  min-width: 62px; padding: 12px 6px;
+  background: linear-gradient(180deg, #fff, var(--ivory));
+  border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(168, 119, 160, 0.14);
+}
+.cd__num { display: block; font-family: var(--font-display); font-size: 1.7rem; color: var(--mauve); line-height: 1; }
+.cd__lbl { display: block; font-size: 0.74rem; color: var(--taupe); margin-top: 5px; }
+.when__arrived { font-size: 1.2rem; color: var(--mauve); }
+
+.timeline { list-style: none; max-width: 22rem; margin: 0 auto; text-align: right; padding: 0; }
+.timeline__item { display: grid; grid-template-columns: 14px auto 1fr; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px dashed var(--line); }
+.timeline__item:last-child { border-bottom: 0; }
+.timeline__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 4px rgba(239, 185, 214, 0.25); }
+.timeline__time { font-family: "Cormorant Garamond", serif; font-weight: 600; color: var(--mauve); font-size: 0.96rem; white-space: nowrap; }
+.timeline__title { color: var(--ink-soft); }
+
+.venue__photo {
+  width: 100%; height: 168px; border-radius: 14px;
+  background: var(--blush) center/cover no-repeat; border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+}
+.venue.has-photo .venue__pin { display: none; }
+.venue__pin { font-size: 1.9rem; opacity: 0.55; }
+.when__date { font-family: var(--font-display); font-weight: 600; color: var(--ink); }
+.when__time { color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 8px; }
+.venue__name { font-family: var(--font-display); font-size: 1.2rem; color: var(--mauve); }
+.venue__addr { color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 14px; }
+.venue__btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 24px;
+  background: linear-gradient(180deg, var(--pink), var(--mauve));
+  color: #fff; border-radius: 30px; font-weight: 600; font-size: 0.92rem;
+  box-shadow: 0 8px 20px rgba(168, 119, 160, 0.36);
+}
+
+.notes__list { list-style: none; max-width: 24rem; margin: 0 auto; text-align: right; padding: 0; }
+.notes__item { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; color: var(--ink-soft); }
+.notes__mark { color: var(--pink); font-size: 0.8rem; margin-top: 6px; }
+
+.closing { padding-top: 14px; padding-bottom: 30px; }
+.closing__note { font-family: "Amiri", serif; font-size: 1.2rem; color: var(--ink); margin-bottom: 6px; }
+.closing__hashtag { color: var(--mauve); font-weight: 600; margin-bottom: 16px; font-family: var(--font-fun); }
+.contact { margin: 14px auto; }
+.contact__label { display: block; font-size: 0.8rem; color: var(--taupe); margin-bottom: 6px; }
+.contact__link {
+  display: inline-flex; align-items: center; gap: 7px; padding: 8px 22px;
+  border: 1px solid var(--pink); border-radius: 30px; color: var(--mauve);
+  font-weight: 600; font-size: 0.92rem;
+}
+.closing__families { margin-top: 18px; font-family: var(--font-display); color: var(--taupe); font-size: 0.95rem; }
+
+.creveal { opacity: 0; transform: translateY(26px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.creveal.is-visible { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .creveal { opacity: 1; transform: none; transition: none; }
+  .spark, .bfly, .petal { animation: none; opacity: 0; }
+}
+
+/* أسطر Enter في حقل «الدعاء/العبارة» تُعرض كما كتبها الزبون (بسملة فوق والآية تحتها) */
+.verse__text { white-space: pre-line; }

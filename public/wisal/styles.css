@@ -1,0 +1,1057 @@
+/* ============================================================
+   قالب wisal «وِصال» — أعراس/خطوبة
+   المبدأ: فصلٌ تام بين الصورة والنص. الصورة تُعرض غنيّة سينمائية في
+   منطقتها (الدخولية كاملة + نافذة أعلى الواجهة)، والنص يجلس على أرضية
+   عاجية صافية — لا نصّ فوق صورة، فلا حاجة لأي حجاب يضبّب المشهد.
+   الخطوط: غُلزار الملكي الممدود للعرض، ورُقعة للبنية، وأميري للنص.
+   ============================================================ */
+
+:root {
+  --ivory:      #f7f0e4;   /* أرضية الصفحة */
+  --ivory-2:    #fdf9f1;   /* أرضية البطاقة */
+  --ivory-3:    #fffdf8;   /* أعلى نقطة إضاءة */
+  --gold:       #b0813c;
+  --gold-lt:    #d6ab63;
+  --gold-dp:    #8a6128;
+  --ink:        #4b3826;   /* الحبر الأساسي — بنّي دافئ */
+  --ink-soft:   #7d6850;
+  --ink-dim:    #9c8a72;
+  /* ألوان النص فوق الفيديو الداكن (الدخولية فقط) */
+  --cream:      #f7ead2;
+  --cream-soft: rgba(247, 234, 210, .82);
+  --dusk:       #14100b;   /* ليل الدخولية — بنّي دافئ قريب من ظلال الفيديو */
+
+  /* غُلزار = الخط الملكي الممدود: الأسماء وعناوين الأقسام والسطور الاحتفالية.
+     حروفه تنحدر قطرياً وتمتدّ، فيحتاج ارتفاع سطرٍ سخياً وإلا قُصَّت ذيوله. */
+  --flow:  "Gulzar", "Amiri", serif;
+  /* رُقعة العريضة = أسماء العروسين: غُلزار يرسم حروفه صغيرة داخل مربّعه
+     (اسم بحجم ٤٣px يخرج بعرض ٥٠px) فتبدو الأسماء دقيقة وباهتة فوق الصورة،
+     ورُقعة ٧٠٠ ملكية وعريضة فتُقرأ من أول نظرة. وتُستعمل أيضاً للأزرار
+     وأرقام العدّاد حيث المكان محسوب بدقّة. */
+  --ruqaa: "Aref Ruqaa", "Amiri", serif;
+  --body:  "Amiri", "Aref Ruqaa", serif;    /* النص الجاري */
+  --latin: "Cormorant Garamond", serif;
+
+  --wl-bars: 0px;   /* ارتفاع أشرطة المنصّة السفلية — يُقاس بالسكربت */
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: var(--body);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body.locked { overflow: hidden; height: 100vh; }
+
+img, video { max-width: 100%; display: block; }
+
+/* ============================================================
+   الدخولية — فيديو غني سينمائي، نصوص كريمية/ذهبية فوقه
+   ============================================================ */
+
+#gate {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: #120d09;
+  overflow: hidden;
+  transition: opacity .9s ease, visibility .9s;
+}
+#gate.is-gone { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.gate__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #120d09 center/cover no-repeat url("/templates/wisal/assets/poster.jpg");
+}
+
+/* الغلاف فوق الفيديو — يتلاشى حين يبدأ التشغيل فعلاً.
+   ڤنييت خفيف أعلى وأسفل فقط (امتداد طبيعي لعتمة الفيديو) — لا ضباب. */
+.cover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(6vh + env(safe-area-inset-top)) 22px calc(5vh + var(--wl-bars) + env(safe-area-inset-bottom));
+  text-align: center;
+  background: linear-gradient(180deg,
+    rgba(12, 8, 5, .72) 0%,
+    rgba(12, 8, 5, .2) 20%,
+    rgba(12, 8, 5, 0) 34%,
+    rgba(12, 8, 5, 0) 50%,
+    rgba(12, 8, 5, .42) 70%,
+    rgba(12, 8, 5, .88) 100%);
+  transition: opacity 1s ease, visibility 1s;
+}
+#gate.is-open .cover { opacity: 0; visibility: hidden; }
+
+/* إطار ذهبي رفيع — البروتوكول الملكي */
+.cover__frame {
+  position: absolute;
+  inset: 16px;
+  border: 1px solid rgba(214, 171, 99, .4);
+  pointer-events: none;
+}
+.cover__frame::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(214, 171, 99, .18);
+}
+
+.cover__top, .cover__bottom { position: relative; z-index: 2; width: 100%; }
+
+/* لا هالات ولا بقع خلف النص — تُقرأ ضبابيةً. الوضوح من التدرّج الخطّي
+   النظيف أعلى/أسفل + ظلّ نصّي حادّ، والصورة تبقى صافية بلا أي طمس. */
+
+
+.cover__kick {
+  margin: 0;
+  font-family: var(--flow);
+  font-weight: 400;
+  font-size: clamp(.95rem, 4vw, 1.2rem);
+  word-spacing: .34em;
+  line-height: 2.1;
+  color: #f0d49a;
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+  opacity: 0;
+  animation: fadeUp 1.3s ease .25s forwards;
+}
+
+.cover__rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  opacity: 0;
+  animation: fadeUp 1.3s ease .5s forwards;
+}
+.cover__rule span {
+  height: 1px;
+  width: min(78px, 20vw);
+  background: linear-gradient(90deg, transparent, rgba(214, 171, 99, .85));
+}
+.cover__rule span:last-of-type { background: linear-gradient(90deg, rgba(214, 171, 99, .85), transparent); }
+.cover__rule i { font-style: normal; color: var(--gold-lt); font-size: .8rem; }
+
+/* هالة الضوء في نهاية الممرّ — تتنفّس مع ضوء الفيديو نفسه */
+.cover__halo {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: min(74vw, 340px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 228, 178, .22) 0%, rgba(214, 171, 99, .1) 44%, transparent 70%);
+  animation: breathe 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.cover__names {
+  margin: 0 0 8px;
+  font-family: var(--ruqaa);
+  font-weight: 700;
+  font-size: clamp(1.62rem, 7.8vw, 2.5rem);
+  line-height: 1.7;
+  padding-bottom: .05em;
+  color: #fff9ee;
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 0;
+  animation: fadeUp 1.4s ease .75s forwards;
+}
+
+.cover__poem {
+  margin: 0 0 26px;
+  font-family: var(--flow);
+  font-size: clamp(.9rem, 3.9vw, 1.1rem);
+  line-height: 2.4;
+  color: rgba(255, 249, 238, .9);
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+  opacity: 0;
+  animation: fadeUp 1.4s ease 1s forwards;
+}
+
+.cover__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 14px 40px;
+  border: 1px solid rgba(214, 171, 99, .6);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(18, 13, 9, .58), rgba(18, 13, 9, .38));
+  color: #f5dcab;
+  font-family: var(--ruqaa);
+  font-size: clamp(.9rem, 3.7vw, 1.02rem);
+  word-spacing: .18em;
+  cursor: pointer;
+  overflow: hidden;
+  opacity: 0;
+  animation: fadeUp 1.4s ease 1.25s forwards, pulseGold 3.4s ease-in-out 2.6s infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+.cover__lbl { transition: opacity .3s ease; }
+.cover__lbl--wait { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; }
+.cover__btn.is-loading .cover__lbl { opacity: 0; }
+.cover__btn.is-loading .cover__lbl--wait { opacity: 1; }
+
+/* شريط الانتظار — يظهر فقط إن تأخّر التشغيل بعد اللمس */
+.cover__bar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: rgba(214, 171, 99, .25);
+  opacity: 0;
+  transition: opacity .3s;
+}
+.cover__btn.is-loading .cover__bar { opacity: 1; }
+.cover__bar span {
+  display: block;
+  height: 100%;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, var(--gold-lt), transparent);
+  animation: slideBar 1.15s ease-in-out infinite;
+}
+
+/* ============================================================
+   الهيرو — الصورة نافذة أعلى الشاشة، والنص تحتها على العاج
+   ============================================================ */
+
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: hidden;
+  background: #120d09;
+  padding: 0 22px calc(3vh + var(--wl-bars) + 22vw);
+  text-align: center;
+}
+/* الصورة كاملة بألوانها الأصلية — ملء الشاشة الأولى، بلا أي إطار */
+.hero__photo {
+  position: absolute;
+  inset: 0;
+  background: #120d09 center 34% / cover no-repeat url("/templates/wisal/assets/hero.webp");
+  /* زحف بطيء للأمام: الضيف يحسّ أنه يمشي في الممرّ لا أنه يقف */
+  animation: creep 26s ease-in-out infinite alternate;
+}
+/* ڤنييت سينمائي أعلى وأسفل حيث يجلس النص — داكن فوق داكن، غير مرئي كجسم */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(12, 8, 5, .55) 0%,
+    rgba(12, 8, 5, .1) 16%,
+    rgba(12, 8, 5, 0) 30%,
+    rgba(12, 8, 5, .5) 52%,
+    rgba(12, 8, 5, .86) 72%,
+    rgba(12, 8, 5, .95) 88%,
+    rgba(46, 34, 20, .9) 100%);
+  pointer-events: none;
+}
+
+.hero__text {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+
+.hero__kick {
+  margin: 0 0 10px;
+  font-family: var(--flow);
+  font-size: clamp(.86rem, 3.6vw, 1.02rem);
+  word-spacing: .22em;
+  line-height: 2.1;
+  color: #f0d49a;
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+}
+
+.hero__names { display: block; }
+
+.hero__name {
+  margin: 0;
+  font-family: var(--ruqaa);
+  font-weight: 700;
+  font-size: clamp(2rem, 9.6vw, 3.1rem);
+  line-height: 1.7;
+  padding-bottom: .05em;
+  color: #fff9ee;
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* الاسمان يبدآن متباعدَين ثم ينزلقان نحو بعضهما — كاليدين في الدخولية */
+.hero__name--a { transform: translateX(26px); }
+.hero__name--b { transform: translateX(-26px); }
+.hero__name--a.is-in, .hero__name--b.is-in { transform: translateX(0); }
+
+/* عقدة الوصال بين الاسمين */
+.hero__knot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 2px 0;
+}
+.hero__knotLine {
+  height: 1px;
+  width: min(70px, 18vw);
+  background: linear-gradient(90deg, transparent, rgba(240, 212, 154, .95));
+}
+.hero__knot .hero__knotLine:last-of-type { background: linear-gradient(90deg, rgba(240, 212, 154, .95), transparent); }
+/* النجمة تنبثق لحظة «التقاء» الاسمين (انزلاقهما يكتمل ~بعد ثانيتين) ثم تغمز دورياً */
+.hero__knotGem {
+  color: #f0d49a;
+  text-shadow: 0 0 12px rgba(214, 171, 99, .8);
+  font-size: .9rem;
+  animation: ruleSpin .9s cubic-bezier(.2, .8, .3, 1.4) 1.9s backwards, glint 4.5s ease-in-out 3.4s infinite;
+}
+
+.hero__date {
+  margin: 14px 0 0;
+  font-family: var(--flow);
+  font-size: clamp(1.02rem, 4.4vw, 1.26rem);
+  line-height: 2.2;
+  word-spacing: .1em;
+  color: #f0d49a;
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+}
+.hero__venue {
+  margin: 6px 0 0;
+  font-family: var(--body);
+  font-size: clamp(.96rem, 4vw, 1.1rem);
+  color: #fff9ee;
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+}
+.hero__addr {
+  margin: 3px 0 0;
+  font-size: clamp(.86rem, 3.5vw, .97rem);
+  color: rgba(255, 249, 238, .75);
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+}
+.hero__tag {
+  margin: 14px 0 0;
+  font-family: var(--flow);
+  font-size: clamp(.88rem, 3.7vw, 1.02rem);
+  line-height: 2.2;
+  color: #f0d49a;
+  text-shadow: 0 2px 14px rgba(10, 7, 4, .85);
+}
+
+.hero__scroll {
+  position: relative;
+  align-self: center;
+  margin-top: 2.5vh;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 249, 238, .72);
+  text-decoration: none;
+  font-size: .78rem;
+  word-spacing: .2em;
+}
+.hero__scroll svg {
+  width: 20px; height: 20px;
+  fill: none;
+  stroke: #f0d49a;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: nudge 2.1s ease-in-out infinite;
+}
+
+/* إكليل الورد على الحدّ: عرضه كامل وارتفاعه يتناسب معه (900×170 من الـviewBox)،
+   فقاعدته العاجية تلتحم بأرضية الأقسام بلا خطّ فاصل. */
+.hero__garland {
+  position: absolute;
+  left: 0;
+  bottom: -1px;          /* يمنع شعرة الخلفية بين الإكليل والقسم التالي */
+  z-index: 3;
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 -6px 14px rgba(60, 42, 20, .16));
+}
+
+/* ظهور عناصر الهيرو بعد انزياح الدخولية */
+.reveal { opacity: 0; transition: opacity 1.1s ease, transform 1.1s cubic-bezier(.2, .7, .3, 1); }
+.hero__kick.reveal, .hero__date.reveal, .hero__venue.reveal,
+.hero__addr.reveal, .hero__tag.reveal, .hero__scroll.reveal,
+.hero__knot.reveal { transform: translateY(16px); }
+.reveal.is-in { opacity: 1; }
+.hero__kick.is-in, .hero__date.is-in, .hero__venue.is-in,
+.hero__addr.is-in, .hero__tag.is-in, .hero__scroll.is-in,
+.hero__knot.is-in { transform: translateY(0); }
+
+/* ============================================================
+   الأقسام — بطاقات عاجية على خيط ضوء ذهبي
+   ============================================================ */
+
+.wrap {
+  position: relative;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 6vh 20px calc(6vh + var(--wl-bars));
+  background:
+    radial-gradient(90% 36% at 50% 0%, rgba(214, 171, 99, .14), transparent 72%),
+    linear-gradient(180deg, var(--ivory) 0%, #fbf5ea 34%, #fbf5ea 66%, var(--ivory) 100%);
+}
+
+/* خيط الضوء الذي يمرّ خلف الأقسام ويمتلئ مع التمرير */
+.thread {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: rgba(176, 129, 60, .2);
+  pointer-events: none;
+}
+.thread i {
+  display: block;
+  width: 100%;
+  height: 0;
+  background: linear-gradient(180deg, var(--gold), rgba(176, 129, 60, .35));
+  transition: height .25s linear;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 30px;
+  padding: 34px 24px;
+  text-align: center;
+  border: 1px solid rgba(176, 129, 60, .3);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 246, 226, .9), transparent 60%),
+    var(--ivory-2);
+  box-shadow: 0 10px 30px rgba(120, 90, 46, .07);
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 1s ease, transform 1s cubic-bezier(.2, .7, .3, 1);
+}
+.card.is-visible { opacity: 1; transform: translateY(0); }
+
+/* زوايا ذهبية — ترسم نفسها لحظة ظهور البطاقة */
+.card::before, .card::after {
+  content: "";
+  position: absolute;
+  width: 0; height: 0;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+  transition: width .7s ease .35s, height .7s ease .35s;
+}
+.card.is-visible::before, .card.is-visible::after { width: 16px; height: 16px; }
+.card::before { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+.card::after  { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+
+.card__kick {
+  margin: 0;
+  font-family: var(--flow);
+  font-weight: 400;
+  font-size: clamp(1.05rem, 4.4vw, 1.26rem);
+  line-height: 2;
+  word-spacing: .3em;
+  color: var(--gold-dp);
+}
+
+.card__rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin: 12px 0 22px;
+}
+.card__rule span {
+  height: 1px;
+  width: min(62px, 16vw);
+  background: linear-gradient(90deg, transparent, rgba(176, 129, 60, .75));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .9s cubic-bezier(.2, .7, .3, 1) .45s;
+}
+.card__rule span:last-of-type {
+  background: linear-gradient(90deg, rgba(176, 129, 60, .75), transparent);
+  transform-origin: right center;
+}
+.card.is-visible .card__rule span { transform: scaleX(1); }
+.card__rule i { font-style: normal; color: var(--gold); font-size: .72rem; opacity: 0; }
+.card.is-visible .card__rule i { animation: ruleSpin .9s cubic-bezier(.2, .8, .3, 1.2) .4s forwards; }
+
+/* --- موعد الفرح / الموقع --- */
+.when__date {
+  margin: 0;
+  font-family: var(--flow);
+  font-size: clamp(1.12rem, 4.8vw, 1.42rem);
+  line-height: 2.25;
+  color: var(--ink);
+}
+.when__time {
+  margin: 6px 0 0;
+  font-family: var(--flow);
+  font-size: clamp(.92rem, 3.8vw, 1.04rem);
+  line-height: 2.2;
+  color: var(--gold-dp);
+}
+
+.venue__name {
+  margin: 20px 0 0;
+  font-family: var(--flow);
+  font-size: clamp(1.02rem, 4.3vw, 1.2rem);
+  line-height: 2.1;
+  color: var(--ink);
+}
+.venue__addr {
+  margin: 5px 0 0;
+  font-size: clamp(.86rem, 3.5vw, .96rem);
+  color: var(--ink-soft);
+}
+.venue__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 12px 30px;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--ivory-3), #f8f0e0);
+  color: var(--gold-dp);
+  font-family: var(--ruqaa);
+  font-size: .95rem;
+  text-decoration: none;
+  transition: background .3s, box-shadow .3s;
+}
+.venue__btn:hover { background: #f3e7cf; box-shadow: 0 4px 14px rgba(138, 97, 40, .16); }
+
+/* --- الآية --- */
+.card--verse {
+  border-color: rgba(176, 129, 60, .4);
+  background:
+    radial-gradient(110% 90% at 50% 50%, rgba(255, 244, 219, .95), transparent 72%),
+    var(--ivory-3);
+}
+.verse__text {
+  margin: 0;
+  font-family: var(--flow);
+  font-size: clamp(1rem, 4.2vw, 1.16rem);
+  line-height: 2.7;
+  color: var(--gold-dp);
+}
+
+/* --- بطاقة الدعوة --- */
+.invitation__text {
+  margin: 0;
+  font-family: var(--body);
+  font-size: clamp(.97rem, 4vw, 1.08rem);
+  line-height: 2.35;
+  color: var(--ink-soft);
+}
+
+/* --- الأهل --- */
+.families {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.family { width: 100%; opacity: 0; transition: opacity 1s ease .25s, transform 1s cubic-bezier(.2, .7, .3, 1) .25s; }
+.family:first-of-type { transform: translateX(30px); }
+.family:last-of-type  { transform: translateX(-30px); }
+.card.is-visible .family { opacity: 1; transform: translateX(0); }
+.family__label {
+  display: block;
+  font-family: var(--flow);
+  font-size: clamp(.8rem, 3.3vw, .9rem);
+  word-spacing: .2em;
+  line-height: 2;
+  color: var(--gold-dp);
+  margin-bottom: 6px;
+}
+.family__names {
+  margin: 0;
+  font-family: var(--flow);
+  font-size: clamp(1rem, 4.2vw, 1.14rem);
+  line-height: 2.3;
+  color: var(--ink);
+}
+.families__knot { color: var(--gold); font-size: .85rem; opacity: 0; }
+.card.is-visible .families__knot { animation: ruleSpin 1s cubic-bezier(.2, .8, .3, 1.2) 1.1s forwards; }
+
+/* --- العدّاد --- */
+.countdown {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+  padding-top: 15px;
+}
+/* الخيط الأفقي الذي تتدلّى منه القلائد */
+.countdown::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 4%; right: 4%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(176, 129, 60, .55) 18%, rgba(176, 129, 60, .55) 82%, transparent);
+}
+.cd__cell {
+  position: relative;
+  padding: 14px 4px;
+  border: 1px solid rgba(176, 129, 60, .28);
+  background: linear-gradient(180deg, var(--ivory-3), #f7efdf);
+  transform-origin: top center;
+  animation: sway 4.4s ease-in-out infinite alternate;
+}
+/* سلسلة كل قلادة */
+.cd__cell::before {
+  content: "";
+  position: absolute;
+  top: -15px; left: 50%;
+  width: 1px; height: 15px;
+  background: rgba(176, 129, 60, .5);
+}
+.cd__cell:nth-child(1) { animation-delay: 0s; }
+.cd__cell:nth-child(2) { animation-delay: -1.3s; }
+.cd__cell:nth-child(3) { animation-delay: -2.4s; }
+.cd__cell:nth-child(4) { animation-delay: -3.1s; }
+/* نبضة الثواني — القلب الحي للعدّاد */
+.cd__cell:last-child .cd__num { animation: tickGlow 1s ease-in-out infinite; }
+.cd__num {
+  display: block;
+  font-family: var(--ruqaa);
+  font-weight: 700;
+  font-size: clamp(1.3rem, 6.2vw, 1.75rem);
+  line-height: 1.5;
+  color: var(--gold-dp);
+}
+.cd__lbl {
+  display: block;
+  margin-top: 3px;
+  font-size: clamp(.66rem, 2.8vw, .76rem);
+  color: var(--ink-soft);
+  word-spacing: .12em;
+}
+.cd__arrived {
+  margin: 4px 0 0;
+  font-family: var(--flow);
+  font-size: 1.15rem;
+  line-height: 2.1;
+  color: var(--gold-dp);
+}
+
+/* --- البرنامج --- */
+.timeline { list-style: none; margin: 0; padding: 0; }
+/* الوقت والفقرة على سطر واحد: «٧:٠٠ مساءً — استقبال الضيوف».
+   فصلهما على سطرين كان يفتح فجوات تفكّك خيط النقاط بصرياً. */
+.timeline__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px max-content 1fr;
+  align-items: baseline;
+  column-gap: 12px;
+  padding: 0 4px 18px 0;
+  text-align: right;
+}
+.timeline__item:last-child { padding-bottom: 0; }
+/* خيط داخلي يصل نقاط البرنامج — يُرسم من الأعلى للأسفل */
+.timeline__item::before {
+  content: "";
+  position: absolute;
+  top: 14px; bottom: 0;
+  right: 7px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(176, 129, 60, .45), rgba(176, 129, 60, .1));
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition: transform .6s ease;
+}
+.timeline__item:last-child::before { display: none; }
+.card.is-visible .timeline__item::before { transform: scaleY(1); }
+.timeline__dot {
+  width: 7px; height: 7px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  transform: translateX(-4px) scale(0);
+  transition: transform .5s cubic-bezier(.2, .8, .3, 1.4), box-shadow .5s;
+}
+.card.is-visible .timeline__dot { transform: translateX(-4px) scale(1); box-shadow: 0 0 10px rgba(214, 171, 99, .8); }
+/* تتابع الفقرات: كل نقطة تضيء بعد سابقتها ويمتد خيطها */
+.timeline__item:nth-child(1) .timeline__dot, .timeline__item:nth-child(1)::before { transition-delay: .4s; }
+.timeline__item:nth-child(2) .timeline__dot, .timeline__item:nth-child(2)::before { transition-delay: .9s; }
+.timeline__item:nth-child(3) .timeline__dot, .timeline__item:nth-child(3)::before { transition-delay: 1.4s; }
+.timeline__item:nth-child(4) .timeline__dot, .timeline__item:nth-child(4)::before { transition-delay: 1.9s; }
+.timeline__item:nth-child(5) .timeline__dot, .timeline__item:nth-child(5)::before { transition-delay: 2.4s; }
+.timeline__item:nth-child(6) .timeline__dot, .timeline__item:nth-child(6)::before { transition-delay: 2.9s; }
+.timeline__item:nth-child(7) .timeline__dot, .timeline__item:nth-child(7)::before { transition-delay: 3.4s; }
+.timeline__item:nth-child(8) .timeline__dot, .timeline__item:nth-child(8)::before { transition-delay: 3.9s; }
+.timeline__time {
+  display: block;
+  font-family: var(--flow);
+  font-size: clamp(.9rem, 3.7vw, 1rem);
+  line-height: 2.1;
+  color: var(--gold-dp);
+}
+.timeline__title {
+  display: block;
+  font-size: clamp(.9rem, 3.7vw, 1rem);
+  color: var(--ink);
+}
+
+/* --- ملاحظات --- */
+.notes__list { list-style: none; margin: 0; padding: 0; }
+.notes__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  text-align: right;
+  font-size: clamp(.92rem, 3.8vw, 1rem);
+  line-height: 2;
+  color: var(--ink-soft);
+}
+.notes__mark { color: var(--gold); font-size: .74rem; margin-top: 9px; flex: none; }
+
+/* --- الختام --- */
+.card--closing { overflow: hidden; padding-bottom: 40px; }
+.closing__glow {
+  position: absolute;
+  left: 50%;
+  bottom: -46%;
+  width: min(120%, 460px);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 240, 205, .8), transparent 68%);
+  pointer-events: none;
+}
+.closing__note {
+  position: relative;
+  margin: 0;
+  font-family: var(--flow);
+  font-size: clamp(1rem, 4.2vw, 1.14rem);
+  line-height: 2.5;
+  color: var(--ink);
+}
+.closing__hashtag {
+  position: relative;
+  margin: 16px 0 0;
+  font-family: var(--latin);
+  font-size: clamp(.98rem, 4.1vw, 1.1rem);
+  word-spacing: .14em;
+  color: var(--gold-dp);
+}
+.contact {
+  position: relative;
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+.contact__label {
+  font-family: var(--flow);
+  font-size: .84rem;
+  word-spacing: .18em;
+  line-height: 2;
+  color: var(--ink-soft);
+}
+.contact__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 26px;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--ivory-3), #f8f0e0);
+  color: var(--gold-dp);
+  font-family: var(--ruqaa);
+  font-size: .95rem;
+  text-decoration: none;
+  transition: background .3s;
+}
+.contact__link:hover { background: #f3e7cf; }
+.closing__families {
+  position: relative;
+  margin: 26px 0 0;
+  font-family: var(--flow);
+  font-size: clamp(.94rem, 3.9vw, 1.06rem);
+  line-height: 2.3;
+  color: var(--ink-soft);
+}
+
+/* ============================================================
+   ذرّات الضوء العائمة — داخل نافذة الصورة وحدها
+   ============================================================ */
+.motes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.mote {
+  position: absolute;
+  bottom: -14px;
+  border-radius: 50%;
+  background: rgba(255, 244, 214, .85);
+  box-shadow: 0 0 8px rgba(214, 171, 99, .75);
+  animation: float linear infinite;
+}
+
+
+/* ============================================================
+   لقاء الضوءين — موعد الفرح يولد من التقائهما (فكرة القالب مصغّرة)
+   ============================================================ */
+.meet {
+  position: relative;
+  height: 42px;
+  margin: -6px 0 2px;
+  pointer-events: none;
+}
+.meet__orb {
+  position: absolute;
+  top: 50%;
+  width: 11px; height: 11px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fff6dd, var(--gold-lt) 62%, var(--gold));
+  box-shadow: 0 0 14px 4px rgba(214, 171, 99, .55);
+  opacity: 0;
+}
+.card.is-visible .meet__orb--a { animation: orbA 1.5s cubic-bezier(.35, 0, .25, 1) .45s forwards, orbMelt .45s ease 1.9s forwards; }
+.card.is-visible .meet__orb--b { animation: orbB 1.5s cubic-bezier(.35, 0, .25, 1) .45s forwards, orbMelt .45s ease 1.9s forwards; }
+/* ومضة الالتقاء */
+.meet__glow {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 54px; height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 240, 205, .95), rgba(214, 171, 99, .4) 55%, transparent 72%);
+  opacity: 0;
+}
+.card.is-visible .meet__glow { animation: meetFlash .9s ease-out 1.85s; }
+/* شرارات تتناثر من نقطة اللقاء */
+.meet__spark {
+  position: absolute;
+  left: 50%; top: 50%;
+  margin: -8px 0 0 -6px;
+  font-size: 12px;
+  color: var(--gold-lt);
+  text-shadow: 0 0 8px rgba(214, 171, 99, .8);
+  opacity: 0;
+}
+.card.is-visible .meet__spark { animation: sparkFly .95s ease-out 1.9s forwards; }
+.meet__spark:nth-child(3) { --dx: -46px; --dy: -30px; }
+.meet__spark:nth-child(4) { --dx: 46px;  --dy: -26px; }
+.meet__spark:nth-child(5) { --dx: -60px; --dy: 6px; }
+.meet__spark:nth-child(6) { --dx: 60px;  --dy: 10px; }
+.meet__spark:nth-child(7) { --dx: -28px; --dy: 30px; font-size: 9px; }
+.meet__spark:nth-child(8) { --dx: 30px;  --dy: 28px; font-size: 9px; }
+/* التاريخ يولد بعد الشرارة */
+#firstCard .when__date, #firstCard .when__time { opacity: 0; }
+#firstCard.is-visible .when__date { animation: fadeUp 1s ease 2.15s forwards; }
+#firstCard.is-visible .when__time { animation: fadeUp 1s ease 2.35s forwards; }
+
+/* ============================================================
+   لمعة ضوء تعبر البطاقة (الآية + الختام) — نافذة تمرّ عليها الشمس
+   ============================================================ */
+.shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.shine::before {
+  content: "";
+  position: absolute;
+  top: -25%; bottom: -25%;
+  left: 0;
+  width: 34%;
+  transform: translateX(-140%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 240, 205, .55), transparent);
+  animation: shineSweep 6.5s ease-in-out 2.2s infinite;
+}
+
+/* ============================================================
+   عقدة الوصال بالختام — تُرسم أمام الضيف حين يصل نهاية الحكاية
+   ============================================================ */
+.closing__knot {
+  position: relative;
+  display: block;
+  width: 96px;
+  height: auto;
+  margin: 0 auto 14px;
+}
+.closing__knot path {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  transition: stroke-dashoffset 2s ease .5s;
+}
+.card.is-visible .closing__knot path { stroke-dashoffset: 0; }
+
+/* ============================================================
+   ومضات ذهب متناثرة بين البطاقات (تُبنى بالسكربت)
+   ============================================================ */
+.spark {
+  position: absolute;
+  z-index: 0;
+  color: var(--gold-lt);
+  text-shadow: 0 0 6px rgba(214, 171, 99, .6);
+  animation: twinkle ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* خرزة الضوء على رأس الخيط + عُقد المحطات (تُبنى بالسكربت) */
+.thread__bead {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 9px; height: 9px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fff6dd, var(--gold-lt) 60%, var(--gold));
+  box-shadow: 0 0 13px 4px rgba(214, 171, 99, .6);
+  opacity: 0;
+  transition: opacity .4s;
+}
+.thread__bead.is-on { opacity: 1; }
+.tknot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .72rem;
+  line-height: 1;
+  color: rgba(176, 129, 60, .3);
+  transition: color .7s, text-shadow .7s, transform .7s;
+}
+.tknot.is-lit {
+  color: var(--gold-lt);
+  text-shadow: 0 0 10px rgba(214, 171, 99, .85);
+  transform: translateX(-50%) scale(1.25);
+}
+
+/* ============================================================
+   الحركات
+   ============================================================ */
+@keyframes fadeUp   { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes breathe  { 0%, 100% { opacity: .72; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } }
+@keyframes nudge    { 0%, 100% { transform: translateY(0); opacity: .65; } 50% { transform: translateY(5px); opacity: 1; } }
+@keyframes glint    { 0%, 88%, 100% { opacity: 1; } 94% { opacity: .35; } }
+@keyframes slideBar { 0% { transform: translateX(100%); } 100% { transform: translateX(-260%); } }
+@keyframes creep    { from { transform: scale(1); } to { transform: scale(1.09); } }
+@keyframes pulseGold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 171, 99, 0); }
+  50%      { box-shadow: 0 0 24px 0 rgba(214, 171, 99, .35); }
+}
+@keyframes ruleSpin {
+  from { opacity: 0; transform: rotate(-120deg) scale(.3); }
+  to   { opacity: 1; transform: rotate(0deg) scale(1); }
+}
+@keyframes sway {
+  from { transform: rotate(.7deg); }
+  to   { transform: rotate(-.7deg); }
+}
+@keyframes tickGlow {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .62; }
+}
+@keyframes orbA {
+  from { right: 6%; opacity: 0; }
+  18%  { opacity: 1; }
+  to   { right: calc(50% - 6px); opacity: 1; }
+}
+@keyframes orbB {
+  from { left: 6%; opacity: 0; }
+  18%  { opacity: 1; }
+  to   { left: calc(50% - 6px); opacity: 1; }
+}
+@keyframes orbMelt {
+  from { opacity: 1; }
+  to   { opacity: 0; transform: scale(2.2); }
+}
+@keyframes meetFlash {
+  from { opacity: 0; transform: scale(.2); }
+  28%  { opacity: 1; }
+  to   { opacity: 0; transform: scale(2.1); }
+}
+@keyframes sparkFly {
+  from { opacity: 1; transform: translate(0, 0) scale(.4) rotate(0deg); }
+  to   { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1) rotate(160deg); }
+}
+@keyframes shineSweep {
+  0%       { transform: translateX(-140%) skewX(-18deg); }
+  46%, 100% { transform: translateX(440%) skewX(-18deg); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(.5); }
+  50%      { opacity: .85; transform: scale(1); }
+}
+@keyframes float {
+  from { transform: translateY(0) translateX(0); opacity: 0; }
+  12%  { opacity: .85; }
+  88%  { opacity: .45; }
+  to   { transform: translateY(-100svh) translateX(22px); opacity: 0; }
+}
+
+/* ============================================================
+   تفضيل تقليل الحركة
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hero__photo, .cover__halo, .cover__btn, .hero__knotGem, .hero__scroll svg,
+  .mote, .cd__cell, .shine::before, .spark, .cd__cell:last-child .cd__num { animation: none !important; }
+  .reveal, .card { transition-duration: .01s; }
+  .hero__name--a, .hero__name--b, .family { transform: none; }
+  .meet { display: none; }
+  #firstCard .when__date, #firstCard .when__time,
+  .card__rule i, .family, .families__knot { opacity: 1 !important; animation: none !important; }
+  .card__rule span { transform: scaleX(1); }
+  .timeline__dot { transform: translateX(-4px) scale(1); }
+  .timeline__item::before { transform: scaleY(1); }
+  .closing__knot path { stroke-dashoffset: 0; transition: none; }
+  .card::before, .card::after { width: 16px; height: 16px; transition: none; }
+  .thread__bead { display: none; }
+}
+
+/* شاشات واسعة: نافذة أعمق وبطاقة بعرض مريح للقراءة */
+@media (min-width: 720px) {
+  .hero__photo { background-position: center 30%; }
+  .hero { padding-bottom: calc(3vh + var(--wl-bars) + 170px); }
+  /* عرض كامل بارتفاع مسقوف: preserveAspectRatio=slice يقصّ الجانبين بدل
+     أن يمطّ الورود، فتبقى الحافة مغطّاة على أي عرض شاشة */
+  .hero__garland { width: 100%; height: 175px; }
+  .card { padding: 42px 40px; }
+}

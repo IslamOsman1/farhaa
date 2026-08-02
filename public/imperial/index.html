@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>دعوة زفاف</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#111210',
+                        foreground: '#E0CCAB',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Aref+Ruqaa:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --background: #111210;
+            --foreground: #E0CCAB;
+            --font-body: 'Tajawal', sans-serif;
+            --font-script: 'Great Vibes', cursive;
+            --font-heading: 'Aref Ruqaa', serif;
+        }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--background);
+            color: var(--foreground);
+            overflow-x: hidden;
+        }
+        .hidden-opacity {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .animate-hint-bounce {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-25%); }
+        }
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease-out, transform 1s ease-out;
+        }
+        .reveal-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* RSVP */
+        .pill {
+            flex: 1; text-align: center; padding: 10px; border: 1px solid var(--foreground);
+            border-radius: 8px; cursor: pointer; transition: all 0.3s;
+        }
+        .pill.active {
+            background-color: var(--foreground);
+            color: var(--background);
+        }
+        input, textarea {
+            background-color: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Background Music -->
+    <audio id="bgMusic" loop preload="auto" src="./intro-music.mp3"></audio>
+
+    <!-- Intro Envelope Layer -->
+    <div id="intro-layer" class="fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-1000 bg-[#0d0e0c]">
+        <div id="poster-container" class="absolute inset-0 transition-opacity duration-500">
+            <img src="./goldleaf-sage-open-poster.jpg" alt="Envelope" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 flex flex-col items-center justify-end pb-16 gap-1 animate-hint-bounce">
+                <p class="font-heading text-white/80 text-xl animate-pulse">اضغط لفتح الدعوة</p>
+                <p id="env-guest-name" class="text-white font-bold text-2xl mt-2"></p>
+            </div>
+        </div>
+        <!-- Video that plays when opened -->
+        <video id="intro-video" muted playsinline preload="auto" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 opacity-0" src="./goldleaf-sage-open.mp4"></video>
+    </div>
+
+    <!-- Main Content Container -->
+    <div id="main-content" class="transition-opacity duration-1000 opacity-0 h-screen overflow-x-hidden overflow-y-auto relative">
+        <!-- Hero Section -->
+        <section class="relative min-h-[90vh] flex items-start justify-center pt-[35vh] overflow-hidden">
+            <div class="absolute inset-0">
+                <video autoplay muted loop playsinline class="w-full h-full object-cover object-center opacity-40">
+                    <source src="./hero-video.mp4" type="video/mp4">
+                </video>
+                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-background/90"></div>
+            </div>
+            <div class="relative z-10 flex flex-col items-center text-center px-6 pt-[70px] reveal-on-scroll">
+                <img src="./ornate-badge.webp" class="w-24 mb-6 opacity-80" alt="Emblem">
+                <h1 class="text-5xl md:text-7xl mb-3 text-foreground font-script flex flex-col items-center" style="font-family: var(--font-script);">
+                    <span id="groomName">عريس</span>
+                    <span class="text-3xl my-2 text-foreground/60">&amp;</span>
+                    <span id="brideName">عروس</span>
+                </h1>
+                <p id="heroDate" class="text-xl font-bold tracking-widest text-foreground mt-4"></p>
+            </div>
+        </section>
+
+        <!-- Welcome Text -->
+        <section class="py-20 px-8 text-center max-w-2xl mx-auto">
+            <div class="reveal-on-scroll">
+                <img src="./divider-candles.webp" class="w-48 mx-auto mb-10 opacity-80" alt="Divider">
+                <h2 class="text-4xl md:text-5xl mb-10 text-foreground font-heading">مرحباً بكم</h2>
+                <p id="verseText" class="text-xl md:text-2xl leading-loose text-foreground/90 font-heading mb-4"></p>
+                <p id="invitationText" class="text-base md:text-lg leading-loose font-light text-foreground/70"></p>
+            </div>
+        </section>
+        
+        <!-- Families -->
+        <section class="py-10 px-8 text-center max-w-2xl mx-auto border-t border-b border-foreground/10">
+            <div class="reveal-on-scroll flex justify-around">
+                <div>
+                    <h3 id="groomParentsLabel" class="family__label text-sm text-foreground/60 mb-2">عائلة العريس</h3>
+                    <p id="groomParents" class="text-xl font-bold"></p>
+                </div>
+                <div>
+                    <h3 id="brideParentsLabel" class="family__label text-sm text-foreground/60 mb-2">عائلة العروس</h3>
+                    <p id="brideParents" class="text-xl font-bold"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Order of the day -->
+        <section class="relative overflow-hidden" id="program-section">
+            <div class="flex justify-center pt-20">
+                <img src="./music-box.webp" class="w-48 object-contain reveal-on-scroll opacity-90">
+            </div>
+            <div class="relative z-10 pt-6 px-6 reveal-on-scroll text-center">
+                <h2 class="text-4xl md:text-5xl text-foreground mb-3 font-heading">برنامج الحفل</h2>
+            </div>
+            <div class="relative mt-12 pb-16 px-6">
+                <div class="flex flex-col items-center" id="timeline"></div>
+            </div>
+        </section>
+
+        <!-- Details -->
+        <section class="relative">
+            <div class="text-center py-12 reveal-on-scroll">
+                <h2 class="text-4xl md:text-5xl text-foreground mb-3 font-heading">التفاصيل</h2>
+            </div>
+            <div class="flex flex-col items-center px-4 mb-16 relative">
+                <img src="./divider-filigree.webp" class="absolute w-[440px] max-w-full opacity-30 pointer-events-none" style="top:-30px;">
+                <div class="relative z-10 text-center px-10 pt-8 pb-12 w-full max-w-[360px]">
+                    <img src="./venue-sketch.webp" class="w-full rounded-t-full mb-6 opacity-80 border-b-2 border-foreground/30">
+                    <span class="text-lg text-foreground block mb-3 leading-snug">
+                        <span id="weddingDate" class="block font-bold text-2xl mb-2"></span>
+                        <span id="weddingTime" class="block"></span>
+                    </span>
+                    <div class="flex flex-col items-center justify-center gap-2 text-foreground/80 mt-4 border-t border-foreground/20 pt-4">
+                        <span id="venueName" class="font-bold text-xl"></span>
+                        <span id="venueAddr" class="text-sm"></span>
+                    </div>
+                </div>
+                <div class="relative z-20 flex flex-row gap-3 justify-center mt-2">
+                    <a id="mapBtn" href="#" target="_blank" class="inline-flex items-center gap-2 bg-foreground text-background font-bold px-8 py-3 rounded-md text-sm hover:opacity-90 transition-opacity">
+                        رابط الموقع (Google Maps)
+                    </a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Gallery Section -->
+        <section class="py-12 px-8" id="gallery-section">
+            <h2 class="text-4xl md:text-5xl text-foreground mb-10 text-center font-heading">صورنا</h2>
+            <div class="max-w-4xl mx-auto grid grid-cols-2 gap-4" id="galleryGrid"></div>
+        </section>
+        
+        <!-- Notes Section -->
+        <section class="py-8 px-8 text-center" id="notes-section">
+            <div id="notesList" class="max-w-2xl mx-auto text-foreground/80 text-lg space-y-2"></div>
+        </section>
+
+        <!-- RSVP -->
+        <section id="rsvp-section" class="pt-8 pb-16 px-6">
+            <div class="max-w-xl mx-auto bg-foreground/5 p-8 rounded-2xl border border-foreground/10 shadow-xl relative overflow-hidden">
+                <div class="text-center mb-10 reveal-on-scroll relative z-10">
+                    <h2 class="text-4xl text-foreground mb-3 font-heading">تأكيد الحضور</h2>
+                    <p class="text-sm text-foreground/60">يسعدنا مشاركتكم فرحتنا</p>
+                </div>
+                <form id="rsvp-form" class="space-y-6 relative z-10">
+                    <div>
+                        <label class="text-sm text-foreground/80 font-medium">الاسم الكريم</label>
+                        <input type="text" name="guestName" required class="mt-2 w-full border border-foreground/20 px-4 py-2.5 rounded-md text-foreground text-sm focus:outline-none focus:border-foreground/50 transition-colors">
+                    </div>
+                    <div>
+                        <label class="text-sm text-foreground/80 font-medium">هل ستحضر؟</label>
+                        <div class="flex gap-4 mt-2">
+                            <div class="pill active" data-val="confirmed">نعم</div>
+                            <div class="pill" data-val="declined">لا</div>
+                        </div>
+                        <input type="hidden" name="status" id="statusInput" value="confirmed">
+                    </div>
+                    <div>
+                        <label class="text-sm text-foreground/80 font-medium">عدد المرافقين (إن وُجد)</label>
+                        <div class="flex items-center gap-4 mt-2">
+                            <button type="button" id="comp-minus" class="w-10 h-10 border border-foreground/50 rounded-full text-foreground hover:bg-foreground hover:text-background transition-colors">-</button>
+                            <span id="comp-count" class="text-xl font-bold">0</span>
+                            <button type="button" id="comp-plus" class="w-10 h-10 border border-foreground/50 rounded-full text-foreground hover:bg-foreground hover:text-background transition-colors">+</button>
+                        </div>
+                        <input type="hidden" name="companions" id="compInput" value="0">
+                    </div>
+                    <div>
+                        <label class="text-sm text-foreground/80 font-medium">رسالة للعرسان</label>
+                        <textarea name="message" rows="3" class="mt-2 w-full border border-foreground/20 px-4 py-2.5 rounded-md text-foreground text-sm focus:outline-none focus:border-foreground/50 resize-none transition-colors"></textarea>
+                    </div>
+                    <button type="submit" id="submitBtn" class="w-full flex items-center justify-center gap-2 bg-foreground text-background py-3 rounded-md text-sm font-bold hover:opacity-90 shadow-md">
+                        إرسال التأكيد
+                    </button>
+                    <div id="rsvpMsg" class="mt-4 text-center font-bold"></div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center pb-24 pt-12 flex flex-col justify-start">
+            <div class="flex flex-col items-center reveal-on-scroll">
+                <p id="closingNote" class="text-xl text-foreground mb-4 font-heading"></p>
+                <p class="text-4xl text-foreground font-script flex gap-4" style="font-family: var(--font-script);">
+                    <span id="closingGroom"></span>
+                    <span>&amp;</span>
+                    <span id="closingBride"></span>
+                </p>
+                <p id="closingHashtag" class="text-lg text-foreground/60 mt-4 tracking-wider"></p>
+                <img src="./footer-ornament.webp" class="w-64 mx-auto mt-12 opacity-60">
+            </div>
+        </footer>
+    </div>
+
+    <script src="./script.js"></script>
+<script src="/generic_script.js"></script>
+</body>
+</html>

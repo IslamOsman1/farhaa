@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Template {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  nameAr      String
+  slug        String       @unique
+  description String?
+  descriptionAr String?
+  previewImage String?
+  colors      String       @default("{}")  // JSON
+  fonts       String       @default("{}")  // JSON
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  invitations Invitation[]
+}
+
+model Package {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  nameAr      String
+  price       Float
+  currency    String   @default("EGP")
+  features    String   @default("[]") // JSON
+  featuresAr  String   @default("[]") // JSON
+  isPopular   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Invitation {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  slug            String    @unique
+  clientName      String    @default("")
+  clientPhone     String?
+  templateId      String    @db.ObjectId
+  template        Template  @relation(fields: [templateId], references: [id])
+  
+  // Status
+  status          String    @default("PENDING") // PENDING | PUBLISHED | REJECTED
+  
+  // Couple info
+  groomName       String    @default("")
+  groomNameEn     String?
+  brideName       String    @default("")
+  brideNameEn     String?
+  
+  // Event details
+  weddingDate     DateTime?
+  venueName       String?
+  venueNameEn     String?
+  venueAddress    String?
+  venueAddressEn  String?
+  venueLat        Float?
+  venueLng        Float?
+  
+  // Content
+  welcomeMessage   String?
+  welcomeMessageEn String?
+  coupleStory      String?
+  coupleStoryEn    String?
+  
+  // Media
+  coverImage      String?
+  coverVideo      String?
+  musicUrl        String?
+  
+  // Customization
+  customColors    String?
+  customFonts     String?
+  
+  // Section visibility
+  sections        String    @default("{\"opening\":true,\"music\":true,\"welcome\":true,\"countdown\":true,\"details\":true,\"schedule\":true,\"gallery\":true,\"rsvp\":true,\"calendar\":true,\"share\":true,\"qrcode\":true}")
+  
+  isActive        Boolean   @default(true)
+  publishStartDate DateTime?
+  publishEndDate   DateTime?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  gallery         GalleryItem[]
+  schedule        EventSchedule[]
+  rsvps           RSVP[]
+  visits          Visit[]
+}
+
+model GalleryItem {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  invitationId String     @db.ObjectId
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  type         String     @default("image") // image | video
+  url          String
+  caption      String?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+}
+
+model EventSchedule {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  invitationId String     @db.ObjectId
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  time         String
+  title        String
+  titleEn      String?
+  description  String?
+  descriptionEn String?
+  icon         String?
+  sortOrder    Int        @default(0)
+}
+
+model RSVP {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  invitationId String     @db.ObjectId
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  guestName    String
+  phone        String?
+  email        String?
+  status       String     @default("confirmed")
+  companions   Int        @default(0)
+  message      String?
+  createdAt    DateTime   @default(now())
+}
+
+model Visit {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  invitationId String     @db.ObjectId
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime   @default(now())
+}
+
+model SiteSettings {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  contactPhone String?
+  contactEmail String?
+  whatsapp     String?
+  instagram    String?
+  facebook     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}

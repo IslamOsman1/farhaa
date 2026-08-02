@@ -1,0 +1,418 @@
+/* ============================================================
+   قالب letter «رسالة» — مظروف مختوم بالشمع + قوس زهور فاخر
+   ============================================================ */
+
+:root {
+  --cream-0: #f6efe4;   /* خلفية الصفحة */
+  --cream-1: #fbf6ec;   /* أفتح */
+  --cream-2: #efe3d0;   /* أغمق قليلاً */
+  --blush:   #f3e3dd;   /* وردي ناعم */
+  --rose:    #c39a8e;   /* وردي دافئ */
+  --rose-dp: #a6705f;
+  --gold:    #c2a05a;   /* ذهبي */
+  --gold-sf: #ddc185;   /* ذهبي فاتح */
+  --gold-dp: #997b38;   /* ذهبي غامق */
+  --wax:     #8c1f2b;   /* شمع برغندي */
+  --wax-hi:  #c2434f;   /* لمعة الشمع */
+  --wax-dp:  #5e131c;   /* ظل الشمع */
+  --green:   #7e8c63;   /* أوراق خضراء خافتة */
+  --ink:     #5f463f;   /* نص بني دافئ */
+  --ink-sf:  #876459;   /* نص ثانوي */
+  --line:    rgba(194, 160, 90, 0.45);
+
+  --font-display: "El Messiri", "Aref Ruqaa", serif;
+  --font-script:  "Amiri", serif;
+  --font-body:    "Tajawal", system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--cream-0);
+  background-image:
+    radial-gradient(circle at 50% 0%, var(--cream-1), transparent 55%),
+    radial-gradient(circle at 100% 100%, #f7ede0, transparent 45%),
+    radial-gradient(circle at 0% 80%, #f3e7d6, transparent 40%);
+  line-height: 1.85;
+  overflow-x: hidden;
+}
+
+/* ====================== شاشة الغلاف (المظروف) ====================== */
+.cover {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 38%, #fdf7ee 0%, var(--blush) 60%, var(--cream-0) 100%);
+  transition: opacity 0.42s ease, visibility 0s linear 0.43s;
+}
+.cover.is-open { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* واجهة عائمة فوق المظروف بكامل الشاشة */
+.cover__ui {
+  position: absolute; inset: 0; z-index: 5;
+  pointer-events: none;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between;
+  text-align: center;
+  padding: 6vh 22px max(5vh, 26px);
+}
+.cover.is-open .cover__ui,
+.cover.is-opening .cover__ui { opacity: 0; transition: opacity 0.3s ease; }
+.cover__caption { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.cover__kicker {
+  font-family: var(--font-display);
+  color: var(--gold-dp);
+  font-size: clamp(17px, 5vw, 22px);
+  letter-spacing: normal;
+  opacity: 0.95;
+  text-shadow: 0 1px 8px rgba(255,250,244,0.85), 0 1px 3px rgba(120,80,60,0.25);
+}
+
+/* ---- المظروف بكامل الشاشة (أنميشن صور CSS — يعمل على كل هاتف بلا فيديو) ---- */
+.env {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100vw, calc(100vh * 9 / 16));
+  aspect-ratio: 9 / 16;
+  cursor: pointer;
+  background: var(--blush);
+}
+.cover.is-open .env { opacity: 0; transform: translate(-50%, -50%) scale(1.03); transition: opacity 0.55s ease 0.15s, transform 0.6s ease 0.15s; }
+/* السبرايت: 17 إطاراً أفقياً. الإطار الأول = مظروف مغلق بلا توهّج */
+.env__anim {
+  position: absolute; inset: 0;
+  background: url("assets/letter-open.jpg") 0% center / 1700% 100% no-repeat;
+}
+@keyframes env-open {
+  from { background-position-x: 0%; }
+  to   { background-position-x: 100%; }
+}
+/* عند الضغط: يظهر التوهّج وتنفتح الأطراف (17 إطار، يتوقّف على آخر إطار) */
+.cover.is-opening .env__anim { animation: env-open 1.15s steps(16) forwards; }
+/* طبقة لمس شفّافة فوق الفيديو لفتحه */
+.env__tap {
+  position: absolute; inset: 0;
+  border: none; background: none; cursor: pointer;
+  z-index: 2;
+}
+
+@keyframes sealPulse {
+  0%, 100% { filter: drop-shadow(0 6px 12px rgba(94,19,28,0.35)); }
+  50%      { filter: drop-shadow(0 10px 20px rgba(140,31,43,0.55)); }
+}
+
+.cover__names {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(26px, 7.5vw, 40px);
+  color: var(--rose-dp);
+  line-height: 1.25;
+  padding: 0 16px;
+  text-shadow: 0 1px 12px rgba(255,250,244,0.9), 0 2px 6px rgba(120,80,60,0.3);
+}
+.cover__hint {
+  color: var(--wax);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: normal;
+  text-shadow: 0 1px 8px rgba(255,250,244,0.9);
+  animation: hintBob 2.2s ease-in-out infinite;
+}
+.cover.is-open .cover__hint,
+.cover.is-open .cover__names { opacity: 0; transition: opacity 0.35s ease; }
+@keyframes hintBob { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+
+/* ====================== خلفية مخصّصة بحواف متلاشية ====================== */
+.bg-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 80% 74% at 50% 42%, #000 48%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 74% at 50% 42%, #000 48%, transparent 100%);
+}
+.bg-photo.is-shown { opacity: 0.5; }
+#coverBg { z-index: 0; }
+#heroBg  { z-index: -1; }
+
+/* ====================== محتوى الدعوة ====================== */
+.invite { position: relative; padding: 0 0 70px; }
+.petals { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+
+/* ====================== الواجهة: إطار العرسين الفاخر ====================== */
+.stage {
+  position: relative;
+  min-height: 100svh;
+  text-align: center;
+  overflow: hidden;
+  isolation: isolate;
+  background: #f4ece1 url("assets/hero-frame.jpg") center / contain no-repeat;
+}
+/* المحتوى في وسط الإطار العلوي (فوق العرسين) — تمركز بـ left/right كي لا يتعارض مع transform الخاص بـ .reveal */
+.stage__content {
+  position: absolute;
+  top: 22%;
+  left: 11%; right: 11%;
+  z-index: 2;
+  padding: 16px 8px;
+  /* هالة عاجية ناعمة لتوضيح النص فوق النقش */
+  background: radial-gradient(ellipse 108% 92% at 50% 50%, rgba(248,242,233,0.82), rgba(248,242,233,0.45) 60%, transparent 82%);
+  border-radius: 46%;
+}
+
+.hero__kicker {
+  color: var(--rose-dp);
+  letter-spacing: normal;
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+.hero__date {
+  font-family: var(--font-display);
+  color: var(--gold-dp);
+  font-size: clamp(14px, 4vw, 19px);
+  margin-bottom: 8px;
+}
+
+/* صورة العرسين المؤطّرة */
+.hero-photo {
+  display: none;
+  width: clamp(120px, 34vw, 180px);
+  aspect-ratio: 1 / 1;
+  margin: 14px auto 6px;
+  border-radius: 50%;
+  overflow: hidden;
+  padding: 4px;
+  background: linear-gradient(145deg, var(--gold-sf), var(--rose));
+  box-shadow: 0 0 0 1px rgba(194,160,90,0.5), 0 14px 34px rgba(120,80,60,0.32);
+}
+.hero-photo img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  border: 2px solid var(--cream-1);
+}
+#heroPhoto.is-shown { display: block; animation: heroPhotoIn 0.9s ease both; }
+@keyframes heroPhotoIn { from { opacity: 0; transform: scale(0.88); } to { opacity: 1; transform: scale(1); } }
+
+.couple {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.32;
+  font-size: clamp(40px, 12vw, 70px);
+  color: #5a3a32;
+  margin: 10px 0 12px;
+}
+.couple__name { padding: .16em .1em; display: block; }
+/* لمعان ذهبي يمرّ على الأسماء */
+.couple__name.shimmer {
+  background: linear-gradient(100deg, #5a3a32 0%, #5a3a32 40%, var(--gold-sf) 50%, #5a3a32 60%, #5a3a32 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: nameShimmer 6s ease-in-out infinite;
+}
+@keyframes nameShimmer { 0% { background-position: 130% 0; } 100% { background-position: -130% 0; } }
+.couple__amp { display: block; color: var(--gold-dp); font-size: 0.5em; margin: -4px 0; font-family: var(--font-script); }
+.hero__sub {
+  color: var(--ink-sf);
+  font-size: clamp(14px, 4vw, 17px);
+}
+.scroll-cue {
+  display: inline-block; margin-top: 28px; color: var(--gold-dp);
+  font-size: clamp(0.82rem, 3.6vw, 0.9rem); font-weight: 600; letter-spacing: normal;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.45), 0 1px 6px rgba(255,250,244,0.6);
+}
+.scroll-cue__arr { display: inline-block; font-size: 1.2rem; animation: bob 1.8s ease-in-out infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0); opacity: 0.85; } 50% { transform: translateY(7px); opacity: 1; } }
+
+/* ====================== البطاقة ====================== */
+.card {
+  position: relative;
+  max-width: 640px;
+  margin: -34px auto 0;
+  padding: clamp(40px, 8vw, 70px) clamp(22px, 6vw, 54px);
+  text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.5), transparent 30%),
+    var(--cream-1);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -20px 50px rgba(120,80,60,0.16);
+}
+.card__frame { position: absolute; inset: 14px; z-index: 0; pointer-events: none; border: 1px solid var(--line); border-radius: 18px; }
+.corner { position: absolute; color: var(--gold); font-size: 18px; opacity: 0.8; }
+.corner--tr { top: -10px; right: -10px; }
+.corner--tl { top: -10px; left: -10px; }
+.corner--br { bottom: -10px; right: -10px; }
+.corner--bl { bottom: -10px; left: -10px; }
+
+.section { position: relative; z-index: 1; padding: clamp(14px, 3vw, 22px) 6px; }
+.section__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(24px, 6vw, 34px);
+  color: var(--rose-dp);
+  margin-bottom: 14px;
+}
+.flourish { color: var(--gold); font-size: 22px; display: inline-block; }
+
+.divider {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  color: var(--gold); max-width: 260px; margin: 6px auto;
+}
+.divider span { height: 1px; flex: 1; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+
+.bismillah { font-family: var(--font-script); color: var(--gold-dp); font-size: clamp(17px, 4.5vw, 22px); margin-bottom: 10px; }
+
+/* دعاء افتتاحي */
+.verse__text {
+  font-family: var(--font-script);
+  font-size: clamp(18px, 5vw, 25px);
+  color: var(--rose-dp); line-height: 2; max-width: 30ch; margin: 0 auto;
+}
+
+/* نص الدعوة */
+.invitation__text {
+  font-size: clamp(15px, 4vw, 17px); color: var(--ink); line-height: 2.1;
+  max-width: 42ch; margin: 0 auto;
+}
+
+/* عائلتا العروسين */
+.families { display: flex; align-items: center; justify-content: center; gap: clamp(10px, 4vw, 26px); flex-wrap: wrap; }
+.family { flex: 1; min-width: 130px; }
+.family__label { display: block; color: var(--ink-sf); font-size: 13px; letter-spacing: normal; margin-bottom: 6px; }
+.family__names { font-family: var(--font-display); color: var(--ink); font-size: clamp(16px, 4.4vw, 20px); }
+.families__heart { color: var(--gold); font-size: 20px; }
+
+/* العدّاد */
+.when__date { font-family: var(--font-display); font-size: clamp(20px, 5.5vw, 30px); color: var(--ink); }
+.when__time { color: var(--ink-sf); margin-top: 2px; font-size: 15px; }
+.countdown {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: clamp(7px, 2vw, 12px);
+  max-width: 420px; margin: 24px auto 0;
+}
+.cd__cell {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 4px;
+  background: rgba(255,255,255,0.45);
+}
+.cd__num {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(26px, 7.5vw, 40px);
+  color: var(--rose-dp);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.cd__lbl { display: block; color: var(--ink-sf); font-size: 12px; margin-top: 2px; }
+.when__arrived { font-family: var(--font-display); color: var(--rose-dp); font-size: clamp(22px, 6vw, 32px); margin-top: 20px; }
+
+/* برنامج الحفل */
+.timeline { list-style: none; max-width: 360px; margin: 6px auto 0; text-align: start; }
+.timeline__item {
+  position: relative; display: grid; grid-template-columns: auto 1fr; align-items: baseline;
+  gap: 12px; padding: 12px 18px 12px 0; border-inline-start: 2px solid var(--line); margin-inline-start: 6px;
+}
+.timeline__dot { position: absolute; inset-inline-start: -7px; top: 17px; width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px var(--cream-1); }
+.timeline__time { font-family: var(--font-display); color: var(--rose-dp); font-size: 15px; min-width: 86px; }
+.timeline__title { color: var(--ink); font-size: 15px; }
+
+/* القاعة */
+.venue__photo {
+  height: 170px; margin: 0 auto 18px; max-width: 380px;
+  border-radius: 16px; border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 40%, #f7ecde, #ecdcc6), var(--cream-2);
+  background-size: cover; background-position: center;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+}
+.venue__photo .venue__pin { color: var(--gold-dp); font-size: 30px; opacity: 0.55; }
+.venue.has-photo .venue__photo { border: none; }
+.venue.has-photo .venue__pin { display: none; }
+.venue__name { font-family: var(--font-display); font-size: clamp(22px, 6vw, 32px); color: var(--ink); }
+.venue__addr { color: var(--ink-sf); margin-top: 4px; font-size: 15px; }
+.venue__btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  margin-top: 22px; font-weight: 700; font-size: 15px;
+  color: #5a3a32; text-decoration: none;
+  background: linear-gradient(180deg, var(--gold-sf), var(--gold));
+  border-radius: 999px; padding: 12px 28px;
+  box-shadow: 0 8px 20px rgba(194,160,90,0.35);
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+.venue__btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
+
+/* ملاحظات */
+.notes__list { list-style: none; max-width: 400px; margin: 4px auto 0; text-align: start; }
+.notes__item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; color: var(--ink); font-size: 15px; line-height: 1.7; }
+.notes__mark { color: var(--gold); font-size: 13px; margin-top: 4px; flex-shrink: 0; }
+
+/* الخاتمة */
+.closing__note { font-family: var(--font-script); font-size: clamp(18px, 5vw, 26px); color: var(--ink); margin-bottom: 8px; }
+.closing__hashtag { color: var(--rose-dp); font-weight: 700; font-size: 15px; letter-spacing: normal; margin-bottom: 18px; }
+.contact { margin: 0 auto 18px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 14px; max-width: 280px; background: rgba(255,255,255,0.45); }
+.contact__label { display: block; color: var(--ink-sf); font-size: 13px; margin-bottom: 4px; }
+.contact__link {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: #fff; font-weight: 700; font-size: 16px; text-decoration: none;
+  background: linear-gradient(180deg, #36c15f, #1faa4d);
+  border-radius: 999px; padding: 9px 22px; margin-top: 4px;
+  box-shadow: 0 6px 16px rgba(31,170,77,0.32);
+}
+.contact__link:hover { filter: brightness(1.05); }
+.closing__families { color: var(--ink-sf); font-size: 15px; margin-bottom: 16px; }
+
+/* حركة الظهور — انزلاق + تكبير ناعم */
+.reveal { opacity: 0; transform: translateY(30px) scale(0.985); transition: opacity 1s ease, transform 1s cubic-bezier(.2,.7,.3,1); }
+.reveal.is-visible { opacity: 1; transform: translateY(0) scale(1); }
+
+/* بتلات وردية متساقطة */
+.petal { position: absolute; top: -24px; opacity: 0; animation: fall linear forwards; }
+@keyframes fall {
+  0%   { opacity: 0; transform: translateY(0) rotate(0deg); }
+  12%  { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(105vh) rotate(300deg); }
+}
+
+/* رسائل عائمة (✉ ❤ ❦) ترتفع بهدوء — أنميشن الرسائل */
+.msg { position: absolute; bottom: -34px; opacity: 0; will-change: transform; animation: floatUp linear infinite; }
+@keyframes floatUp {
+  0%   { opacity: 0; transform: translateY(0) translateX(0) rotate(-6deg); }
+  14%  { opacity: 0.55; }
+  86%  { opacity: 0.55; }
+  100% { opacity: 0; transform: translateY(-112vh) translateX(var(--mx, 22px)) rotate(8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, .reveal { transition: none !important; animation: none !important; }
+  .reveal, .stage__content.reveal { opacity: 1; transform: none; }
+  .stage__arch, .scroll-cue__arr, .seal { animation: none !important; }
+  .bg-photo { transition: none !important; }
+  /* عند الفتح: تلاشٍ بسيط فقط بلا دوران ثلاثي الأبعاد */
+  .cover.is-open .env__flap { transform: none; }
+  .cover.is-open .env { opacity: 0; transform: none; }
+  .cover.is-open .seal { opacity: 0; transform: translate(-50%, -50%); }
+}
+
+/* ============================================================
+   الصور: تُحمّل تلقائياً من script.js (كائن images).
+   ضع صورك في مجلد assets/ بالأسماء: hero.jpg و venue.jpg
+   وتظهر تلقائياً بدون أي تعديل على الكود.
+   ============================================================ */
+
+/* أسطر Enter في حقل «الدعاء/العبارة» تُعرض كما كتبها الزبون (بسملة فوق والآية تحتها) */
+.verse__text { white-space: pre-line; }

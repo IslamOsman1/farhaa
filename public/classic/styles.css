@@ -1,0 +1,490 @@
+/* ============================================================
+   قالب classic «كلاسيك» — فاخر
+   الدخول + الهيرو: بنية Codex السينمائية (باب يُفتح ← وميض ← طيور)
+   الأقسام أسفل الهيرو: تصميم البطاقة الكريمي الذهبي
+   ============================================================ */
+:root {
+  /* متغيّرات هيرو Codex */
+  --bg: #f6efe4;
+  --warm: #f6efe4;
+  --white: #fffaf4;
+  --muted: rgba(58, 48, 36, 0.64);
+  --font-display: "Aref Ruqaa", "Noto Naskh Arabic", serif;
+  --font-ar: "Noto Naskh Arabic", "Aref Ruqaa", serif;
+  --font-en: "Cormorant Garamond", "Times New Roman", serif;
+  --font-ui: "Tajawal", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* متغيّرات البطاقة الكريمية */
+  --cream: #f6efe4;
+  --ivory: #fbf8f1;
+  --sand: #ece0cc;
+  --camel: #c9a87c;
+  --gold: #b8924f;
+  --gold-2: #cdab6a;
+  --taupe: #8a7a64;
+  --ink: #3a3024;
+  --ink-soft: #6a5d49;
+  --line: rgba(138, 122, 100, 0.34);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ar);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.locked { height: 100vh; overflow: hidden; }
+
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+img, video, svg { display: block; }
+img { max-width: 100%; }
+::selection { background: var(--gold); color: white; }
+
+/* ============ شاشة الدخول: فيديو الباب + شريط التحميل (بنية Codex) ============ */
+#preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #100d0a url("assets/preloader-poster.jpg") center / cover no-repeat;
+  transition: opacity 900ms cubic-bezier(0.7, 0, 0.3, 1);
+}
+#preloader.fade-out { opacity: 0; pointer-events: none; }
+#preloader.hidden { display: none; }
+
+#preloaderPoster {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  padding: 0 1.25rem 4.25rem;
+  border: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.1) 48%, rgba(0, 0, 0, 0.64));
+  color: white;
+  transition: opacity 700ms ease;
+}
+#preloaderPoster.hidden { opacity: 0; pointer-events: none; }
+#preloaderPoster:disabled { cursor: progress; }
+#preloaderPoster.loading .preloader-cta { animation: none; }
+#preloaderPoster.loading .preloader-cta::after { opacity: 0.15; animation: none; }
+#preloaderPoster.loading .preloader-cta__hint { opacity: 0.62; }
+#preloaderPoster.is-ready .preloader-cta { border-color: rgba(242, 205, 154, 0.82); }
+#preloaderPoster.is-ready .preloader-progress__bar { box-shadow: 0 0 18px rgba(255, 225, 178, 0.48); }
+
+.preloader-cta {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: min(21rem, calc(100vw - 2.5rem));
+  min-height: 9rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.68rem;
+  overflow: hidden;
+  padding: 1.15rem 1.35rem 1.2rem;
+  border: 1px solid rgba(224, 182, 128, 0.66);
+  border-radius: 1.15rem;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 246, 0.22), rgba(255, 255, 255, 0.08)),
+    rgba(18, 13, 10, 0.34);
+  box-shadow:
+    0 24px 52px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  backdrop-filter: blur(12px);
+  text-align: center;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.46);
+  animation: ctaFloat 2.8s ease-in-out infinite;
+}
+.preloader-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0.42rem;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.82rem;
+}
+.preloader-cta::after {
+  content: "";
+  position: absolute;
+  top: -35%;
+  bottom: -35%;
+  left: -80%;
+  z-index: -1;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+  transform: rotate(18deg);
+  animation: ctaShine 3.8s ease-in-out infinite;
+}
+.preloader-text { font-family: var(--font-display); font-size: 1.95rem; font-weight: 700; line-height: 1.25; }
+.preloader-cta__label, .preloader-cta__hint { font-family: var(--font-ui); font-weight: 500; line-height: 1.4; }
+.preloader-cta__label { color: rgba(255, 235, 210, 0.82); font-size: 0.9rem; }
+.preloader-cta__hint { color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; }
+.preloader-progress {
+  position: relative;
+  display: block;
+  width: min(13.5rem, 100%);
+  height: 0.36rem;
+  margin-top: 0.48rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.preloader-progress__bar {
+  display: block;
+  width: var(--progress, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d49a68, #ffe3b8 55%, #fff9e8);
+  transition: width 260ms ease;
+}
+/* وميض متحرّك أثناء التحميل — يبقى الشريط "حيّاً" ولا يبدو متجمّداً */
+.preloader-progress::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: translateX(-120%);
+  animation: progShimmer 1.25s ease-in-out infinite;
+}
+#preloaderPoster.is-ready .preloader-progress::after { opacity: 0; animation: none; }
+@keyframes progShimmer { 0% { transform: translateX(-120%); } 55%, 100% { transform: translateX(240%); } }
+.preloader-progress__meta {
+  margin-top: 0.08rem;
+  color: rgba(255, 244, 227, 0.78);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+@keyframes ctaFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.28rem); } }
+@keyframes ctaShine { 0%, 42% { left: -80%; } 74%, 100% { left: 138%; } }
+
+#preloaderVideo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #100d0a url("assets/preloader-poster.jpg") center / cover no-repeat;
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+#preloaderVideo.is-ready { opacity: 1; }
+
+#preloaderWhite {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 620ms ease-out;
+}
+#preloader.whiteout #preloaderWhite { opacity: 1; }
+
+/* ============ الموقع + الهيرو (فيديو الطيور — بنية Codex) ============ */
+#site { opacity: 0; transition: opacity 1200ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+#site.visible { opacity: 1; }
+
+.hero {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #070606 url("assets/poster.jpg") center / cover no-repeat;
+}
+.hero__video, .hero__overlay, .hero__vignette, .hero__fade { position: absolute; inset: 0; }
+.hero__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #070606 url("assets/poster.jpg") center / cover no-repeat;
+  opacity: 0;
+  transition: opacity 360ms ease;
+}
+.hero__video.is-ready { opacity: 1; }
+.hero__overlay { background: linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.2) 44%, rgba(0, 0, 0, 0.64)); }
+.hero__vignette { background: radial-gradient(circle, transparent 30%, rgba(0, 0, 0, 0.48)); }
+.hero__fade { top: auto; height: 11rem; background: linear-gradient(0deg, var(--warm), transparent); }
+
+.hero__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  height: 100svh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.25rem 5rem;
+  color: white;
+  text-align: center;
+}
+.hero__eyebrow, .eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-family: var(--font-ui);
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+.hero__eyebrow { color: rgba(255, 255, 255, 0.86); }
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: min(16rem, 70vw);
+  margin: 0.75rem auto;
+  color: rgba(255, 255, 255, 0.64);
+}
+.ornament span { height: 1px; flex: 1; background: currentColor; }
+.ornament b { font-size: 0.8rem; font-weight: 400; }
+.mask-reveal { overflow: visible; padding: 0.25rem 0.45rem; }
+.hero__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 4.8rem;
+  font-weight: 700;
+  line-height: 1.08;
+  text-shadow: 0 8px 34px rgba(0, 0, 0, 0.34);
+}
+.hero__amp {
+  margin: -0.2rem 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-family: var(--font-en);
+  font-size: 3.2rem;
+  line-height: 1;
+}
+.hero__invite {
+  max-width: 28rem;
+  margin: 1rem auto 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  line-height: 2;
+}
+.hero__forever {
+  margin: 0.25rem 0 0;
+  color: white;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  line-height: 1;
+}
+.hero__date { margin: 0.25rem 0; color: rgba(255, 255, 255, 0.94); font-family: var(--font-ui); font-size: 0.95rem; }
+.hero__caption { margin: 0.3rem 0 0; color: rgba(255, 255, 255, 0.88); font-family: var(--font-display); font-size: 1.7rem; }
+.hero__scroll {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: none;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
+}
+.hero__scroll svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.45));
+  animation: bob 1.8s ease-in-out infinite;
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(0.45rem); }
+}
+
+/* أنميشن ظهور نصّ الهيرو (Codex) */
+.reveal, .reveal-mask {
+  opacity: 0;
+  transform: translateY(1rem);
+  transition: opacity 900ms ease, transform 900ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal-mask { transform: translateY(1.7rem); }
+.reveal.is-in, .reveal-mask.is-in { opacity: 1; transform: translateY(0); }
+.hero__scroll.reveal { transform: translateX(-50%) translateY(1rem); }
+.hero__scroll.reveal.is-in { transform: translateX(-50%) translateY(0); }
+
+@media (min-width: 700px) {
+  .preloader-text { font-size: 2.9rem; }
+  .hero__name { font-size: 6.2rem; }
+  .hero__amp { font-size: 3.5rem; }
+  .hero__forever { font-size: 2.8rem; }
+}
+
+/* ============ طبقة بتلات/رموز عائمة ============ */
+.petals { position: fixed; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.petal, .msg { position: absolute; top: -6%; will-change: transform, opacity; }
+.petal { animation: petalFall linear infinite; opacity: 0.7; }
+.msg { animation: msgRise linear infinite; opacity: 0; }
+@keyframes petalFall {
+  0% { transform: translateY(-10vh) rotate(0); opacity: 0; }
+  10% { opacity: 0.8; }
+  100% { transform: translateY(112vh) rotate(320deg); opacity: 0; }
+}
+@keyframes msgRise {
+  0% { transform: translateX(0) scale(.6); opacity: 0; top: 104%; }
+  12% { opacity: 0.85; }
+  100% { transform: translateX(var(--mx)) scale(1.05); opacity: 0; top: -8%; }
+}
+
+/* ============ البطاقة والأقسام (تصميمي أسفل الهيرو) ============ */
+.card {
+  position: relative;
+  max-width: 33rem;
+  margin: -2px auto 0;
+  background: linear-gradient(180deg, var(--ivory), var(--cream));
+  padding: 40px 22px 8px;
+  z-index: 1;
+  font-family: "El Messiri", "Tajawal", serif;
+}
+.card__frame { position: absolute; inset: 14px; border: 1px solid var(--line); pointer-events: none; }
+.card__frame .corner {
+  position: absolute; color: var(--camel); font-size: 1rem; line-height: 1;
+  background: var(--ivory); padding: 3px;
+}
+.corner--tr { top: -9px; right: -9px; } .corner--tl { top: -9px; left: -9px; }
+.corner--br { bottom: -9px; right: -9px; } .corner--bl { bottom: -9px; left: -9px; }
+
+.section { text-align: center; padding: 22px 6px; }
+.section__title {
+  font-family: "Aref Ruqaa", serif;
+  font-size: 1.5rem;
+  color: var(--gold);
+  margin-bottom: 16px;
+  position: relative;
+  display: inline-block;
+}
+.section__title::after {
+  content: "";
+  display: block;
+  width: 46px; height: 1px;
+  margin: 8px auto 0;
+  background: linear-gradient(90deg, transparent, var(--camel), transparent);
+}
+
+.flourish { display: block; color: var(--camel); font-size: 1.5rem; margin: 4px 0 12px; }
+
+.verse__text {
+  font-family: "Amiri", serif;
+  font-size: 1.3rem;
+  line-height: 2.1;
+  color: var(--ink);
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.divider { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--camel); font-size: 0.7rem; padding: 4px 0; }
+.divider span { height: 1px; width: 56px; background: linear-gradient(90deg, transparent, var(--line)); }
+.divider span:last-child { background: linear-gradient(90deg, var(--line), transparent); }
+
+.invitation__text { color: var(--ink-soft); font-size: 1.05rem; max-width: 27rem; margin: 0 auto; }
+
+.families { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.family { flex: 1; min-width: 120px; }
+.family__label { display: block; font-size: 0.78rem; color: var(--taupe); letter-spacing: 1px; margin-bottom: 4px; }
+.family__names { font-family: "El Messiri", serif; font-weight: 600; color: var(--ink); font-size: 0.98rem; }
+.families__heart { color: var(--camel); font-size: 0.85rem; }
+
+/* العدّاد */
+.countdown { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.cd__cell {
+  min-width: 62px;
+  padding: 12px 6px;
+  background: linear-gradient(180deg, #fff, var(--ivory));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(120, 95, 60, 0.1);
+}
+.cd__num { display: block; font-family: "Aref Ruqaa", serif; font-size: 1.7rem; color: var(--gold); line-height: 1; }
+.cd__lbl { display: block; font-size: 0.74rem; color: var(--taupe); margin-top: 5px; }
+.when__arrived { font-size: 1.2rem; color: var(--gold); }
+
+/* البرنامج */
+.timeline { list-style: none; max-width: 22rem; margin: 0 auto; text-align: right; padding: 0; }
+.timeline__item {
+  display: grid;
+  grid-template-columns: 14px auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.timeline__item:last-child { border-bottom: 0; }
+.timeline__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--camel); box-shadow: 0 0 0 4px rgba(201, 168, 124, 0.18); }
+.timeline__time { font-family: "Cormorant Garamond", serif; font-weight: 600; color: var(--gold); font-size: 0.96rem; white-space: nowrap; }
+.timeline__title { color: var(--ink-soft); }
+
+/* القاعة */
+.venue__photo {
+  width: 100%; height: 168px;
+  border-radius: 12px;
+  background: var(--sand) center/cover no-repeat;
+  border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.venue.has-photo .venue__pin { display: none; }
+.venue__pin { font-size: 2rem; color: var(--taupe); opacity: 0.5; }
+.when__date { font-family: "El Messiri", serif; font-weight: 600; color: var(--ink); }
+.when__time { color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 8px; }
+.venue__name { font-family: "Aref Ruqaa", serif; font-size: 1.2rem; color: var(--gold); }
+.venue__addr { color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 14px; }
+.venue__btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 24px;
+  background: linear-gradient(180deg, var(--gold-2), var(--gold));
+  color: #fff; text-decoration: none; border-radius: 30px;
+  font-weight: 600; font-size: 0.92rem;
+  box-shadow: 0 8px 20px rgba(184, 146, 79, 0.32);
+}
+
+/* ملاحظات */
+.notes__list { list-style: none; max-width: 24rem; margin: 0 auto; text-align: right; padding: 0; }
+.notes__item { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; color: var(--ink-soft); }
+.notes__mark { color: var(--camel); font-size: 0.8rem; margin-top: 6px; }
+
+/* الخاتمة */
+.closing { padding-top: 14px; padding-bottom: 30px; }
+.closing__note { font-family: "Amiri", serif; font-size: 1.2rem; color: var(--ink); margin-bottom: 6px; }
+.closing__hashtag { color: var(--gold); font-weight: 600; letter-spacing: 1px; margin-bottom: 16px; }
+.contact { margin: 14px auto; }
+.contact__label { display: block; font-size: 0.8rem; color: var(--taupe); margin-bottom: 6px; }
+.contact__link {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 22px; border: 1px solid var(--camel); border-radius: 30px;
+  color: var(--gold); text-decoration: none; font-weight: 600; font-size: 0.92rem;
+}
+.closing__families { margin-top: 18px; font-family: "Aref Ruqaa", serif; color: var(--taupe); font-size: 0.95rem; }
+
+/* ظهور أقسام البطاقة عند التمرير */
+.creveal { opacity: 0; transform: translateY(26px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.creveal.is-visible { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .creveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* أسطر Enter في حقل «الدعاء/العبارة» تُعرض كما كتبها الزبون (بسملة فوق والآية تحتها) */
+.verse__text { white-space: pre-line; }

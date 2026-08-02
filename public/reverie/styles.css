@@ -1,0 +1,207 @@
+/* ============================================================
+   قالب «حُلم وردي» (reverie) — دخولية فيديو المظروف + هيرو فيديو البجع
+   ============================================================ */
+:root{
+  --ivory:#fdf8ef; --cream:#f7efe3; --cream-2:#efe2d0;
+  --blush:#eccfc6; --blush-2:#dcae9f;
+  --rose:#7a4a55; --rose-deep:#5c3540; --rose-soft:#a9707a;
+  --gold:#c9a24b; --gold-2:#d8b878; --gold-hi:#f0dca8; --gold-deep:#a8824a;
+  --sage:#9caf8f; --ink:#5e4a44; --ink-soft:#957f76;
+  --line:rgba(201,162,75,.32); --line-soft:rgba(201,162,75,.15);
+  --shadow:0 30px 80px -34px rgba(92,53,64,.5);
+  --ruqaa:"Aref Ruqaa",serif; --amiri:"Amiri",serif; --kufi:"Reem Kufi",sans-serif;
+  --serif:"Cormorant Garamond",serif; --body:"Tajawal",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--ink);background:var(--cream);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
+body.locked{overflow:hidden;height:100vh}
+::selection{background:var(--gold);color:#fff}
+video{display:block}
+a{color:inherit;text-decoration:none}
+
+/* ==================== الدخولية: المظروف الوردي بالختم الذهبي ==================== */
+.cover{position:fixed;inset:0;z-index:100;overflow:hidden;
+  background:radial-gradient(120% 82% at 50% 46%, #f3ddd4 0%, #ecd0ca 66%, #e6c9c2 100%);
+  display:grid;place-items:center;
+  transition:opacity 2s ease .15s, transform 2.4s cubic-bezier(.2,.9,.2,1), filter 2s ease}
+.cover__hero{position:absolute;inset:0;z-index:0;opacity:0;transition:opacity .9s ease .2s;
+  background:#efe2d0 url("/templates/reverie/assets/hero-poster.jpg") center/cover no-repeat}
+.cover.is-playing .cover__hero{opacity:1}
+/* الإغلاق: ذوبان طويل هادئ عبر إضاءة دافئة — بلا visibility فورية تقطع الانتقال
+   (الإخفاء النهائي يتولاه display:none من السكربت بعد اكتمال الذوبان) */
+.cover.is-open{opacity:0;transform:scale(1.035);filter:brightness(1.14);pointer-events:none}
+
+/* فيديو المظروف: يملأ الدخولية كاملة، وأول فريم (البوستر) هو الغلاف الساكن */
+.cover__vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+
+/* الظرف = صورتك الحقيقية، مقسّمة أربع طيّات تنفتح فعلياً عند الضغط */
+.env{position:absolute;inset:0;perspective:1600px;transform-style:preserve-3d}
+.env__flap{position:absolute;inset:0;backface-visibility:hidden;
+  background:#ecd0ca url("/templates/reverie/assets/envelope.jpg") center/cover no-repeat;
+  transition:transform 1.15s cubic-bezier(.58,.02,.28,1), opacity .8s ease .12s}
+.cover.is-playing .env__flap{opacity:0}
+.env__flap--top{clip-path:polygon(0 0,100% 0,51% 53%);transform-origin:50% 0}
+.env__flap--bottom{clip-path:polygon(0 100%,100% 100%,51% 53%);transform-origin:50% 100%;z-index:3}
+.env__flap--left{clip-path:polygon(0 0,0 100%,51% 53%);transform-origin:0 50%}
+.env__flap--right{clip-path:polygon(100% 0,100% 100%,51% 53%);transform-origin:100% 50%}
+.cover.is-playing .env__flap--top{transform:rotateX(-124deg)}
+.cover.is-playing .env__flap--bottom{transform:rotateX(124deg)}
+.cover.is-playing .env__flap--left{transform:rotateY(124deg)}
+.cover.is-playing .env__flap--right{transform:rotateY(-124deg)}
+
+/* الختم الذهبي (طبقة مستقلة من صورتك) — يلمع، ثم يرتفع ويتلاشى عند الفتح */
+.seal{position:absolute;left:51%;top:53.3%;z-index:6;height:24.6vh;width:24.6vh;pointer-events:none;
+  transform:translate(-50%,-50%);
+  transition:opacity .5s ease, transform .8s cubic-bezier(.3,.7,.3,1)}
+.seal__img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:filter .5s ease}
+.cover.is-playing .seal__img{filter:drop-shadow(0 18px 24px rgba(84,52,26,.45))}
+/* لمعة ناعمة دائرية تنساب قطرياً على وجه الختم (لا شريط، لا حواف) */
+.seal__gloss{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:76%;height:76%;
+  border-radius:50%;overflow:hidden;pointer-events:none;z-index:3}
+.seal__gloss::before{content:"";position:absolute;top:0;left:0;width:64%;height:64%;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,254,246,.6), rgba(255,251,233,.12) 46%, transparent 70%);
+  filter:blur(5px);mix-blend-mode:screen;
+  animation:sealGlint 7s ease-in-out infinite}
+.cover.is-playing .seal{opacity:0;transform:translate(-50%,-72%) scale(1.32) rotate(-6deg);animation:none}
+.cover.is-open .seal{opacity:0}
+
+/* غبار ذهبي يطفو فوق الظرف */
+.cover .fx{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.mote{position:absolute;bottom:-5vh;border-radius:50%;background:radial-gradient(circle,#fbe7b0,rgba(201,162,75,.15));
+  box-shadow:0 0 9px rgba(230,200,120,.7);animation:floatUp linear infinite}
+.cover.is-playing .fx{opacity:0;transition:opacity .5s}
+
+.cover__ui{position:relative;z-index:8;text-align:center;padding:6vh 24px;align-self:end;margin-bottom:8vh;
+  transition:opacity .5s ease, transform .6s ease}
+.cover.is-playing .cover__ui{opacity:0;transform:translateY(18px);pointer-events:none}
+.cover__names{font-family:var(--ruqaa);font-weight:700;font-size:clamp(2rem,9vw,3.2rem);color:var(--rose-deep);
+  text-shadow:0 2px 14px rgba(255,255,255,.35);margin-bottom:26px;opacity:0;animation:fadeUp 1.1s .5s forwards}
+.cover__btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;
+  font-family:var(--amiri);font-weight:700;font-size:1.12rem;color:var(--rose-deep);
+  padding:12px 40px;border-radius:100px;
+  border:1px solid rgba(201,162,75,.75);
+  background:linear-gradient(180deg,#fffdf8,#f7ecdc);
+  box-shadow:0 0 0 3px rgba(255,253,248,.5),0 0 0 4px rgba(201,162,75,.4),0 16px 34px -14px rgba(92,53,64,.45),inset 0 1px 0 #fff;
+  opacity:0;animation:fadeUp 1s .8s forwards}
+.cover__btn::before,.cover__btn::after{content:"\2766";font-size:.7em;color:var(--gold);opacity:.8}
+.cover__btn::before{transform:scaleX(-1)}
+.cover__btn-ring{position:absolute;inset:-9px;border-radius:100px;border:1px solid rgba(201,162,75,.45);animation:btnRing 2.4s ease-out infinite}
+.cover__btn:hover{transform:translateY(-2px)}
+
+@keyframes fadeUp{to{opacity:1;transform:none}}
+@keyframes sealGlint{0%{transform:translate(-45%,-30%);opacity:0}22%{opacity:.85}55%{transform:translate(120%,110%);opacity:.55}72%,100%{transform:translate(150%,140%);opacity:0}}
+@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:0}12%{opacity:.85}86%{opacity:.7}100%{transform:translateY(-72vh) scale(.55);opacity:0}}
+@media (prefers-reduced-motion: reduce){.seal__gloss{display:none}.mote{display:none}}
+@keyframes btnRing{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.12)}}
+
+/* ==================== المحتوى ==================== */
+.invite{opacity:0;transition:opacity 1.2s ease}
+.invite.visible{opacity:1}
+
+/* عناصر متحركة: بتلات + وميض ذهبي */
+.fx{position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden}
+.petal{position:absolute;top:-28px;will-change:transform;opacity:0;animation:fall linear infinite}
+@keyframes fall{0%{opacity:0;transform:translateY(-10px) translateX(0) rotate(0)}12%{opacity:.9}90%{opacity:.8}100%{opacity:0;transform:translateY(104vh) translateX(40px) rotate(340deg)}}
+.spark{position:absolute;width:4px;height:4px;border-radius:50%;
+  background:radial-gradient(circle,var(--gold-hi),rgba(240,220,168,0) 70%);opacity:0;animation:twinkle ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.4)}}
+
+/* ---- الهيرو (فيديو) ---- */
+.stage{position:relative;min-height:100svh;display:grid;place-items:center;text-align:center;overflow:hidden;isolation:isolate;
+  background:#efe2d0 url("/templates/reverie/assets/hero-poster.jpg") center/cover no-repeat}
+.stage__vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:0;transition:opacity 1s ease}
+.stage__vid.is-ready{opacity:1}
+.stage__veil{position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(80% 50% at 50% 38%, rgba(253,248,239,.5), rgba(253,248,239,.08) 60%, transparent 82%),
+  linear-gradient(180deg, rgba(253,248,239,.28) 0%, transparent 34%, rgba(247,239,227,.55) 100%)}
+.stage__inner{position:relative;z-index:1;padding:9vh 24px;margin-top:-6vh}
+.stage__kicker{font-family:var(--kufi);font-size:.86rem;color:var(--gold-deep);margin-bottom:14px}
+.stage__orn{display:block;color:var(--gold);font-size:22px;margin-bottom:12px}
+.couple{font-family:var(--ruqaa);font-weight:700;line-height:1.06;color:var(--rose-deep);
+  font-size:clamp(2.8rem,13vw,5.6rem);display:flex;flex-direction:column;align-items:center;gap:0;
+  text-shadow:0 2px 22px rgba(253,248,239,.7)}
+.couple__amp{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:.42em;margin:4px 0}
+.stage__date{font-family:var(--kufi);font-size:clamp(1rem,3.4vw,1.2rem);color:var(--rose);margin-top:18px;text-shadow:0 1px 12px rgba(253,248,239,.7)}
+.stage__sub{font-family:var(--amiri);font-style:italic;font-size:clamp(1.05rem,3.2vw,1.35rem);color:var(--rose);margin-top:8px;text-shadow:0 1px 12px rgba(253,248,239,.7)}
+.scroll-cue{display:inline-block;margin-top:32px;font-family:var(--kufi);font-size:.88rem;color:var(--gold-deep);text-shadow:0 1px 8px rgba(92,53,64,.45)}
+.scroll-cue b{display:block;margin-top:6px;font-size:1.25rem;animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.85}50%{transform:translateY(7px);opacity:1}}
+
+/* ---- بطاقة المحتوى ---- */
+.card{position:relative;max-width:640px;margin:0 auto;overflow:hidden;
+  padding:clamp(34px,8vw,70px) clamp(18px,5vw,46px);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(236,207,198,.4), transparent 60%),
+    linear-gradient(180deg,var(--ivory),var(--cream));
+  box-shadow:0 -30px 60px -42px rgba(92,53,64,.4)}
+.card__glow{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(60% 30% at 50% 8%, rgba(240,220,168,.18), transparent 60%)}
+.sec{position:relative;text-align:center;padding:26px 6px}
+.sec__title{font-family:var(--ruqaa);font-weight:700;color:var(--rose-deep);font-size:clamp(1.5rem,5.2vw,2.1rem);margin-bottom:20px}
+.sec__title::after{content:"";display:block;width:52px;height:2px;margin:12px auto 0;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+
+.bismillah{font-family:var(--amiri);font-size:clamp(1.15rem,4.4vw,1.6rem);color:var(--gold-deep)}
+.flourish{display:block;color:var(--gold);font-size:20px;margin:14px 0}
+.verse__text{font-family:var(--amiri);font-style:italic;font-size:clamp(1.05rem,3.6vw,1.35rem);line-height:2.1;color:var(--rose-deep)}
+.invitation__text{font-family:var(--body);font-weight:300;font-size:clamp(1.02rem,3.2vw,1.2rem);line-height:2.2;color:var(--ink);max-width:44ch;margin:0 auto}
+
+.divider{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--gold);padding:8px 0}
+.divider span{height:1px;width:66px;background:linear-gradient(90deg,transparent,var(--gold))}
+.divider span:last-child{background:linear-gradient(90deg,var(--gold),transparent)}
+
+.families{display:flex;align-items:center;justify-content:center;gap:clamp(14px,5vw,40px);flex-wrap:wrap}
+.family__label{font-family:var(--kufi);font-size:.68rem;color:var(--gold-deep);display:block;margin-bottom:8px}
+.family__names{font-family:var(--ruqaa);font-weight:700;font-size:clamp(1.1rem,4vw,1.4rem);color:var(--rose-deep)}
+
+.countdown{display:flex;justify-content:center;gap:clamp(8px,3vw,18px)}
+.cd__u{min-width:62px;background:linear-gradient(180deg,#fffaf2,#f3e6d5);border:1px solid var(--line);border-radius:16px;padding:14px 6px;box-shadow:0 12px 24px -16px rgba(92,53,64,.4)}
+.cd__n{display:block;font-family:var(--ruqaa);font-weight:700;font-size:clamp(1.5rem,6vw,2rem);color:var(--rose-deep);line-height:1}
+.cd__l{display:block;font-family:var(--kufi);font-size:.62rem;color:var(--gold-deep);margin-top:7px}
+.count__arrived{font-family:var(--ruqaa);color:var(--rose-deep);font-size:1.3rem}
+
+/* برنامج الحفل — جدول زمني وسطي بوردة تنزلق على الخط مع التمرير */
+.program .sec__title{display:flex;align-items:center;justify-content:center;gap:12px}
+.program .sec__title::before{content:"\2767";font-size:.55em;color:var(--gold);opacity:.85;transform:scaleX(-1)}
+.program .sec__title::after{content:"\2767";display:inline;width:auto;height:auto;margin:0;background:none;font-size:.55em;color:var(--gold);opacity:.85}
+.sched{position:relative;max-width:430px;margin:4px auto 0}
+.sched__line{position:absolute;left:50%;top:16px;bottom:16px;width:1px;transform:translateX(-50%);
+  background:linear-gradient(180deg,transparent,var(--line) 10%,var(--line) 90%,transparent)}
+.sched__row{position:relative;display:grid;grid-template-columns:1fr 34px 1fr;align-items:center;gap:4px;padding:18px 0}
+.sched__time{font-family:var(--amiri);font-weight:700;font-size:clamp(1.1rem,4.2vw,1.4rem);color:var(--ink);text-align:center}
+.sched__dot{width:7px;height:7px;margin:0 auto;background:var(--gold-deep);transform:rotate(45deg);opacity:.7}
+.sched__event{font-family:var(--body);font-weight:500;font-size:clamp(.94rem,3.4vw,1.05rem);color:var(--ink);text-align:center;line-height:1.55}
+.sched__rose{position:absolute;left:50%;top:16px;width:48px;height:48px;margin:-24px 0 0 -24px;z-index:2;pointer-events:none;
+  filter:drop-shadow(0 3px 6px rgba(92,53,64,.25));transition:top .5s cubic-bezier(.25,.6,.3,1)}
+.sched__rose svg{width:100%;height:100%;display:block}
+
+.venue__photo{width:100%;height:0;background:#eaddc6 center/cover no-repeat;border-radius:16px;border:1px solid var(--line)}
+.venue.has-photo .venue__photo{height:190px;margin-bottom:16px}
+.venue__name{font-family:var(--ruqaa);font-weight:700;font-size:clamp(1.2rem,4.6vw,1.6rem);color:var(--rose-deep)}
+.venue__addr{font-family:var(--body);color:var(--ink-soft);margin-top:4px}
+.venue__map{display:inline-flex;align-items:center;gap:8px;margin-top:16px;font-family:var(--kufi);font-weight:600;color:#fff;
+  background:linear-gradient(180deg,var(--gold-2),var(--gold));padding:11px 24px;border-radius:100px;box-shadow:0 12px 26px -12px rgba(201,162,75,.7)}
+
+.notes__list{list-style:none;max-width:420px;margin:0 auto;text-align:start;display:grid;gap:10px}
+.notes__item{display:flex;gap:10px;align-items:flex-start;font-family:var(--body);color:var(--ink);line-height:1.9}
+.notes__mark{color:var(--gold);flex:none}
+
+.contact{display:flex;flex-direction:column;align-items:center;gap:10px}
+.contact__label{font-family:var(--kufi);font-size:.7rem;color:var(--gold-deep)}
+.contact__link{display:inline-flex;align-items:center;gap:8px;font-family:var(--body);font-weight:700;color:var(--rose-deep);
+  border:1px solid var(--line);border-radius:100px;padding:10px 22px;background:#fffaf2}
+
+.closing__note{font-family:var(--amiri);font-style:italic;font-size:clamp(1.1rem,4vw,1.45rem);color:var(--rose-deep)}
+.closing__families{font-family:var(--ruqaa);font-weight:700;color:var(--gold-deep);margin-top:12px;font-size:1.2rem}
+.closing__hashtag{font-family:var(--kufi);color:var(--gold-deep);margin-top:10px;direction:ltr}
+
+/* ظهور تدريجي */
+.creveal,.sreveal{opacity:0;transform:translateY(26px);filter:blur(5px);transition:opacity .9s cubic-bezier(.2,.9,.2,1),transform .9s cubic-bezier(.2,.9,.2,1),filter .9s}
+.creveal.is-visible,.sreveal.is-in{opacity:1;transform:none;filter:none}
+.stage__inner .sreveal.is-in:nth-child(2){transition-delay:.1s}
+.stage__inner .sreveal.is-in:nth-child(3){transition-delay:.2s}
+.stage__inner .sreveal.is-in:nth-child(4){transition-delay:.34s}
+.stage__inner .sreveal.is-in:nth-child(5){transition-delay:.46s}
+.stage__inner .sreveal.is-in:nth-child(6){transition-delay:.58s}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.3s!important}}

@@ -1,0 +1,581 @@
+/* ============================================================
+   قالب «روزنة» (rozana) — الختم يسقط والورقة تتمزّق عن حديقة العرس
+   عالم ورقي: كريمي/وردي باهت/صدأ، ختم شمع، زهور مجفّفة، أوراق ممزّقة
+   ============================================================ */
+
+:root {
+  --rz-page: #e9e2d3;
+  --rz-card: #f2ecdf;
+  --rz-ink: #3f3b33;
+  --rz-soft: #6d665b;
+  --rz-rust: #96492f;
+  --rz-gold: #b7a06b;
+  --rz-wax: #bb8a70;
+  /* وحدة قياس الغلاف: عرض إطار الفيديو الظاهر فعلاً (نسبته 0.563) */
+  --cu: min(100vw, calc(100svh * 0.563));
+  --u: calc(var(--cu) / 100);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Tajawal", system-ui, sans-serif;
+  background: var(--rz-page) url("assets/paper.jpg");
+  background-size: 460px;
+  color: var(--rz-ink);
+  overflow-x: hidden;
+}
+body.locked { overflow: hidden; height: 100svh; }
+img, video { display: block; max-width: 100%; }
+button { font: inherit; border: 0; background: none; cursor: pointer; color: inherit; }
+
+/* ============ الدخولية ============ */
+#gate {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #e9e2d3;
+  cursor: pointer;
+  overflow: hidden;
+  transition: opacity 1.15s ease, transform 1.5s ease;
+}
+#gate.is-gone {
+  opacity: 0;
+  transform: scale(1.035);
+  pointer-events: none;
+}
+.gate__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* ---- نصوص الغلاف فوق إطار الختم ---- */
+.cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  /* --rz-bars: ارتفاع أشرطة المنصّة المحقونة أسفل الشاشة (شريط الديمو، زرّ
+     الموسيقى) يقيسه script.js فعلياً — بلا ذلك يغيب زرّ الفتح تحت الشريط
+     في كل صفحات الديمو، وهي واجهة البيع. صفر في دعوة الزبون النظيفة. */
+  /* الحشوة السفلى ضيّقة قصداً: الختم يقع عند ٦٢٫٤٪ من الشاشة (يحدّده الفيديو)،
+     وشريط الديمو يرفع الكتلة ٩٥px، فكل بكسل هنا يُقتطع من الفراغ بين الختم
+     والأسماء (كان ٣٧px فقط). max() يحمي حافة الشاشة وشريط الآيفون السفلي. */
+  padding: 5.5svh 6vw calc(max(2.6svh, env(safe-area-inset-bottom, 0px) + 12px) + var(--rz-bars, 0px));
+  transition: opacity 0.55s ease, transform 0.7s ease;
+}
+#gate.is-open .cover { opacity: 0; transform: translateY(calc(var(--u) * -1.6)); pointer-events: none; }
+
+.cover__top, .cover__bottom { display: flex; flex-direction: column; align-items: center; }
+.cover__top > *, .cover__bottom > * { animation: rz-rise 1.1s ease both; }
+.cover__kick {
+  font-size: calc(var(--u) * 3.1);
+  font-weight: 500;
+  letter-spacing: calc(var(--u) * 0.22);
+  color: var(--rz-soft);
+}
+.cover__rule, .hero__rule, .sheet__rule {
+  display: flex; align-items: center; justify-content: center;
+  gap: calc(var(--u) * 1.1);
+  margin-top: calc(var(--u) * 1.7);
+}
+.cover__rule { width: calc(var(--u) * 30); }
+.cover__rule span, .hero__rule span, .sheet__rule span {
+  flex: 1; height: 1px;
+  background: color-mix(in srgb, var(--rz-gold) 78%, transparent);
+}
+.cover__rule i, .hero__rule i, .sheet__rule i {
+  width: calc(var(--u) * 1.05); height: calc(var(--u) * 1.05);
+  background: var(--rz-gold);
+  transform: rotate(45deg);
+}
+
+/* هالة نابضة فوق الختم (مركزه 57.4% من ارتفاع الإطار) */
+.cover__halo {
+  position: absolute;
+  /* مركز الختم في إطار الفيديو الأول — مقيس (٦٢٫٤٪ بعد قصّ أول ثانية).
+     أي تغيير في قصّ الفيديو يحرّك الختم فتلزم إعادة قياس هذه النسبة. */
+  top: 62.4%; left: 50%;
+  width: calc(var(--u) * 36); height: calc(var(--u) * 36);
+  margin: calc(var(--u) * -18) 0 0 calc(var(--u) * -18);
+  border-radius: 50%;
+  border: 1px solid rgba(150, 73, 47, 0.35);
+  animation: rz-halo 2.6s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes rz-halo {
+  0% { opacity: 0; transform: scale(0.82); }
+  35% { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+.cover__names {
+  font-family: "Aref Ruqaa", serif;
+  font-size: calc(var(--u) * 6.2);
+  line-height: 1.5;
+  color: #3b372f;
+  animation-delay: 0.12s;
+}
+/* العبارة انتقلت لأعلى الغلاف (تحت «دعوة زفاف»): أسفلَ كانت تسرق ~٣٠px من
+   الفراغ بين الختم والأسماء، وأعلى الغلاف ورقٌ فارغ فوق الزهور بلا استغلال */
+.cover__poem {
+  font-family: "Amiri", serif;
+  font-size: calc(var(--u) * 3.4);
+  color: var(--rz-rust);
+  margin-top: calc(var(--u) * 1.6);
+  animation-delay: 0.26s;
+}
+.cover__btn {
+  margin-top: calc(var(--u) * 2.4);
+  display: flex; flex-direction: column; align-items: center;
+  gap: calc(var(--u) * 1.2);
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 5.4);
+  border-radius: 999px;
+  background: rgba(252, 249, 242, 0.9);
+  border: 1px solid rgba(151, 134, 102, 0.45);
+  box-shadow: 0 10px 26px rgba(84, 68, 48, 0.24);
+  color: #55493a;
+  font-size: calc(var(--u) * 3.1);
+  font-weight: 500;
+  animation-delay: 0.4s;
+}
+/* الزرّ جاهز من اللحظة الأولى — لا انتظار مصطنع (انظر تعليق script.js) */
+.cover__btn { animation: rz-rise 1.1s 0.4s ease both, rz-pulse 2.3s 1.4s ease-in-out infinite; }
+@keyframes rz-pulse { 50% { transform: scale(1.045); } }
+
+/* «لحظة…» وشريطها لا يظهران إلا إن تأخّر التشغيل فعلاً بعد اللمس */
+.cover__lbl--wait, .cover__bar { display: none; }
+.cover__btn.is-loading { animation: rz-rise 1.1s 0.4s ease both; }
+.cover__btn.is-loading .cover__lbl { display: none; }
+.cover__btn.is-loading .cover__lbl--wait, .cover__btn.is-loading .cover__bar { display: block; }
+.cover__bar {
+  width: calc(var(--u) * 22);
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(63, 59, 51, 0.14);
+  overflow: hidden;
+}
+/* شريط غير محدّد المقدار: نبضة تسير — لا نكذب بنسبة لا نعرفها */
+.cover__bar > span {
+  display: block; height: 100%; width: 40%;
+  border-radius: 3px;
+  background: linear-gradient(270deg, var(--rz-gold), var(--rz-rust));
+  animation: rz-slide 1.2s ease-in-out infinite;
+}
+@keyframes rz-slide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(260%); }
+}
+
+@keyframes rz-rise {
+  from { opacity: 0; transform: translateY(calc(var(--u) * 2)); }
+  to { opacity: 1; transform: none; }
+}
+
+/* على الشاشات العريضة: إطار عمودي متمركز بدل قصّ الفيديو عرضياً */
+@media (min-width: 760px) {
+  #gate { display: grid; place-items: center; background: var(--rz-page) url("assets/paper.jpg") center / 520px; }
+  .gate__video {
+    width: var(--cu);
+    height: calc(var(--cu) / 0.563);
+    max-height: 94svh;
+    border-radius: calc(var(--u) * 2.4);
+    box-shadow: 0 34px 90px rgba(84, 68, 48, 0.4), 0 8px 22px rgba(84, 68, 48, 0.24);
+  }
+  .cover {
+    width: var(--cu);
+    height: min(calc(var(--cu) / 0.563), 94svh);
+    inset: auto;
+    padding: 4.4svh calc(var(--u) * 8) 3.6svh;
+  }
+}
+
+/* ============ الهيرو ============ */
+/* عرض القوس = عرض الشاشة بحدٍّ أقصى 620px؛ قاعه عند 1.155 من هذا العرض.
+   الصورة تُعرَض بعرضها كاملاً (بلا cover) فلا تُقصّ، والنص يبدأ بعد قاعها
+   حتماً — لا تراكب على أي نسبة شاشة، طويلة كانت أو قصيرة. */
+.hero {
+  /* الحدّ الثالث (الارتفاع) يخصّ الشاشات العريضة القصيرة: يمنع القوس من دفع
+     الأسماء تحت الطيّة على الحاسوب. الهواتف يحدّها العرض فلا تتأثر. */
+  --archw: min(100vw, 620px, calc(100svh * 0.55));
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  padding: calc(var(--archw) * 1.155) 7vw calc(var(--u) * 10);
+  background: url("assets/hero.webp") top center / var(--archw) auto no-repeat;
+  /* إلزامي: زهور الزاوية تخرج عن الحافة بـ left سالبة. بلا القصّ هنا تتمدّد
+     الصفحة أوسع من الشاشة، وفي RTL يزيح ذلك كل شيء فيظهر شريط من الهيرو
+     يمين طبقة الدخولية (الطبقة تُقاس بالشاشة لا بالصفحة). */
+  overflow: hidden;
+}
+.hero__wash { display: none; }
+.hero__text { position: relative; z-index: 2; }
+.hero__kick {
+  font-size: calc(var(--u) * 3);
+  color: var(--rz-soft);
+  letter-spacing: calc(var(--u) * 0.1);
+}
+.hero__name {
+  font-family: "Aref Ruqaa", serif;
+  font-weight: 400;
+  font-size: calc(var(--u) * 8.8);
+  line-height: 1.32;
+  color: #37332c;
+  white-space: nowrap;
+}
+.hero__amp {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: calc(var(--u) * 5.2);
+  line-height: 0.9;
+  color: var(--rz-rust);
+  margin: calc(var(--u) * 0.4) 0;
+}
+.hero__rule { width: calc(var(--u) * 46); margin: calc(var(--u) * 2.4) auto calc(var(--u) * 2.6); }
+.hero__date {
+  font-size: calc(var(--u) * 3.4);
+  font-weight: 500;
+  color: #48433a;
+}
+.hero__venue, .hero__addr {
+  font-size: calc(var(--u) * 3.1);
+  color: var(--rz-soft);
+  margin-top: calc(var(--u) * 1.1);
+}
+.hero__tag {
+  font-family: "Amiri", serif;
+  font-size: calc(var(--u) * 3.5);
+  color: var(--rz-rust);
+  margin-top: calc(var(--u) * 2.6);
+}
+.hero__sprig {
+  position: absolute;
+  bottom: calc(var(--u) * 2);
+  left: calc(var(--u) * -4);
+  width: calc(var(--u) * 28);
+  transform: rotate(14deg);
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 1;
+  /* الضرب يُذيب ورق القصاصة في ورق الخلفية فلا يبقى قرص باهت حول الزهور */
+  mix-blend-mode: multiply;
+}
+.hero__scroll {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(var(--u) * 4);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px;
+  color: #5f5545;
+  font-size: calc(var(--u) * 2.7);
+  font-weight: 500;
+  text-decoration: none;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3.6);
+  border-radius: 999px;
+  background: rgba(252, 249, 242, 0.8);
+  border: 1px solid rgba(151, 134, 102, 0.4);
+}
+.hero__scroll svg {
+  width: calc(var(--u) * 3.6); height: calc(var(--u) * 3.6);
+  fill: none; stroke: var(--rz-rust); stroke-width: 2.4;
+  stroke-linecap: round; stroke-linejoin: round;
+  animation: rz-bob 1.7s ease-in-out infinite;
+}
+@keyframes rz-bob { 50% { transform: translateY(4px); } }
+
+/* ظهور نصوص الهيرو بعد انزياح الدخولية */
+.hero .reveal { opacity: 0; transform: translateY(calc(var(--u) * 2.2)); }
+.hero .reveal.is-in {
+  opacity: 1; transform: none;
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+@media (min-width: 760px) {
+  .hero { padding-bottom: calc(var(--u) * 8); }
+  .hero__sprig { left: calc(50% - var(--archw) / 2 - var(--u) * 6); width: calc(var(--u) * 22); }
+}
+
+/* ============ أوراق الدعوة ============ */
+.wrap {
+  width: min(92vw, 560px);
+  margin: 0 auto;
+  padding: 30px 0 60px;
+}
+.sheet {
+  position: relative;
+  background: url("assets/paper-card.jpg");
+  background-size: 380px;
+  margin: 44px 0;
+  padding: 40px 28px 36px;
+  text-align: center;
+  box-shadow: 0 16px 38px rgba(92, 78, 58, 0.17);
+}
+.sheet::before, .sheet::after {
+  content: "";
+  position: absolute; left: -2px; right: -2px;
+  height: 30px;
+  background: url("assets/tear.webp") 50% 0 / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.sheet::before { top: -27px; }
+.sheet::after { bottom: -27px; transform: scaleY(-1); }
+.sheet:nth-of-type(odd) { --rot: 0.4deg; }
+.sheet:nth-of-type(even) { --rot: -0.35deg; }
+
+.sheet__kick {
+  font-family: "Aref Ruqaa", serif;
+  font-size: 23px;
+  color: #4a4438;
+}
+.sheet__rule { width: 150px; margin: 12px auto 20px; }
+.sheet__rule i { width: 6px; height: 6px; }
+
+.sheet__sprig {
+  position: absolute;
+  top: -40px; left: 0;
+  width: 104px;
+  transform: rotate(-12deg);
+  opacity: 0.92;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.sheet--verse { padding-top: 46px; }
+.verse__text {
+  font-family: "Amiri", serif;
+  font-size: 21px;
+  line-height: 2.15;
+  color: #4a4438;
+}
+
+/* ============ موعد الفرح: طبقة غبار تُمسح بالإصبع ============ */
+.sheet--when { padding-bottom: 30px; }
+.wipe {
+  position: relative;
+  margin: 4px auto 0;
+  max-width: 330px;
+  border-radius: 6px;
+  overflow: hidden;
+  touch-action: pan-y;           /* المسح أفقياً لنا، والتمرير الرأسي يبقى للضيف */
+}
+.wipe__under { padding: 22px 14px 24px; }
+.wipe__date {
+  font-family: "Aref Ruqaa", serif;
+  font-size: 26px;
+  line-height: 1.7;
+  color: var(--rz-ink);
+}
+.wipe__time {
+  font-size: 15.5px;
+  color: var(--rz-soft);
+  margin-top: 8px;
+}
+/* الغطاء: يُرسم بالكانفاس (غبار ورقي) ويُمحى بالإصبع */
+.wipe__cover {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  cursor: grab;
+  transition: opacity 0.7s ease;
+}
+.wipe.is-clear .wipe__cover { opacity: 0; pointer-events: none; }
+.wipe__hint {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--rz-rust);
+  text-align: center;
+  pointer-events: none;
+  animation: rz-hintpulse 2.4s ease-in-out infinite;
+  transition: opacity 0.18s ease;   /* يزول فور بدء المسح فلا يتراكب على التاريخ */
+}
+.wipe__hint::after {              /* سهم مسح صغير يوحي بالحركة */
+  content: "↔";
+  display: block;
+  margin-top: 3px;
+  font-size: 15px;
+  opacity: 0.75;
+}
+@keyframes rz-hintpulse { 50% { opacity: 0.45; } }
+.wipe.is-wiping .wipe__hint, .wipe.is-clear .wipe__hint { opacity: 0; }
+
+.invitation__text { font-size: 16px; line-height: 2.1; color: var(--rz-soft); }
+
+.sheet.families {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; flex-wrap: wrap;
+}
+.family { flex: 1 1 180px; }
+.family__label {
+  display: block;
+  font-size: 13px; font-weight: 500;
+  color: #8d8271;
+  margin-bottom: 8px;
+}
+.family__names {
+  font-family: "Aref Ruqaa", serif;
+  font-size: 19px;
+  line-height: 1.9;
+  color: var(--rz-ink);
+}
+.families__heart { color: var(--rz-gold); font-size: 19px; }
+
+/* العدّاد — أختام شمع */
+.countdown {
+  display: flex; justify-content: center;
+  gap: 10px; flex-wrap: wrap;
+}
+.cd__cell { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.cd__num {
+  width: 63px; height: 63px;
+  display: grid; place-items: center;
+  font-size: 21px; font-weight: 700;
+  color: #fff6ea;
+  text-shadow: 0 1px 1px rgba(80, 42, 24, 0.55), 0 -1px 1px rgba(255, 238, 224, 0.3);
+  background: radial-gradient(circle at 32% 27%, #d5a68e, #bb8a70 56%, #9e7057);
+  border-radius: 47% 53% 51% 49% / 51% 46% 54% 49%;
+  box-shadow:
+    inset 2px 3px 6px rgba(255, 235, 220, 0.5),
+    inset -3px -5px 9px rgba(96, 52, 30, 0.38),
+    0 7px 16px rgba(120, 70, 45, 0.3);
+}
+.cd__cell:nth-child(2) .cd__num { border-radius: 52% 48% 47% 53% / 48% 53% 47% 52%; }
+.cd__cell:nth-child(3) .cd__num { border-radius: 49% 51% 54% 46% / 53% 49% 51% 47%; }
+.cd__cell:nth-child(4) .cd__num { border-radius: 53% 47% 49% 51% / 46% 52% 48% 54%; }
+.cd__lbl { font-size: 13px; color: #8d8271; }
+.when__arrived { font-size: 19px; color: var(--rz-rust); font-weight: 700; }
+
+/* برنامج الحفل */
+.timeline {
+  list-style: none;
+  max-width: 330px;
+  margin: 0 auto;
+  text-align: right;
+  border-right: 1px solid rgba(183, 160, 107, 0.55);
+  padding-right: 20px;
+}
+.timeline__item { position: relative; margin: 18px 0; }
+.timeline__dot {
+  position: absolute;
+  right: -25.5px; top: 7px;
+  width: 11px; height: 11px;
+  border-radius: 50% 46% 52% 48%;
+  background: radial-gradient(circle at 34% 30%, #d5a68e, #bb8a70 60%, #9e7057);
+  box-shadow: 0 0 0 3px var(--rz-card), 0 2px 5px rgba(120, 70, 45, 0.35);
+}
+.timeline__time {
+  display: block;
+  font-size: 15px; font-weight: 700;
+  color: var(--rz-rust);
+}
+.timeline__title { font-size: 16px; color: var(--rz-ink); }
+
+/* الموقع */
+.when__date, .when__time { font-size: 15px; color: var(--rz-soft); }
+.when__time { margin-top: 4px; }
+.venue__name {
+  font-family: "Aref Ruqaa", serif;
+  font-size: 25px;
+  color: var(--rz-ink);
+  margin-top: 14px;
+}
+.venue__addr { font-size: 15px; color: var(--rz-soft); margin-top: 4px; }
+.venue__btn, .contact__link {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 18px;
+  padding: 11px 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(150, 73, 47, 0.5);
+  background: rgba(255, 252, 244, 0.75);
+  color: var(--rz-rust);
+  font-size: 15px; font-weight: 500;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+.venue__btn:active, .contact__link:active { transform: scale(0.965); }
+
+/* ملاحظات */
+.notes__list { list-style: none; }
+.notes__item {
+  display: flex; justify-content: center; align-items: baseline;
+  gap: 10px;
+  font-size: 15.5px; line-height: 1.9;
+  color: var(--rz-soft);
+  margin: 10px 0;
+}
+.notes__mark { color: var(--rz-gold); }
+
+/* الختام */
+.sheet--closing { padding-bottom: 42px; }
+.closing__note {
+  font-family: "Amiri", serif;
+  font-size: 21px;
+  color: #4a4438;
+}
+.closing__hashtag {
+  font-size: 15px; font-weight: 700;
+  color: var(--rz-rust);
+  margin-top: 10px;
+}
+.contact { margin-top: 18px; }
+.contact__label { display: block; font-size: 13px; color: #8d8271; margin-bottom: 4px; }
+.contact__link { margin-top: 8px; padding: 9px 24px; }
+.closing__families {
+  font-family: "Aref Ruqaa", serif;
+  font-size: 20px;
+  color: var(--rz-ink);
+  margin-top: 20px;
+}
+.closing__seal {
+  width: 82px;
+  margin: 20px auto 0;
+  transform: rotate(-8deg);
+  mix-blend-mode: multiply;
+}
+
+/* ظهور الأوراق عند التمرير */
+.creveal {
+  opacity: 0;
+  transform: translateY(28px) rotate(var(--rot, 0deg));
+  transition: opacity 0.85s ease, transform 0.85s ease;
+}
+.creveal.is-visible { opacity: 1; transform: translateY(0) rotate(var(--rot, 0deg)); }
+
+/* بتلات عائمة */
+.petals {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  overflow: hidden;
+}
+.petal {
+  position: absolute;
+  top: -5vh;
+  animation: rz-fall linear infinite;
+  opacity: 0.8;
+}
+@keyframes rz-fall {
+  to { transform: translateY(112vh) translateX(-9vw) rotate(320deg); }
+}
+
+@media (min-width: 700px) {
+  .sheet { margin: 52px 0; padding: 46px 40px 42px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover__top > *, .cover__bottom > *, .cover__btn, .cover__halo,
+  .cover__bar > span, .hero__scroll svg, .petal { animation: none !important; }
+  .cover__top > *, .cover__bottom > * { opacity: 1; transform: none; }
+  .creveal, .hero .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
+}

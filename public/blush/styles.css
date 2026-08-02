@@ -1,0 +1,158 @@
+/* ============================================================
+   قالب blush «وردة» — الحديقة خلفية حيّة، والظرف الشفاف ينزلق للأسفل
+   ============================================================ */
+:root{
+  --blush:#f7e3e6; --blush-deep:#efc9cf; --rose:#d1889a; --rose-ink:#a85668;
+  --wine:#7a4450; --ink:#5c3a44; --ink-soft:#8f6b74; --cream:#fdf6f3;
+  --gold:#cba15f; --line:rgba(168,86,104,.24);
+  --font-disp:"Aref Ruqaa", serif;
+  --font-lat:"Cormorant Garamond", serif;
+  --font-ui:"Tajawal", system-ui, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--cream); color:var(--ink); font-family:var(--font-ui); line-height:1.7; -webkit-font-smoothing:antialiased; overflow-x:hidden}
+body.locked{overflow:hidden;height:100dvh}
+img{max-width:100%;display:block}
+
+/* ============ الظرف: طبقة تنزلق للأسفل ============ */
+#envelope{
+  position:fixed; inset:0; z-index:60; border:none; cursor:pointer; padding:0;
+  width:100%; height:100dvh; overflow:hidden; background:transparent; display:block;
+  -webkit-tap-highlight-color:transparent; will-change:transform;
+  transition:transform 2s cubic-bezier(.33,.02,.28,1);
+}
+.env__img{
+  position:absolute; inset:0;
+  background:url("/templates/blush/assets/envelope.png") center/cover no-repeat;
+  filter:drop-shadow(0 -8px 26px rgba(120,60,72,.18));
+}
+/* الفيونكة/الختم عند فتحة الظرف */
+.env__seal{
+  position:absolute; top:39%; left:50%; transform:translate(-50%,-50%);
+  font-size:2.4rem; z-index:2; filter:drop-shadow(0 6px 14px rgba(120,60,72,.4));
+  transition:transform .5s ease, opacity .4s ease;
+}
+.env__foot{
+  position:absolute; left:0; right:0; bottom:0; z-index:3;
+  display:flex; flex-direction:column; align-items:center; gap:.45rem;
+  padding:0 1.5rem 3rem; text-align:center;
+}
+.env__kicker{
+  font-family:var(--font-ui); font-weight:700; font-size:.94rem; color:#fff;
+  background:rgba(168,86,104,.6); border:1px solid rgba(255,255,255,.45);
+  border-radius:999px; padding:.28rem 1.1rem; letter-spacing:normal;
+}
+.env__names{font-family:var(--font-disp); font-size:clamp(1.9rem,8vw,2.6rem); color:var(--wine); line-height:1.3; text-shadow:0 2px 12px rgba(255,235,240,.6)}
+.env__hint{font-family:var(--font-ui); font-size:.88rem; color:var(--wine); opacity:.9; display:inline-flex; align-items:center; gap:.4rem; animation:hintPulse 2.4s ease-in-out infinite}
+.env__hint::before{content:"👆"; font-size:1rem}
+@keyframes hintPulse{0%,100%{opacity:.7;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+
+#envelope.lifting .env__seal{transform:translate(-50%,-50%) scale(1.3) rotate(-6deg); opacity:.9}
+#envelope.sliding{transform:translateY(106%)}
+
+/* ============ المحتوى ============ */
+#site{opacity:0; transition:opacity .7s ease}
+#site.visible{opacity:1}
+
+.petals{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:6}
+.petal{position:absolute; top:-6%; will-change:transform,opacity; opacity:0; animation:petalFall linear infinite}
+@keyframes petalFall{0%{opacity:0; transform:translateY(-10px) rotate(0)}10%{opacity:.85}100%{opacity:0; transform:translateY(108vh) rotate(320deg)}}
+
+/* ============ الهيرو: الحديقة + الأسماء الشاعرية ============ */
+.hero{position:relative; min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:clamp(3rem,16vh,8rem) 1.3rem 2rem; overflow:hidden}
+.hero__photo{position:absolute; inset:0; background:url("/templates/blush/assets/garden.jpg") center/cover no-repeat; transform:scale(1.04); animation:heroBreath 18s ease-in-out infinite alternate}
+@keyframes heroBreath{from{transform:scale(1.02)}to{transform:scale(1.1)}}
+.hero__wash{position:absolute; inset:0; background:radial-gradient(circle at 50% 34%, rgba(255,250,251,.15), rgba(210,150,168,.08) 55%, rgba(120,60,72,.16))}
+.hero__fade{position:absolute; left:0; right:0; bottom:0; height:24%; background:linear-gradient(180deg, transparent, var(--cream))}
+
+.hero__poem{position:relative; z-index:3; width:min(92%,360px); text-align:center; padding:1.4rem 1rem}
+.hero__poem::before{content:""; position:absolute; inset:-8% -6%; z-index:-1; background:radial-gradient(ellipse at center, rgba(255,248,249,.72) 0%, rgba(255,248,249,.42) 42%, rgba(255,248,249,0) 72%); pointer-events:none}
+.hero__eyebrow{font-family:var(--font-ui); font-size:.96rem; color:var(--rose-ink); margin-bottom:.3rem; text-shadow:0 1px 8px rgba(255,255,255,.8)}
+.hero__orn{display:block; color:var(--rose); font-size:1.4rem; margin:.1rem 0 .3rem}
+.hero__name{font-family:var(--font-disp); font-size:clamp(2.4rem,11vw,3.4rem); font-weight:700; color:var(--wine); line-height:1.15; text-shadow:0 2px 22px rgba(255,248,249,.9), 0 1px 3px rgba(120,60,72,.25)}
+.hero__amp{font-family:var(--font-lat); font-size:2rem; color:var(--rose); margin:-.1rem 0; text-shadow:0 1px 10px rgba(255,255,255,.8)}
+.hero__invite{font-family:var(--font-ui); font-size:.94rem; color:var(--ink); line-height:1.95; margin:.7rem auto 0; max-width:25rem; text-shadow:0 1px 10px rgba(255,255,255,.85)}
+.hero__rule{display:flex; align-items:center; justify-content:center; gap:.7rem; margin:1rem 0 .3rem; color:var(--rose)}
+.hero__rule span{height:1px; width:46px; background:linear-gradient(90deg,transparent,var(--rose))}
+.hero__rule span:last-child{transform:scaleX(-1)}
+.hero__date{font-family:var(--font-ui); font-weight:700; font-size:1rem; color:var(--wine); text-shadow:0 1px 10px rgba(255,255,255,.85)}
+.hero__caption{font-family:var(--font-disp); font-size:1.4rem; color:var(--rose-ink); margin-top:.35rem; text-shadow:0 1px 12px rgba(255,255,255,.85)}
+.hero__scroll{position:absolute; bottom:1.4rem; left:50%; transform:translateX(-50%); z-index:3; display:inline-flex; flex-direction:column; align-items:center; gap:.3rem; color:var(--wine); font-family:var(--font-ui); font-weight:500; text-decoration:none; text-shadow:0 1px 8px rgba(255,255,255,.8), 0 1px 8px rgba(120,60,72,.28)}
+.hero__scroll-txt{font-size:.86rem; letter-spacing:.01em}
+.hero__scroll-arrow{width:1.2rem; height:1.2rem; fill:none; stroke:currentColor; stroke-width:1.8; animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(.4rem)}}
+
+/* ظهور شاعري: صعود + وضوح تدريجي */
+.reveal,.reveal-mask{opacity:0; transform:translateY(1.4rem); filter:blur(6px); transition:opacity 1.1s ease, transform 1.1s cubic-bezier(.2,.7,.2,1), filter 1.1s ease}
+.reveal-mask{transform:translateY(2rem)}
+.mask-reveal{overflow:visible; padding:.1rem .4rem}
+.reveal.is-in,.reveal-mask.is-in{opacity:1; transform:none; filter:blur(0)}
+.hero__scroll.reveal{transform:translateX(-50%) translateY(1rem)}
+.hero__scroll.reveal.is-in{transform:translateX(-50%) translateY(0)}
+
+/* ============ البطاقة والأقسام ============ */
+.card{position:relative; max-width:600px; margin:0 auto; padding:2.5rem 1.4rem 3rem; background:var(--cream)}
+.card__frame{position:absolute; inset:14px; border:1px solid var(--line); border-radius:18px; pointer-events:none}
+.corner{position:absolute; color:var(--rose); font-size:1rem; opacity:.7}
+.corner--tr{top:-8px; right:16px} .corner--tl{top:-8px; left:16px}
+.corner--br{bottom:-8px; right:16px} .corner--bl{bottom:-8px; left:16px}
+
+.section{text-align:center; padding:1.4rem .6rem}
+.section__title{font-family:var(--font-disp); font-size:1.5rem; color:var(--rose-ink); margin-bottom:1rem; letter-spacing:normal; font-weight:700}
+.flourish{color:var(--rose); font-size:1.4rem; display:block; margin-bottom:.4rem}
+.verse__text{font-family:var(--font-disp); font-size:1.3rem; color:var(--wine); line-height:2; letter-spacing:normal}
+.invitation__text{font-size:.98rem; color:var(--ink); line-height:2; max-width:34rem; margin:0 auto}
+
+.divider{display:flex; align-items:center; justify-content:center; gap:.9rem; color:var(--rose); margin:.4rem 0}
+.divider span{height:1px; width:60px; background:linear-gradient(90deg,transparent,var(--rose))}
+.divider span:last-child{transform:scaleX(-1)}
+
+.families{display:flex; align-items:center; justify-content:center; gap:1.2rem; flex-wrap:wrap}
+.family{flex:1; min-width:130px}
+.family__label{display:block; font-size:.8rem; color:var(--rose-ink); font-weight:700; margin-bottom:.3rem}
+.family__names{font-size:.95rem; color:var(--ink)}
+.families__heart{color:var(--rose); font-size:1.1rem}
+
+.countdown{display:flex; justify-content:center; gap:.6rem}
+.cd__cell{background:var(--blush); border:1px solid var(--line); border-radius:14px; padding:.7rem .5rem; min-width:62px; box-shadow:0 8px 20px rgba(120,60,72,.1)}
+.cd__num{display:block; font-family:var(--font-disp); font-size:1.8rem; color:var(--wine); line-height:1}
+.cd__lbl{display:block; font-size:.72rem; color:var(--ink-soft); margin-top:.25rem}
+.when__arrived{font-family:var(--font-disp); font-size:1.4rem; color:var(--rose-ink)}
+
+.timeline{list-style:none; max-width:24rem; margin:0 auto; text-align:right}
+.timeline__item{display:flex; align-items:center; gap:.7rem; padding:.55rem 0; border-bottom:1px dashed var(--line)}
+.timeline__item:last-child{border-bottom:none}
+.timeline__dot{width:9px; height:9px; border-radius:50%; background:var(--rose); flex-shrink:0}
+.timeline__time{font-weight:700; color:var(--wine); font-size:.9rem; min-width:6.5rem}
+.timeline__title{color:var(--ink); font-size:.92rem}
+
+.when__date{font-weight:700; color:var(--wine); font-size:1rem}
+.when__time{color:var(--ink-soft); font-size:.9rem; margin-bottom:.5rem}
+.venue__name{font-family:var(--font-disp); font-size:1.3rem; color:var(--rose-ink); margin-top:.2rem}
+.venue__addr{color:var(--ink-soft); font-size:.9rem; margin-bottom:1rem}
+.venue__btn{display:inline-flex; align-items:center; gap:.4rem; background:var(--rose); color:#fff; text-decoration:none; font-weight:700; font-size:.9rem; padding:.6rem 1.5rem; border-radius:999px; box-shadow:0 10px 22px -8px var(--rose-ink)}
+
+.notes__list{list-style:none; max-width:26rem; margin:0 auto; text-align:right}
+.notes__item{display:flex; align-items:flex-start; gap:.6rem; padding:.4rem 0; color:var(--ink); font-size:.92rem}
+.notes__mark{color:var(--rose); flex-shrink:0}
+
+.closing{padding-top:2rem}
+.closing__note{font-family:var(--font-disp); font-size:1.4rem; color:var(--wine); margin-bottom:.4rem; letter-spacing:normal}
+.closing__hashtag{color:var(--rose-ink); font-weight:700; font-size:.95rem; margin-bottom:1rem}
+.contact{margin:1rem auto; display:inline-flex; flex-direction:column; gap:.3rem}
+.contact__label{font-size:.8rem; color:var(--ink-soft)}
+.contact__link{color:var(--wine); font-weight:700; text-decoration:none; font-size:1rem}
+.closing__families{color:var(--ink-soft); font-size:.9rem; margin-top:1rem}
+
+.creveal{opacity:0; transform:translateY(1.4rem); transition:opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1)}
+.creveal.is-visible{opacity:1; transform:none}
+
+@media (min-width:700px){ .hero__name{font-size:3.6rem} .hero__poem{width:420px} }
+@media (prefers-reduced-motion:reduce){
+  .hero__photo,.env__hint,.hero__scroll-arrow{animation:none}
+  .reveal,.reveal-mask{filter:none}
+}
+
+/* أسطر Enter في حقل «الدعاء/العبارة» تُعرض كما كتبها الزبون (بسملة فوق والآية تحتها) */
+.verse__text { white-space: pre-line; }
