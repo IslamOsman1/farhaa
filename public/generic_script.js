@@ -1,4 +1,26 @@
 (() => {
+  const initialSearchParams = new URLSearchParams(window.location.search);
+  const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
+
+  if (initialPromoBarDisabled && !document.getElementById('farha-disable-promo-style')) {
+    const style = document.createElement('style');
+    style.id = 'farha-disable-promo-style';
+    style.textContent = `
+      #da3wa-democta,
+      #farha-democta,
+      #farha-template-bar {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+      body {
+        padding-bottom: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   const TEMPLATE_META = {
     jathuandthanu: { arabicName: 'جاثو وثانو' },
     royal: { arabicName: 'الملكي' },
@@ -28,12 +50,15 @@
     manifest: null,
     renderConfig: null,
     preview: false,
-    showPromoBar: !new URLSearchParams(window.location.search).has('farhaPromoBar')
-      || new URLSearchParams(window.location.search).get('farhaPromoBar') !== '0',
+    showPromoBar: !initialPromoBarDisabled,
     invitationId: null,
     styleTag: null,
     promoBarMounted: false,
+    scrollLocked: false,
+    lockedScrollY: 0,
   };
+  let promoGuardObserver = null;
+  let nativeOpeningObserver = null;
 
   const fallbackBindings = {
     groomName: { method: 'text', selector: '#groomName, #heroGroom' },
@@ -66,6 +91,10 @@
     runtimeState.templateSlug = window.location.pathname.split('/').filter(Boolean)[0] || '';
 
     hideLegacyTemplateBars();
+    setupNativeOpeningGuard();
+    if (!runtimeState.showPromoBar) {
+      startPromoGuard();
+    }
     installMessageBridge();
     applyLegacyWindowInvite();
     mountPromoBarIfNeeded();
@@ -93,7 +122,9 @@
       applyRenderConfig(payload.manifest, payload.renderConfig);
       if (runtimeState.preview || !runtimeState.showPromoBar) {
         removePromoBar();
+        startPromoGuard();
       } else {
+        stopPromoGuard();
         mountPromoBarIfNeeded();
       }
       hijackRsvpForms(true);
@@ -458,8 +489,95 @@
       node.style.display = '';
     });
     document.body.classList.remove('locked');
+    unlockPageScroll();
+  }
+
+  function setupNativeOpeningGuard() {
+    syncNativeOpeningState();
+    bindNativeOpeningTriggers();
+
+    const overlay = document.getElementById('popup-overlay');
+    if (!overlay || nativeOpeningObserver) return;
+
+    nativeOpeningObserver = new MutationObserver(() => {
+      syncNativeOpeningState();
+    });
+
+    nativeOpeningObserver.observe(overlay, {
+      attributes: true,
+      attributeFilter: ['style', 'class', 'hidden'],
+    });
+  }
+
+  function bindNativeOpeningTriggers() {
+    queryAll('#popup-enter, .popup-enter').forEach((button) => {
+      if (button.dataset.farhaOpeningBound === 'true') return;
+      button.dataset.farhaOpeningBound = 'true';
+      button.addEventListener('click', () => {
+        window.setTimeout(syncNativeOpeningState, 50);
+        window.setTimeout(syncNativeOpeningState, 250);
+        window.setTimeout(syncNativeOpeningState, 800);
+      });
+    });
+  }
+
+  function syncNativeOpeningState() {
+    const overlay = document.getElementById('popup-overlay');
+    if (!overlay) {
+      unlockPageScroll();
+      return;
+    }
+
+    if (isElementVisible(overlay)) {
+      lockPageScroll();
+      return;
+    }
+
+    unlockPageScroll();
+  }
+
+  function isElementVisible(element) {
+    if (!element || element.hidden) return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+  }
+
+  function lockPageScroll() {
+    if (runtimeState.scrollLocked) return;
+
+    runtimeState.scrollLocked = true;
+    runtimeState.lockedScrollY = window.scrollY || window.pageYOffset || 0;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${runtimeState.lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    document.body.style.touchAction = 'none';
+  }
+
+  function unlockPageScroll() {
+    const restoreY = runtimeState.lockedScrollY || 0;
+
+    runtimeState.scrollLocked = false;
+    runtimeState.lockedScrollY = 0;
+
+    document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
     document.body.style.height = '';
+    document.body.style.touchAction = '';
+
+    if (window.scrollY !== restoreY) {
+      window.scrollTo(0, restoreY);
+    }
   }
 
   function showMinimalFadeOverlay(config) {
@@ -653,7 +771,32 @@
   function hideLegacyTemplateBars() {
     queryAll('#da3wa-democta, #farha-democta').forEach((element) => {
       element.style.display = 'none';
+      element.style.opacity = '0';
+      element.style.visibility = 'hidden';
+      element.style.pointerEvents = 'none';
     });
+  }
+
+  function startPromoGuard() {
+    hideLegacyTemplateBars();
+    removePromoBar();
+
+    if (promoGuardObserver || !document.body) return;
+
+    promoGuardObserver = new MutationObserver(() => {
+      hideLegacyTemplateBars();
+      removePromoBar();
+    });
+    promoGuardObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  function stopPromoGuard() {
+    if (!promoGuardObserver) return;
+    promoGuardObserver.disconnect();
+    promoGuardObserver = null;
   }
 
   async function mountPromoBarIfNeeded() {

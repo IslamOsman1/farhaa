@@ -43,7 +43,7 @@ export default function RenderFrame({
     && sourceTemplateSlug
     && sourceManifest,
   );
-  const showPromoBar = renderConfig?.ui?.showPromoBar !== false;
+  const showPromoBar = renderConfig?.ui?.showPromoBar !== false && !renderConfig?.preview;
 
   const frameSrc = useMemo(() => {
     const params = new URLSearchParams();
@@ -54,10 +54,15 @@ export default function RenderFrame({
     const query = params.toString();
     return `/${templateSlug}/index.html${query ? `?${query}` : ''}`;
   }, [showPromoBar, templateSlug]);
-  const openingFrameSrc = useMemo(
-    () => (sourceTemplateSlug ? `/${sourceTemplateSlug}/index.html` : ''),
-    [sourceTemplateSlug],
-  );
+  const openingFrameSrc = useMemo(() => {
+    if (!sourceTemplateSlug) {
+      return '';
+    }
+
+    const params = new URLSearchParams();
+    params.set('farhaPromoBar', '0');
+    return `/${sourceTemplateSlug}/index.html?${params.toString()}`;
+  }, [sourceTemplateSlug]);
 
   const baseRenderConfig = useMemo(() => {
     if (!hasTemplateOpening) {
@@ -154,13 +159,28 @@ export default function RenderFrame({
   }, [openingLoaded, openingVisible]);
 
   return (
-    <div className={className} style={{ position: 'relative' }}>
+    <div
+      className={className}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        minHeight: '100%',
+      }}
+    >
       <iframe
         ref={iframeRef}
         src={frameSrc}
         title="Farha Invitation Preview"
         className={frameClassName}
-        style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          minHeight: '100%',
+          border: 'none',
+          background: '#fff',
+        }}
         onLoad={() => {
           setLoaded(true);
           if (typeof onLoad === 'function') {
