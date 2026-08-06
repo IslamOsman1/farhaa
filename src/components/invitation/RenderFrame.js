@@ -43,8 +43,17 @@ export default function RenderFrame({
     && sourceTemplateSlug
     && sourceManifest,
   );
+  const showPromoBar = renderConfig?.ui?.showPromoBar !== false;
 
-  const frameSrc = useMemo(() => `/${templateSlug}/index.html`, [templateSlug]);
+  const frameSrc = useMemo(() => {
+    const params = new URLSearchParams();
+    if (!showPromoBar) {
+      params.set('farhaPromoBar', '0');
+    }
+
+    const query = params.toString();
+    return `/${templateSlug}/index.html${query ? `?${query}` : ''}`;
+  }, [showPromoBar, templateSlug]);
   const openingFrameSrc = useMemo(
     () => (sourceTemplateSlug ? `/${sourceTemplateSlug}/index.html` : ''),
     [sourceTemplateSlug],

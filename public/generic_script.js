@@ -28,7 +28,8 @@
     manifest: null,
     renderConfig: null,
     preview: false,
-    showPromoBar: true,
+    showPromoBar: !new URLSearchParams(window.location.search).has('farhaPromoBar')
+      || new URLSearchParams(window.location.search).get('farhaPromoBar') !== '0',
     invitationId: null,
     styleTag: null,
     promoBarMounted: false,
