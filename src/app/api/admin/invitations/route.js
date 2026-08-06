@@ -1,29 +1,23 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function GET() {
   try {
+    await requirePermission('invitations.view');
+
     const invitations = await prisma.invitation.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        template: { select: { name: true } },
+        template: { select: { name: true, nameAr: true } },
         _count: {
-          select: { rsvps: true, visits: true }
-        }
-      }
+          select: { rsvps: true, visits: true },
+        },
+      },
     });
 
-    return NextResponse.json({ invitations });
+    return apiSuccess({ invitations });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch invitations' }, { status: 500 });
+    return apiError(error);
   }
 }

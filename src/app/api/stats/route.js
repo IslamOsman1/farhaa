@@ -1,36 +1,27 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    await requirePermission('analytics.view');
 
-    const [
-      totalInvitations,
-      activeInvitations,
-      totalRSVPs,
-      confirmedRSVPs,
-      totalVisits,
-      totalClients
-    ] = await Promise.all([
+    const [totalInvitations, activeInvitations, totalRSVPs, confirmedRSVPs, totalVisits, totalClients] = await Promise.all([
       prisma.invitation.count(),
-      prisma.invitation.count({ where: { status: 'ACTIVE' } }),
+      prisma.invitation.count({ where: { status: 'PUBLISHED' } }),
       prisma.rSVP.count(),
       prisma.rSVP.count({ where: { status: 'CONFIRMED' } }),
       prisma.visit.count(),
-      prisma.client.count()
+      prisma.client.count(),
     ]);
 
-    return NextResponse.json({
+    return apiSuccess({
       invitations: { total: totalInvitations, active: activeInvitations },
       rsvps: { total: totalRSVPs, confirmed: confirmedRSVPs },
       visits: { total: totalVisits },
-      clients: { total: totalClients }
+      clients: { total: totalClients },
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
+    return apiError(error);
   }
 }

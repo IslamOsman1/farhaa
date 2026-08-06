@@ -1,44 +1,40 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import prisma from '@/lib/prisma';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
+import { persistFileLocally } from '@/lib/storage';
 
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    const actor = await requirePermission('media.upload');
     const data = await request.formData();
     const file = data.get('file');
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!(file instanceof File)) {
+      return apiError(new Error('No file provided'), { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const filename = `${uniqueSuffix}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
-    
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (e) {
-      // Ignore directory exists error
-    }
-    
-    const filePath = join(uploadDir, filename);
-    await writeFile(filePath, buffer);
-    
-    return NextResponse.json({ 
-      url: `/uploads/${filename}`,
-      success: true 
+    const stored = await persistFileLocally(file, 'legacy-upload');
+    await prisma.mediaAsset.create({
+      data: {
+        url: stored.url,
+        providerKey: stored.storageKey,
+        type: stored.fileType,
+        fileName: stored.fileName,
+        originalName: stored.originalName,
+        storageKey: stored.storageKey,
+        mimeType: stored.mimeType,
+        fileType: stored.fileType,
+        sizeBytes: stored.size,
+        folder: 'legacy-upload',
+        provider: stored.provider,
+        originalFilename: stored.originalName,
+        createdById: actor.id,
+        uploadedBy: actor.id,
+      },
     });
+
+    return apiSuccess({ url: stored.url });
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+    return apiError(error);
   }
 }

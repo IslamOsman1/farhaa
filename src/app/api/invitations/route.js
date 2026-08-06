@@ -1,13 +1,10 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    await requirePermission('invitations.view');
     const invitations = await prisma.invitation.findMany({
       include: {
         client: true,
@@ -15,17 +12,15 @@ export async function GET(request) {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(invitations);
+    return apiSuccess(invitations);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch invitations' }, { status: 500 });
+    return apiError(error);
   }
 }
 
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    await requirePermission('invitations.create');
     const data = await request.json();
     const invitation = await prisma.invitation.create({
       data: {
@@ -33,21 +28,15 @@ export async function POST(request) {
         slug: data.slug,
         clientId: data.clientId,
         templateId: data.templateId,
-        packageId: data.packageId,
-        language: data.language,
-        status: data.status,
-        eventDate: new Date(data.eventDate),
-        eventVenue: data.eventVenue,
-        eventLocation: data.eventLocation,
-        groomName: data.groomName,
-        brideName: data.brideName,
-        welcomeText: data.welcomeText,
-        story: data.story,
-        themeConfig: data.themeConfig,
-      }
+        status: data.status || 'DRAFT',
+        groomName: data.groomName || '',
+        brideName: data.brideName || '',
+        themeConfig: data.themeConfig || {},
+        contentConfig: data.contentConfig || {},
+      },
     });
-    return NextResponse.json(invitation, { status: 201 });
+    return apiSuccess(invitation, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create invitation', details: error.message }, { status: 500 });
+    return apiError(error);
   }
 }

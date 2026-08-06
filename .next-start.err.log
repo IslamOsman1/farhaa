@@ -1,0 +1,2 @@
+Failed to load site settings: Error: Site settings query timed out after 3000ms
+    at Timeout._onTimeout (D:\فرحه\.next\server\chunks\ssr\[root-of-the-server]__043xm6_._.js:1:2490)

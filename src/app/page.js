@@ -11,11 +11,19 @@ export const metadata = {
     'اجعل يوم زفافك لا ينسى مع دعوات فرحة الرقمية. قوالب أنيقة، تأكيد حضور، والمزيد.',
 };
 
+async function loadSiteSettingsWithTimeout(timeoutMs = 3000) {
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`Site settings query timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  return Promise.race([prisma.siteSettings.findFirst(), timeoutPromise]);
+}
+
 export default async function LandingPage() {
   let settings = null;
 
   try {
-    settings = await prisma.siteSettings.findFirst();
+    settings = await loadSiteSettingsWithTimeout();
   } catch (error) {
     console.error('Failed to load site settings:', error);
   }

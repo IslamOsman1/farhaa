@@ -1,27 +1,26 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import { stringify } from 'csv-stringify/sync';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request, { params }) {
+export async function GET(_request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    await requirePermission('rsvps.manage');
+    const { id } = await params;
 
     const rsvps = await prisma.rSVP.findMany({
-      where: { invitationId: params.id },
-      orderBy: { createdAt: 'desc' }
+      where: { invitationId: id },
+      orderBy: { createdAt: 'desc' },
     });
 
-    const records = rsvps.map(rsvp => ({
-      Name: rsvp.name,
+    const records = rsvps.map((rsvp) => ({
+      Name: rsvp.guestName,
       Email: rsvp.email || '',
       Phone: rsvp.phone || '',
       Status: rsvp.status,
-      Guests: rsvp.guestsCount,
+      Guests: rsvp.companions,
       Message: rsvp.message || '',
-      Date: rsvp.createdAt.toISOString()
+      Date: rsvp.createdAt.toISOString(),
     }));
 
     const csv = stringify(records, { header: true });
@@ -29,10 +28,10 @@ export async function GET(request, { params }) {
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="rsvps-${params.id}.csv"`
-      }
+        'Content-Disposition': `attachment; filename="rsvps-${id}.csv"`,
+      },
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to export RSVPs' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to export RSVPs' }, { status: error.status || 500 });
   }
 }

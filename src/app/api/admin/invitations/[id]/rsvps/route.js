@@ -1,22 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request, { params }) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function GET(_request, { params }) {
   try {
+    await requirePermission('rsvps.manage');
+    const { id } = await params;
     const rsvps = await prisma.rSVP.findMany({
-      where: { invitationId: params.id },
-      orderBy: { createdAt: 'desc' }
+      where: { invitationId: id },
+      orderBy: { createdAt: 'desc' },
     });
 
-    // Generate CSV string
     const headers = ['الاسم', 'رقم الهاتف', 'الإيميل', 'عدد المرافقين', 'الرسالة/التعليق', 'تاريخ الرد'];
     const csvRows = [headers.join(',')];
 
@@ -27,23 +21,19 @@ export async function GET(request, { params }) {
         `"${r.email || ''}"`,
         r.companions || 0,
         `"${(r.message || '').replace(/"/g, '""')}"`,
-        `"${r.createdAt.toISOString().split('T')[0]}"`
+        `"${r.createdAt.toISOString().split('T')[0]}"`,
       ];
       csvRows.push(row.join(','));
     }
 
-    const csvData = csvRows.join('\n');
-    const bom = '\uFEFF';
-
-    return new NextResponse(bom + csvData, {
+    return new NextResponse(`\uFEFF${csvRows.join('\n')}`, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="rsvps.csv"'
-      }
+        'Content-Disposition': 'attachment; filename="rsvps.csv"',
+      },
     });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch RSVPs' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to fetch RSVPs' }, { status: error.status || 500 });
   }
 }

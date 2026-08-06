@@ -1,22 +1,14 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function DELETE(request, { params }) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function DELETE(_request, { params }) {
   try {
-    await prisma.package.delete({
-      where: { id: params.id }
-    });
-    return NextResponse.json({ success: true });
+    await requirePermission('packages.manage');
+    const { id } = await params;
+    await prisma.package.delete({ where: { id } });
+    return apiSuccess({ id }, { message: 'تم حذف الباقة.' });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to delete package' }, { status: 500 });
+    return apiError(error);
   }
 }

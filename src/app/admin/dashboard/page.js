@@ -1,7 +1,15 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getDashboardStats, getRecentInvitations } from '@/actions/admin';
+import { requirePermission } from '@/lib/admin-session';
 
 export default async function DashboardPage() {
+  try {
+    await requirePermission('dashboard.view');
+  } catch {
+    redirect('/admin/login');
+  }
+
   const stats = await getDashboardStats();
   const recent = await getRecentInvitations();
 

@@ -1,6 +1,17 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-// Removed bcrypt and prisma imports as they are no longer needed for fixed admin
+import { authenticateAdmin, assertAuthEnv } from '@/lib/admin-security';
+
+function getRequestIp(req) {
+  const forwarded =
+    req?.headers?.['x-forwarded-for'] ||
+    req?.headers?.get?.('x-forwarded-for') ||
+    req?.headers?.['x-real-ip'] ||
+    req?.headers?.get?.('x-real-ip');
+
+  if (!forwarded) return 'unknown';
+  return String(forwarded).split(',')[0].trim();
+}
 
 export const authOptions = {
   providers: [
@@ -8,19 +19,12 @@ export const authOptions = {
       name: 'credentials',
       credentials: {
         username: { label: 'Username', type: 'text' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null;
-
-        const validUsername = process.env.ADMIN_USERNAME || 'admin';
-        const validPassword = process.env.ADMIN_PASSWORD || 'admin123';
-
-        if (credentials.username === validUsername && credentials.password === validPassword) {
-          return { id: 'admin', name: 'المدير', role: 'ADMIN' };
-        } 
-        
-        return null;
+      async authorize(credentials, req) {
+        assertAuthEnv();
+        const ip = getRequestIp(req);
+        return authenticateAdmin(credentials, ip);
       },
     }),
   ],
@@ -28,19 +32,25 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
         token.id = user.id;
+        token.role = user.role;
+        token.username = user.username || null;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.role = token.role;
+      if (session.user && token) {
         session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.username = token.username || null;
       }
       return session;
-    }
+    },
   },
-  pages: { signIn: '/admin/login' },
-  secret: process.env.NEXTAUTH_SECRET || 'farha-secret-key-change-in-production',
+  pages: {
+    signIn: '/admin/login',
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 };
+
+export default NextAuth(authOptions);

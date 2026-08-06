@@ -1,24 +1,31 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
+import { writeAuditLog } from '@/lib/admin-security';
 
-export async function DELETE(request, { params }) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function DELETE(_request, { params }) {
   try {
-    const id = params.id;
-    await prisma.invitation.delete({
-      where: { id }
+    const actor = await requirePermission('invitations.delete');
+    const { id } = await params;
+    const existing = await prisma.invitation.findUnique({ where: { id } });
+
+    if (!existing) {
+      return apiError(new Error('الدعوة غير موجودة.'), { status: 404 });
+    }
+
+    await prisma.invitation.delete({ where: { id } });
+
+    await writeAuditLog({
+      action: 'invitation.delete',
+      entityType: 'invitation',
+      entityId: id,
+      actorId: actor.id,
+      summary: `Deleted invitation ${existing.slug}`,
+      details: existing,
     });
 
-    return NextResponse.json({ success: true });
+    return apiSuccess({ id }, { message: 'تم حذف الدعوة.' });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to delete invitation' }, { status: 500 });
+    return apiError(error);
   }
 }

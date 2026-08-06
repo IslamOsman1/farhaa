@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
 
     if (!invitation) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     
-    if (invitation.status !== 'ACTIVE') {
+    if (!['ACTIVE', 'PUBLISHED'].includes(invitation.status)) {
       return NextResponse.json({ error: 'Invitation not active' }, { status: 403 });
     }
 

@@ -1,15 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
 
-export default function RsvpPage({ params }) {
-  const [rsvps, setRsvps] = useState([]);
-  
-  useEffect(() => {
-    setRsvps([
-      { id: 1, name: 'فهد عبدالله', phone: '050000000', status: 'confirmed', companions: 2, message: 'ألف مبروك' },
-      { id: 2, name: 'سعد محمد', phone: '051111111', status: 'declined', companions: 0, message: 'أعتذر لظروف السفر' }
-    ]);
-  }, []);
+const mockRsvps = [
+  { id: 1, name: 'فهد عبدالله', phone: '050000000', status: 'confirmed', companions: 2, message: 'ألف مبروك' },
+  { id: 2, name: 'سعد محمد', phone: '051111111', status: 'declined', companions: 0, message: 'أعتذر لظروف السفر' },
+];
+
+export default function RsvpPage() {
+  const rsvps = mockRsvps;
 
   return (
     <div>
@@ -19,7 +16,7 @@ export default function RsvpPage({ params }) {
           <div className="stat-card-value">1</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-title">إعتذار</div>
+          <div className="stat-card-title">اعتذار</div>
           <div className="stat-card-value">1</div>
         </div>
         <div className="stat-card">
@@ -27,10 +24,10 @@ export default function RsvpPage({ params }) {
           <div className="stat-card-value">2</div>
         </div>
       </div>
-      
+
       <div className="admin-card">
         <div className="admin-card-header">
-          <h3 style={{margin:0}}>إدارة الردود</h3>
+          <h3 style={{ margin: 0 }}>إدارة الردود</h3>
           <button className="btn btn-outline">تصدير CSV</button>
         </div>
         <table className="admin-table">
@@ -44,17 +41,17 @@ export default function RsvpPage({ params }) {
             </tr>
           </thead>
           <tbody>
-            {rsvps.map(r => (
-              <tr key={r.id}>
-                <td>{r.name}</td>
-                <td>{r.phone}</td>
+            {rsvps.map((rsvp) => (
+              <tr key={rsvp.id}>
+                <td>{rsvp.name}</td>
+                <td>{rsvp.phone}</td>
                 <td>
-                  <span className={`badge badge-${r.status === 'confirmed' ? 'success' : 'danger'}`}>
-                    {r.status === 'confirmed' ? 'مؤكد' : 'معتذر'}
+                  <span className={`badge badge-${rsvp.status === 'confirmed' ? 'success' : 'danger'}`}>
+                    {rsvp.status === 'confirmed' ? 'مؤكد' : 'معتذر'}
                   </span>
                 </td>
-                <td>{r.companions}</td>
-                <td>{r.message}</td>
+                <td>{rsvp.companions}</td>
+                <td>{rsvp.message}</td>
               </tr>
             ))}
           </tbody>

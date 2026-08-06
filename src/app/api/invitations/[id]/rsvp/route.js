@@ -1,39 +1,39 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request, { params }) {
+export async function GET(_request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    await requirePermission('rsvps.manage');
+    const { id } = await params;
     const rsvps = await prisma.rSVP.findMany({
-      where: { invitationId: params.id },
-      orderBy: { createdAt: 'desc' }
+      where: { invitationId: id },
+      orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(rsvps);
+    return apiSuccess(rsvps);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch RSVPs' }, { status: 500 });
+    return apiError(error);
   }
 }
 
 export async function POST(request, { params }) {
   try {
+    await requirePermission('rsvps.manage');
+    const { id } = await params;
     const data = await request.json();
     const rsvp = await prisma.rSVP.create({
       data: {
-        invitationId: params.id,
-        name: data.name,
+        invitationId: id,
+        guestName: data.name,
         email: data.email,
         phone: data.phone,
         status: data.status,
-        guestsCount: parseInt(data.guestsCount) || 1,
-        message: data.message
-      }
+        companions: parseInt(data.guestsCount, 10) || 1,
+        message: data.message,
+      },
     });
-    return NextResponse.json(rsvp, { status: 201 });
+    return apiSuccess(rsvp, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to submit RSVP', details: error.message }, { status: 500 });
+    return apiError(error);
   }
 }

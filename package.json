@@ -7,7 +7,21 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint src scripts tests public/generic_script.js prisma/seed.js next.config.mjs vitest.config.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "db:push": "prisma db push",
+    "seed": "node prisma/seed.js",
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
+    "backfill:configs": "node scripts/backfill-configs.mjs",
+    "database:validate": "node scripts/database-validate.mjs",
+    "database:dry-run": "node scripts/backfill-configs.mjs --dry-run",
+    "database:backfill": "node scripts/backfill-configs.mjs",
+    "database:verify": "node scripts/database-verify.mjs",
+    "permissions:scan": "node scripts/scan-protected-routes.mjs",
+    "studio:inventory": "node scripts/template-studio-inventory.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -20,10 +34,13 @@
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "eslint": "^9",
-    "eslint-config-next": "16.2.12"
+    "eslint-config-next": "16.2.12",
+    "vitest": "^4.1.10"
   }
 }

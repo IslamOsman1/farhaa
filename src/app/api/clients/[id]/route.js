@@ -1,51 +1,44 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request, { params }) {
+export async function GET(_request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    await requirePermission('clients.manage');
+    const { id } = await params;
     const client = await prisma.client.findUnique({
-      where: { id: params.id },
-      include: { invitations: true }
+      where: { id },
+      include: { invitations: true },
     });
-
-    if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json(client);
+    if (!client) return apiError(new Error('Not found'), { status: 404 });
+    return apiSuccess(client);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch client' }, { status: 500 });
+    return apiError(error);
   }
 }
 
 export async function PUT(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    await requirePermission('clients.manage');
+    const { id } = await params;
     const data = await request.json();
     const client = await prisma.client.update({
-      where: { id: params.id },
-      data
+      where: { id },
+      data,
     });
-    return NextResponse.json(client);
+    return apiSuccess(client);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update client' }, { status: 500 });
+    return apiError(error);
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(_request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    await prisma.client.delete({
-      where: { id: params.id }
-    });
-    return NextResponse.json({ success: true });
+    await requirePermission('clients.manage');
+    const { id } = await params;
+    await prisma.client.delete({ where: { id } });
+    return apiSuccess({ id });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete client' }, { status: 500 });
+    return apiError(error);
   }
 }

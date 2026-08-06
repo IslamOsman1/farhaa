@@ -1,43 +1,35 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
 
-export async function GET(request) {
+const clientSchema = z.object({
+  name: z.string().trim().min(1),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().trim().optional().or(z.literal('')),
+  status: z.string().trim().default('ACTIVE'),
+});
+
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    await requirePermission('clients.manage');
     const clients = await prisma.client.findMany({
-      include: {
-        _count: {
-          select: { invitations: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
+      include: { _count: { select: { invitations: true } } },
+      orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(clients);
+    return apiSuccess(clients);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });
+    return apiError(error);
   }
 }
 
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const data = await request.json();
-    const client = await prisma.client.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        status: data.status || 'ACTIVE'
-      }
-    });
-    return NextResponse.json(client, { status: 201 });
+    await requirePermission('clients.manage');
+    const data = clientSchema.parse(await request.json());
+    const client = await prisma.client.create({ data });
+    return apiSuccess(client, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create client', details: error.message }, { status: 500 });
+    return apiError(error);
   }
 }

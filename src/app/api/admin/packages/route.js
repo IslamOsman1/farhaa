@@ -1,30 +1,24 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { apiError, apiSuccess } from '@/lib/api-response';
+import { requirePermission } from '@/lib/admin-session';
+
+const packageSchema = z.object({
+  name: z.string().trim().min(1),
+  nameAr: z.string().trim().min(1),
+  price: z.coerce.number().nonnegative(),
+  currency: z.string().trim().default('EGP'),
+  featuresAr: z.string().trim().default('[]'),
+  isPopular: z.boolean().default(false),
+});
 
 export async function POST(request) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const data = await request.json();
-    const pkg = await prisma.package.create({
-      data: {
-        name: data.name,
-        nameAr: data.nameAr,
-        price: data.price,
-        currency: data.currency,
-        featuresAr: data.featuresAr,
-        isPopular: data.isPopular
-      }
-    });
-    return NextResponse.json({ success: true, package: pkg });
+    await requirePermission('packages.manage');
+    const data = packageSchema.parse(await request.json());
+    const pkg = await prisma.package.create({ data });
+    return apiSuccess({ package: pkg }, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to create package' }, { status: 500 });
+    return apiError(error);
   }
 }

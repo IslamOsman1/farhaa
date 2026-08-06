@@ -1,682 +1,1037 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import RenderFrame from '@/components/invitation/RenderFrame';
+import MediaPicker from '@/components/admin/MediaPicker';
+import {
+  buildInvitationRenderConfig,
+  getOpeningBySlug,
+  migrateTemplateConfigBetweenManifests,
+} from '@/lib/template-system';
 
-export default function EditorClient({ initialData }) {
-  // Parse sections JSON safely
-  let initialSections = {
-    gallery: true,
-    timeline: true,
-    rsvp: true,
-    calendar: true
+const GROUPS = [
+  { key: 'basic', label: 'الأساسيات' },
+  { key: 'wording', label: 'النصوص' },
+  { key: 'families', label: 'العائلات' },
+  { key: 'details', label: 'المكان والزمان' },
+  { key: 'schedule', label: 'البرنامج' },
+  { key: 'media', label: 'الوسائط' },
+  { key: 'theme', label: 'الهوية البصرية' },
+  { key: 'opening', label: 'الافتتاحية' },
+  { key: 'publishing', label: 'النشر والإصدارات' },
+];
+
+function arrayValue(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function buildInitialDraft(invitation, manifest, normalized) {
+  return {
+    templateSlug: manifest.slug,
+    openingSlug: invitation.opening?.slug || 'native-template',
+    contentConfig: {
+      ...normalized.contentConfig,
+      weddingDate: invitation.weddingDate ? new Date(invitation.weddingDate).toISOString().slice(0, 16) : '',
+      galleryImages: arrayValue(normalized.contentConfig.galleryImages),
+      program: arrayValue(normalized.contentConfig.program),
+      notes: arrayValue(normalized.contentConfig.notes),
+    },
+    themeConfig: {
+      ...(manifest.defaultValues.theme || {}),
+      ...(normalized.themeConfig || {}),
+    },
+    sectionConfig: {
+      ...(manifest.defaultValues.sections || {}),
+      ...(normalized.sectionConfig || {}),
+    },
+    openingConfig: {
+      ...(normalized.openingConfig || {}),
+    },
+    hiddenConfig: {},
   };
-  try {
-    if (initialData.sections) {
-      initialSections = { ...initialSections, ...JSON.parse(initialData.sections) };
-    }
-  } catch(e) {}
-  
-  // Parse coupleStory safely
-  let extraFields = {};
-  try {
-    if (initialData.coupleStory) {
-      extraFields = JSON.parse(initialData.coupleStory);
-    }
-  } catch (e) {}
+}
 
-  const [formData, setFormData] = useState({
-    groomName: initialData.groomName || 'اسم العريس',
-    brideName: initialData.brideName || 'اسم العروس',
-    weddingDate: initialData.weddingDate ? new Date(initialData.weddingDate).toISOString().slice(0, 16) : '2026-12-18T19:00',
-    venueName: initialData.venueName || 'اسم القاعة',
-    venueAddress: initialData.venueAddress || 'المدينة — العنوان',
-    locationLink: extraFields.locationLink || 'https://maps.google.com',
-    welcomeMessage: initialData.welcomeMessage || 'يتشرّفان بدعوتكم لمشاركتهما فرحة العمر',
-    verseText: extraFields.verseText || 'اللّهُمَّ بارِكْ لهُما، وبارِكْ عليهِما، واجمَعْ بينهُما في خير',
-    invitationText: extraFields.invitationText || 'بقلوبٍ مفعمةٍ بالفرح، نتشرّف بدعوتكم لحضور حفل زفافنا.',
-    groomParentsLabel: extraFields.groomParentsLabel || 'والدا العريس',
-    groomParents: extraFields.groomParents || 'عائلة العريس',
-    brideParentsLabel: extraFields.brideParentsLabel || 'والدا العروس',
-    brideParents: extraFields.brideParents || 'عائلة العروس',
-    closingNote: extraFields.closingNote || 'بحضوركم تكتمل فرحتنا',
-    closingHashtag: extraFields.closingHashtag || '#فرحتنا',
-    closingFamilies: extraFields.closingFamilies || 'عائلتي العريس والعروس',
-    contactLabel: extraFields.contactLabel || 'للاستفسار والتأكيد',
-    contactName: extraFields.contactName || '',
-    contactPhone: extraFields.contactPhone || '',
-    venueImage: extraFields.venueImage || '',
-    musicUrl: initialData.musicUrl || ''
-  });
-
-  const [program, setProgram] = useState(extraFields.program || [
-    { time: "٧:٠٠ مساءً", title: "استقبال الضيوف" },
-    { time: "٨:٣٠ مساءً", title: "الزفة" },
-    { time: "٩:٣٠ مساءً", title: "العشاء" },
-  ]);
-
-  const [notes, setNotes] = useState(extraFields.notes || [
-    "يُرجى الحضور قبل الموعد بنصف ساعة",
-    "نتشرّف بحضوركم بأبهى حلّة",
-    "الدعوة تشمل حاملها والعائلة الكريمة"
-  ]);
-
-  const [galleryImages, setGalleryImages] = useState(extraFields.galleryImages || [
-    'https://da3wa.co/media/gallery/1.jpg',
-    'https://da3wa.co/media/gallery/2.jpg',
-    'https://da3wa.co/media/gallery/3.jpg',
-    'https://da3wa.co/media/gallery/4.jpg'
-  ]);
-
-  const [sections, setSections] = useState(initialSections);
-  const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('basics'); // basics, texts, program, media, sections
-  const iframeRef = useRef(null);
-
-  // Sync to iframe whenever data changes
-  useEffect(() => {
-    if (!iframeRef.current) return;
-    
-    const doc = iframeRef.current.contentDocument;
-    const win = iframeRef.current.contentWindow;
-    if (!doc || !win) return;
-
-    const updateEl = (id, text) => {
-      const el = doc.getElementById(id);
-      if (el) el.innerText = text;
-    };
-
-    updateEl('heroGroom', formData.groomName);
-    updateEl('heroBride', formData.brideName);
-    
-    // Format date for preview
-    const dateObj = new Date(formData.weddingDate);
-    const dateStr = dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const timeStr = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-    const monthYear = dateObj.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-    const dayNum = dateObj.toLocaleDateString('ar-EG', { day: 'numeric' });
-    const weekdayName = dateObj.toLocaleDateString('ar-EG', { weekday: 'long' });
-    
-    updateEl('heroDate', dateStr);
-    updateEl('heroInvite', formData.welcomeMessage);
-    updateEl('verseText', formData.verseText);
-    updateEl('invitationText', formData.invitationText);
-    updateEl('groomParents', formData.groomParents);
-    updateEl('brideParents', formData.brideParents);
-    updateEl('weddingDate', dateStr);
-    updateEl('weddingTime', timeStr);
-    updateEl('venueName', formData.venueName);
-    updateEl('venueAddr', formData.venueAddress);
-    updateEl('closingNote', formData.closingNote);
-    updateEl('closingHashtag', formData.closingHashtag);
-    updateEl('closingFamilies', formData.closingFamilies);
-    
-    // Sync Calendar Data manually
-    const updateClassEl = (className, text) => {
-      const el = doc.querySelector(className);
-      if (el) el.innerText = text;
-    };
-    updateClassEl('.cal-top', monthYear);
-    updateClassEl('.cal-wd', weekdayName);
-    updateClassEl('.cal-day', dayNum);
-    updateClassEl('.cal-time', timeStr);
-    
-    // Family labels update via querySelector
-    const familyLabels = doc.querySelectorAll('.family__label');
-    if (familyLabels.length >= 2) {
-      familyLabels[0].innerText = formData.groomParentsLabel;
-      familyLabels[1].innerText = formData.brideParentsLabel;
-    }
-    
-    const mapBtn = doc.getElementById('mapBtn');
-    if (mapBtn) mapBtn.href = formData.locationLink;
-    
-    // Sync Config Arrays via script.js global functions
-    if (typeof win.buildTimeline === 'function') win.buildTimeline(program);
-    if (typeof win.buildNotes === 'function') win.buildNotes(notes);
-    if (typeof win.buildContact === 'function') win.buildContact({
-      contactLabel: formData.contactLabel,
-      contactName: formData.contactName,
-      contactPhone: formData.contactPhone
-    });
-    
-    // Sync Venue Image
-    const vp = doc.getElementById("venuePhoto");
-    if (vp && formData.venueImage) vp.style.backgroundImage = `url("${formData.venueImage}")`;
-
-    // Sync Music
-    const audioEl = doc.getElementById("bgMusic");
-    if (audioEl && formData.musicUrl) {
-      if (audioEl.src !== formData.musicUrl) {
-        audioEl.src = formData.musicUrl;
-      }
-    }
-
-    // Sync Gallery Images (Live Replacement)
-    const memGrid = doc.querySelector('.mem-grid');
-    if (memGrid && galleryImages.length > 0) {
-      memGrid.className = `mem-grid n${Math.min(galleryImages.length, 4)}`;
-      memGrid.innerHTML = galleryImages.map(img => `<figure class="mem-cell"><img src="${img}" loading="lazy" decoding="async" /></figure>`).join('');
-    }
-    
-    // Sync Section Toggles via injected CSS
-    let styleTag = doc.getElementById('editor-preview-styles');
-    if (!styleTag) {
-      styleTag = doc.createElement('style');
-      styleTag.id = 'editor-preview-styles';
-      doc.head.appendChild(styleTag);
-    }
-
-    let css = '';
-    if (!sections.gallery) css += '#da3wa-mem { display: none !important; }\n';
-    if (!sections.timeline) css += '.program, #timeline { display: none !important; }\n';
-    if (!sections.rsvp) css += '#da3wa-rsvp { display: none !important; }\n';
-    if (!sections.calendar) css += '#da3wa-cal { display: none !important; }\n';
-    
-    // Hide demo CTA and watermark footer
-    css += '#farha-democta, #da3wa-democta, #da3wa-credit { display: none !important; }\n';
-    
-    styleTag.innerHTML = css;
-    
-  }, [formData, sections, program, notes, galleryImages]);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+function buildPreviewInvitation(invitation, draft) {
+  return {
+    ...invitation,
+    groomName: draft.contentConfig.groomName,
+    brideName: draft.contentConfig.brideName,
+    weddingDate: draft.contentConfig.weddingDate ? new Date(draft.contentConfig.weddingDate) : invitation.weddingDate,
+    venueName: draft.contentConfig.venueName,
+    venueAddress: draft.contentConfig.venueAddress,
+    welcomeMessage: draft.contentConfig.welcomeMessage,
+    musicUrl: draft.contentConfig.musicUrl,
+    contentConfig: draft.contentConfig,
+    themeConfig: draft.themeConfig,
+    sectionConfig: draft.sectionConfig,
+    openingConfig: draft.openingConfig,
+    opening: { slug: draft.openingSlug },
+    template: { slug: draft.templateSlug },
   };
+}
 
-  const handleToggle = (e) => {
-    setSections({ ...sections, [e.target.name]: e.target.checked });
-  };
-  
-  const handleProgramChange = (index, field, value) => {
-    const newArr = [...program];
-    newArr[index][field] = value;
-    setProgram(newArr);
-  };
-  
-  const handleNoteChange = (index, value) => {
-    const newArr = [...notes];
-    newArr[index] = value;
-    setNotes(newArr);
-  };
-  
-  const handleGalleryChange = (index, value) => {
-    const newArr = [...galleryImages];
-    newArr[index] = value;
-    setGalleryImages(newArr);
-  };
+function renderField({ field, draft, onContentChange, onScheduleChange, onListChange }) {
+  const value = draft.contentConfig[field.key];
 
-  const handlePublish = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/editor/${initialData.slug}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...formData, 
-          program, 
-          notes,
-          galleryImages,
-          sections: JSON.stringify(sections) 
-        })
-      });
-      if (res.ok) {
-        alert('تم إرسال الدعوة وفي انتظار قبول النشر');
-      } else {
-        alert('حدث خطأ أثناء الحفظ');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('حدث خطأ في الاتصال');
-    }
-    setSaving(false);
-  };
+  if (field.type === 'textarea') {
+    return <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />;
+  }
+
+  if (field.type === 'gallery') {
+    const items = arrayValue(value);
+    return (
+      <div className="array-editor">
+        {items.map((item, index) => (
+          <div key={`${field.key}-${index}`} className="array-row">
+            <MediaPicker
+              label="اختيار صورة"
+              value={item || ''}
+              accept="image"
+              folder="gallery"
+              onChange={(nextValue) => {
+                const next = [...items];
+                next[index] = nextValue;
+                onContentChange(field.key, next);
+              }}
+            />
+            <button
+              type="button"
+              className="mini-btn danger"
+              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+            >
+              حذف
+            </button>
+          </div>
+        ))}
+        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, ''])}>
+          إضافة صورة
+        </button>
+      </div>
+    );
+  }
+
+  if (field.type === 'schedule') {
+    const items = arrayValue(value);
+    return (
+      <div className="array-editor">
+        {items.map((item, index) => (
+          <div key={`${field.key}-${index}`} className="schedule-row">
+            <input
+              type="text"
+              value={item.time || ''}
+              placeholder="الوقت"
+              onChange={(event) => onScheduleChange(field.key, index, 'time', event.target.value)}
+            />
+            <input
+              type="text"
+              value={item.title || ''}
+              placeholder="الفقرة"
+              onChange={(event) => onScheduleChange(field.key, index, 'title', event.target.value)}
+            />
+            <button
+              type="button"
+              className="mini-btn danger"
+              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+            >
+              حذف
+            </button>
+          </div>
+        ))}
+        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, { time: '', title: '' }])}>
+          إضافة فقرة
+        </button>
+      </div>
+    );
+  }
+
+  if (field.type === 'list') {
+    const items = arrayValue(value);
+    return (
+      <div className="array-editor">
+        {items.map((item, index) => (
+          <div key={`${field.key}-${index}`} className="array-row">
+            <input
+              type="text"
+              value={item || ''}
+              placeholder="ملاحظة"
+              onChange={(event) => onListChange(field.key, index, event.target.value)}
+            />
+            <button
+              type="button"
+              className="mini-btn danger"
+              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+            >
+              حذف
+            </button>
+          </div>
+        ))}
+        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, ''])}>
+          إضافة ملاحظة
+        </button>
+      </div>
+    );
+  }
+
+  if (field.type === 'image' || field.type === 'audio' || field.type === 'video') {
+    return (
+      <MediaPicker
+        label={`اختيار ${field.type === 'image' ? 'ملف' : field.type === 'audio' ? 'صوت' : 'فيديو'}`}
+        value={value || ''}
+        accept={field.type}
+        folder={field.type}
+        onChange={(nextValue) => onContentChange(field.key, nextValue)}
+      />
+    );
+  }
+
+  const inputType = {
+    datetime: 'datetime-local',
+    url: 'url',
+    phone: 'text',
+  }[field.type] || 'text';
 
   return (
-    <div className="editor-container">
-      <div className="editor-topbar">
-        <Link href="/" className="logo-text">FARHA</Link>
+    <input
+      type={inputType}
+      value={value || ''}
+      dir={inputType === 'url' ? 'ltr' : undefined}
+      onChange={(event) => onContentChange(field.key, event.target.value)}
+    />
+  );
+}
+
+export default function EditorClient({ invitation, manifest, manifests, openings, normalized }) {
+  const initialDraft = useMemo(() => buildInitialDraft(invitation, manifest, normalized), [invitation, manifest, normalized]);
+  const [draft, setDraft] = useState(initialDraft);
+  const [activeGroup, setActiveGroup] = useState('basic');
+  const [previewDevice, setPreviewDevice] = useState('mobile');
+  const [saveState, setSaveState] = useState('saved');
+  const [notice, setNotice] = useState('');
+  const [currentInvitation, setCurrentInvitation] = useState(invitation);
+  const [revisions, setRevisions] = useState(invitation.revisions || []);
+  const [compareSelection, setCompareSelection] = useState({ from: '', to: '' });
+  const [compareResult, setCompareResult] = useState(null);
+  const autosaveTimer = useRef(null);
+  const lastSavedRef = useRef(JSON.stringify(initialDraft));
+
+  const currentManifest = useMemo(
+    () => manifests.find((item) => item.slug === draft.templateSlug) || manifest,
+    [draft.templateSlug, manifests, manifest],
+  );
+
+  const currentOpening = useMemo(
+    () => openings.find((item) => item.slug === draft.openingSlug) || getOpeningBySlug(draft.openingSlug),
+    [draft.openingSlug, openings],
+  );
+  const sortedOpenings = useMemo(
+    () => [...openings].sort((left, right) => (left.sortOrder || 0) - (right.sortOrder || 0)),
+    [openings],
+  );
+
+  const previewInvitation = useMemo(() => buildPreviewInvitation(currentInvitation, draft), [currentInvitation, draft]);
+
+  const renderConfig = useMemo(
+    () =>
+      buildInvitationRenderConfig({
+        invitation: previewInvitation,
+        manifest: currentManifest,
+        opening: currentOpening,
+        preview: true,
+      }),
+    [previewInvitation, currentManifest, currentOpening],
+  );
+
+  function setContentValue(key, value) {
+    setDraft((current) => ({
+      ...current,
+      contentConfig: {
+        ...current.contentConfig,
+        [key]: value,
+      },
+    }));
+  }
+
+  function setThemeValue(key, value) {
+    setDraft((current) => ({
+      ...current,
+      themeConfig: {
+        ...current.themeConfig,
+        [key]: value,
+      },
+    }));
+  }
+
+  function setSectionValue(key, value) {
+    setDraft((current) => ({
+      ...current,
+      sectionConfig: {
+        ...current.sectionConfig,
+        [key]: value,
+      },
+    }));
+  }
+
+  function setScheduleValue(key, index, property, value) {
+    const items = [...arrayValue(draft.contentConfig[key])];
+    items[index] = { ...items[index], [property]: value };
+    setContentValue(key, items);
+  }
+
+  function setListValue(key, index, value) {
+    const items = [...arrayValue(draft.contentConfig[key])];
+    items[index] = value;
+    setContentValue(key, items);
+  }
+
+  async function loadRevisions() {
+    try {
+      const response = await fetch(`/api/editor/${currentInvitation.slug}/revisions`);
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setRevisions(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to load revisions', error);
+    }
+  }
+
+  async function persistDraft(action = 'save', silent = false) {
+    setSaveState('saving');
+
+    try {
+      const response = await fetch(`/api/editor/${currentInvitation.slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateSlug: draft.templateSlug,
+          openingSlug: draft.openingSlug,
+          contentConfig: draft.contentConfig,
+          themeConfig: draft.themeConfig,
+          sectionConfig: draft.sectionConfig,
+          openingConfig: draft.openingConfig,
+          action,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'تعذر حفظ الدعوة.');
+      }
+
+      lastSavedRef.current = JSON.stringify(draft);
+      setSaveState('saved');
+      setCurrentInvitation((current) => ({
+        ...current,
+        ...result.invitation,
+      }));
+
+      if (result.revisionNumber) {
+        void loadRevisions();
+      }
+
+      if (!silent) {
+        setNotice(action === 'publish' ? 'تم نشر الدعوة بنجاح.' : action === 'unpublish' ? 'تم إلغاء نشر الدعوة.' : 'تم حفظ المسودة.');
+        window.setTimeout(() => setNotice(''), 2500);
+      }
+    } catch (error) {
+      console.error(error);
+      setSaveState('error');
+      setNotice(error.message || 'حدث خطأ أثناء الحفظ.');
+    }
+  }
+
+  const saveDraftEffect = useEffectEvent(() => {
+    void persistDraft('save', true);
+  });
+
+  useEffect(() => {
+    const serialized = JSON.stringify(draft);
+    const isDirty = serialized !== lastSavedRef.current;
+
+    if (!isDirty) {
+      setSaveState('saved');
+      return undefined;
+    }
+
+    setSaveState('dirty');
+    clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      saveDraftEffect();
+    }, 1200);
+
+    return () => clearTimeout(autosaveTimer.current);
+  }, [draft]);
+
+  useEffect(() => {
+    const beforeUnload = (event) => {
+      if (saveState !== 'dirty') return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => window.removeEventListener('beforeunload', beforeUnload);
+  }, [saveState]);
+
+  async function compareRevisions() {
+    if (!compareSelection.from || !compareSelection.to) {
+      setNotice('اختر نسختين أولًا للمقارنة.');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/editor/${currentInvitation.slug}/revisions/compare?from=${compareSelection.from}&to=${compareSelection.to}`,
+      );
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'تعذرت المقارنة بين النسختين.');
+      }
+
+      setCompareResult(result.data);
+    } catch (error) {
+      setNotice(error.message || 'تعذرت المقارنة بين النسختين.');
+    }
+  }
+
+  async function restoreRevision(revisionId) {
+    if (!window.confirm('هل تريد استعادة هذه النسخة؟ سيتم إنشاء إصدار جديد يمثل عملية الاستعادة.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/editor/${currentInvitation.slug}/revisions/${revisionId}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publish: false }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'تعذرت استعادة النسخة.');
+      }
+
+      const restoredInvitation = result.data.invitation;
+      setCurrentInvitation((current) => ({ ...current, ...restoredInvitation }));
+      setDraft((current) => ({
+        ...current,
+        templateSlug: restoredInvitation.template?.slug || current.templateSlug,
+        openingSlug: restoredInvitation.opening?.slug || current.openingSlug,
+        contentConfig: restoredInvitation.contentConfig || current.contentConfig,
+        themeConfig: restoredInvitation.themeConfig || current.themeConfig,
+        sectionConfig: restoredInvitation.sectionConfig || current.sectionConfig,
+        openingConfig: restoredInvitation.openingConfig || current.openingConfig,
+      }));
+      setCompareResult(null);
+      setNotice('تمت استعادة النسخة بنجاح.');
+      void loadRevisions();
+    } catch (error) {
+      setNotice(error.message || 'تعذرت استعادة النسخة.');
+    }
+  }
+
+  function switchTemplate(nextSlug) {
+    const nextManifest = manifests.find((item) => item.slug === nextSlug);
+    if (!nextManifest || nextManifest.slug === currentManifest.slug) return;
+
+    const migration = migrateTemplateConfigBetweenManifests(draft.contentConfig, currentManifest, nextManifest);
+    setDraft((current) => ({
+      ...current,
+      templateSlug: nextSlug,
+      contentConfig: {
+        ...current.contentConfig,
+        ...migration.preserved,
+      },
+      hiddenConfig: {
+        ...current.hiddenConfig,
+        ...migration.hidden,
+      },
+    }));
+
+    setNotice(
+      migration.lostKeys.length > 0
+        ? `تم تبديل القالب مع الاحتفاظ بالحقول المتوافقة. بقيت ${migration.lostKeys.length} قيمة مخزنة للرجوع إليها لاحقًا.`
+        : 'تم تبديل القالب مع الحفاظ على البيانات المتوافقة.',
+    );
+  }
+
+  const groupedFields = currentManifest.editableFields.filter((field) => field.section === activeGroup);
+  const previewWidth = previewDevice === 'desktop' ? '100%' : previewDevice === 'tablet' ? '820px' : '390px';
+
+  return (
+    <div className="editor-shell">
+      <header className="editor-topbar">
+        <div className="topbar-left">
+          <Link href="/admin/invitations" className="back-link">
+            العودة للدعوات
+          </Link>
+          <div className="editor-title">
+            <h1>محرر الدعوة</h1>
+            <p>{currentInvitation.slug}</p>
+          </div>
+        </div>
         <div className="topbar-actions">
-          <button className="publish-btn" onClick={handlePublish} disabled={saving}>
-            {saving ? 'جاري الحفظ...' : 'إرسال الدعوة'}
+          <span className={`save-state ${saveState}`}>
+            {saveState === 'saving' ? 'جارٍ الحفظ' : saveState === 'dirty' ? 'تغييرات غير محفوظة' : saveState === 'error' ? 'فشل الحفظ' : 'محفوظ'}
+          </span>
+          <button type="button" className="action-btn secondary" onClick={() => persistDraft('save', false)}>
+            حفظ الآن
+          </button>
+          <button type="button" className="action-btn secondary" onClick={() => persistDraft('unpublish', false)}>
+            إلغاء النشر
+          </button>
+          <button type="button" className="action-btn primary" onClick={() => persistDraft('publish', false)}>
+            نشر
           </button>
         </div>
-      </div>
+      </header>
+
+      {notice ? <div className="notice-banner">{notice}</div> : null}
 
       <div className="editor-layout">
-        <div className="editor-sidebar">
-          
-          <div className="tabs-header">
-            <button className={`tab-btn ${activeTab === 'basics' ? 'active' : ''}`} onClick={() => setActiveTab('basics')}>الأساسيات</button>
-            <button className={`tab-btn ${activeTab === 'texts' ? 'active' : ''}`} onClick={() => setActiveTab('texts')}>النصوص</button>
-            <button className={`tab-btn ${activeTab === 'program' ? 'active' : ''}`} onClick={() => setActiveTab('program')}>البرنامج والملاحظات</button>
-            <button className={`tab-btn ${activeTab === 'media' ? 'active' : ''}`} onClick={() => setActiveTab('media')}>الصور</button>
-            <button className={`tab-btn ${activeTab === 'sections' ? 'active' : ''}`} onClick={() => setActiveTab('sections')}>الأقسام</button>
+        <aside className="editor-sidebar">
+          <div className="group-list">
+            {GROUPS.map((group) => (
+              <button
+                key={group.key}
+                type="button"
+                className={`group-btn ${activeGroup === group.key ? 'active' : ''}`}
+                onClick={() => setActiveGroup(group.key)}
+              >
+                {group.label}
+              </button>
+            ))}
           </div>
 
-          <div className="tabs-content">
-            {activeTab === 'basics' && (
-              <>
-                <div className="editor-section">
-                  <h3 className="section-title">العرسان</h3>
-                  <div className="input-group">
-                    <label>اسم العريس</label>
-                    <input type="text" name="groomName" value={formData.groomName} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>اسم العروس</label>
-                    <input type="text" name="brideName" value={formData.brideName} onChange={handleChange} />
-                  </div>
+          <div className="editor-panel">
+            {activeGroup === 'opening' ? (
+              <section className="panel-section">
+                <h2>اختيار الافتتاحية</h2>
+                <div className="cards-grid">
+                  {sortedOpenings.map((opening) => (
+                    <button
+                      key={opening.slug}
+                      type="button"
+                      className={`select-card ${draft.openingSlug === opening.slug ? 'active' : ''}`}
+                      onClick={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          openingSlug: opening.slug,
+                          openingConfig: {
+                            ...current.openingConfig,
+                            ...(opening.defaultConfig || {}),
+                          },
+                        }))
+                      }
+                    >
+                      <strong>{opening.nameAr}</strong>
+                      <span>{opening.type}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {activeGroup === 'theme' ? (
+              <section className="panel-section">
+                <h2>الهوية البصرية</h2>
+                <div className="field-grid">
+                  {currentManifest.themeOptions.map((field) => (
+                    <label key={field.key} className="field-block">
+                      <span>{field.labelAr}</span>
+                      <input
+                        type={field.type === 'color' ? 'color' : 'text'}
+                        value={draft.themeConfig[field.key] || ''}
+                        onChange={(event) => setThemeValue(field.key, event.target.value)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {activeGroup === 'publishing' ? (
+              <section className="panel-section">
+                <h2>النشر والإصدارات</h2>
+                <div className="meta-card">
+                  <div><strong>الحالة الحالية:</strong> {currentInvitation.status}</div>
+                  <div><strong>إصدار المسودة:</strong> v{currentInvitation.draftVersion || 1}</div>
+                  <div><strong>آخر تحديث:</strong> {new Date(currentInvitation.updatedAt || currentInvitation.createdAt).toLocaleString('ar-EG')}</div>
                 </div>
 
-                <div className="editor-section">
-                  <h3 className="section-title">المكان والزمان</h3>
-                  <div className="input-group">
-                    <label>التاريخ والوقت</label>
-                    <input type="datetime-local" name="weddingDate" value={formData.weddingDate} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>اسم القاعة</label>
-                    <input type="text" name="venueName" value={formData.venueName} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>العنوان</label>
-                    <input type="text" name="venueAddress" value={formData.venueAddress} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>رابط الموقع (Google Maps)</label>
-                    <input type="url" name="locationLink" value={formData.locationLink} onChange={handleChange} dir="ltr" />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'texts' && (
-              <>
-                <div className="editor-section">
-                  <h3 className="section-title">الافتتاحية</h3>
-                  <div className="input-group">
-                    <label>العبارة الترحيبية</label>
-                    <input type="text" name="welcomeMessage" value={formData.welcomeMessage} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>الدعاء / الآية</label>
-                    <textarea name="verseText" rows="2" value={formData.verseText} onChange={handleChange}></textarea>
-                  </div>
-                  <div className="input-group">
-                    <label>نص الدعوة الرئيسي</label>
-                    <textarea name="invitationText" rows="3" value={formData.invitationText} onChange={handleChange}></textarea>
-                  </div>
-                </div>
-                
-                <div className="editor-section">
-                  <h3 className="section-title">العوائل</h3>
-                  <div className="input-row">
-                    <div className="input-group">
-                      <label>عنوان عائلة العريس</label>
-                      <input type="text" name="groomParentsLabel" value={formData.groomParentsLabel} onChange={handleChange} />
-                    </div>
-                    <div className="input-group">
-                      <label>اسم العائلة</label>
-                      <input type="text" name="groomParents" value={formData.groomParents} onChange={handleChange} />
-                    </div>
-                  </div>
-                  <div className="input-row">
-                    <div className="input-group">
-                      <label>عنوان عائلة العروس</label>
-                      <input type="text" name="brideParentsLabel" value={formData.brideParentsLabel} onChange={handleChange} />
-                    </div>
-                    <div className="input-group">
-                      <label>اسم العائلة</label>
-                      <input type="text" name="brideParents" value={formData.brideParents} onChange={handleChange} />
-                    </div>
-                  </div>
+                <h3>مقارنة الإصدارات</h3>
+                <div className="compare-toolbar">
+                  <select value={compareSelection.from} onChange={(event) => setCompareSelection((current) => ({ ...current, from: event.target.value }))}>
+                    <option value="">اختر النسخة الأولى</option>
+                    {revisions.map((revision) => (
+                      <option key={`from-${revision.id}`} value={revision.id}>
+                        v{revision.revisionNumber} - {revision.status}
+                      </option>
+                    ))}
+                  </select>
+                  <select value={compareSelection.to} onChange={(event) => setCompareSelection((current) => ({ ...current, to: event.target.value }))}>
+                    <option value="">اختر النسخة الثانية</option>
+                    {revisions.map((revision) => (
+                      <option key={`to-${revision.id}`} value={revision.id}>
+                        v{revision.revisionNumber} - {revision.status}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="button" className="mini-btn" onClick={() => void compareRevisions()}>
+                    مقارنة
+                  </button>
                 </div>
 
-                <div className="editor-section">
-                  <h3 className="section-title">الخاتمة</h3>
-                  <div className="input-group">
-                    <label>كلمة الختام</label>
-                    <input type="text" name="closingNote" value={formData.closingNote} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>هاشتاغ الزفاف</label>
-                    <input type="text" name="closingHashtag" value={formData.closingHashtag} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>توقيع العائلتين</label>
-                    <input type="text" name="closingFamilies" value={formData.closingFamilies} onChange={handleChange} />
-                  </div>
-                </div>
-
-                <div className="editor-section">
-                  <h3 className="section-title">بيانات التواصل</h3>
-                  <div className="input-group">
-                    <label>عنوان التواصل</label>
-                    <input type="text" name="contactLabel" value={formData.contactLabel} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>اسم الشخص</label>
-                    <input type="text" name="contactName" value={formData.contactName} onChange={handleChange} />
-                  </div>
-                  <div className="input-group">
-                    <label>رقم الواتساب (بالصيغة الدولية)</label>
-                    <input type="text" name="contactPhone" value={formData.contactPhone} onChange={handleChange} dir="ltr" />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'program' && (
-              <>
-                <div className="editor-section">
-                  <h3 className="section-title">الفعاليات الزمنيّة</h3>
-                  {program.map((item, index) => (
-                    <div key={index} className="program-item">
-                      <div className="program-inputs">
-                        <input type="text" value={item.time} onChange={(e) => handleProgramChange(index, 'time', e.target.value)} placeholder="الوقت" />
-                        <input type="text" value={item.title} onChange={(e) => handleProgramChange(index, 'title', e.target.value)} placeholder="الفعالية" />
+                <h3>سجل التعديلات</h3>
+                <div className="revision-list">
+                  {revisions.map((revision) => (
+                    <div key={revision.id} className="revision-item">
+                      <div className="revision-main">
+                        <strong>v{revision.revisionNumber}</strong>
+                        <span>{revision.status}</span>
+                        <small>{new Date(revision.createdAt).toLocaleString('ar-EG')}</small>
+                        {revision.changeSummary ? <small>{revision.changeSummary}</small> : null}
                       </div>
-                      <button className="remove-program-btn" onClick={() => setProgram(program.filter((_, i) => i !== index))}>×</button>
+                      <div className="revision-actions">
+                        <button type="button" className="mini-btn" onClick={() => setCompareSelection((current) => ({ ...current, from: revision.id }))}>
+                          كنسخة أولى
+                        </button>
+                        <button type="button" className="mini-btn" onClick={() => setCompareSelection((current) => ({ ...current, to: revision.id }))}>
+                          كنسخة ثانية
+                        </button>
+                        <button type="button" className="mini-btn danger" onClick={() => void restoreRevision(revision.id)}>
+                          استعادة
+                        </button>
+                      </div>
                     </div>
                   ))}
-                  <button className="add-program-btn" onClick={() => setProgram([...program, { time: '٠:٠٠', title: 'جديد' }])}>+ إضافة فقرة</button>
                 </div>
 
-                <div className="editor-section">
-                  <h3 className="section-title">الملاحظات</h3>
-                  {notes.map((note, index) => (
-                    <div key={index} className="program-item">
-                      <div className="program-inputs">
-                        <input type="text" value={note} onChange={(e) => handleNoteChange(index, e.target.value)} placeholder="اكتب ملاحظة..." />
-                      </div>
-                      <button className="remove-program-btn" onClick={() => setNotes(notes.filter((_, i) => i !== index))}>×</button>
+                {compareResult ? (
+                  <div className="diff-panel">
+                    <h3>نتيجة المقارنة</h3>
+                    <p>
+                      مقارنة النسخة v{compareResult.fromRevision.revisionNumber} مع v{compareResult.toRevision.revisionNumber}
+                    </p>
+                    <div className="diff-list">
+                      {compareResult.diff.changes.slice(0, 20).map((change) => (
+                        <div key={change.key} className="diff-item">
+                          <strong>{change.key}</strong>
+                          <span>قبل: {change.beforeDisplay}</span>
+                          <span>بعد: {change.afterDisplay}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  <button className="add-program-btn" onClick={() => setNotes([...notes, 'ملاحظة جديدة'])}>+ إضافة ملاحظة</button>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'media' && (
-              <>
-                <div className="editor-section">
-                  <h3 className="section-title">صورة القاعة (خلفية)</h3>
-                  <div className="input-group">
-                    <label>رابط الصورة المباشر</label>
-                    <input type="url" name="venueImage" value={formData.venueImage} onChange={handleChange} dir="ltr" placeholder="https://..." />
                   </div>
-                </div>
+                ) : null}
+              </section>
+            ) : null}
 
-                <div className="editor-section">
-                  <h3 className="section-title">موسيقى الدعوة</h3>
-                  <div className="input-group">
-                    <label>رابط الملف الصوتي (MP3 المباشر)</label>
-                    <input type="url" name="musicUrl" value={formData.musicUrl} onChange={handleChange} dir="ltr" placeholder="https://.../music.mp3" />
-                  </div>
-                </div>
+            {activeGroup === 'basic' ? (
+              <section className="panel-section">
+                <h2>القالب</h2>
+                <label className="field-block">
+                  <span>اختيار القالب</span>
+                  <select value={draft.templateSlug} onChange={(event) => switchTemplate(event.target.value)}>
+                    {manifests.map((item) => (
+                      <option key={item.slug} value={item.slug}>
+                        {item.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </section>
+            ) : null}
 
-                <div className="editor-section">
-                  <h3 className="section-title">معرض الصور (Gallery)</h3>
-                  {galleryImages.map((img, index) => (
-                    <div key={index} className="program-item">
-                      <div className="program-inputs">
-                        <input type="url" value={img} onChange={(e) => handleGalleryChange(index, e.target.value)} placeholder="رابط الصورة المباشر" dir="ltr" />
-                      </div>
-                      <button className="remove-program-btn" onClick={() => setGalleryImages(galleryImages.filter((_, i) => i !== index))}>×</button>
-                    </div>
+            {groupedFields.length > 0 ? (
+              <section className="panel-section">
+                <h2>{GROUPS.find((group) => group.key === activeGroup)?.label}</h2>
+                <div className="field-grid">
+                  {groupedFields.map((field) => (
+                    <label key={field.key} className="field-block">
+                      <span>{field.labelAr}</span>
+                      {renderField({
+                        field,
+                        draft,
+                        onContentChange: setContentValue,
+                        onScheduleChange: setScheduleValue,
+                        onListChange: setListValue,
+                      })}
+                    </label>
                   ))}
-                  <button className="add-program-btn" onClick={() => setGalleryImages([...galleryImages, ''])}>+ إضافة صورة لمعرض الذكريات</button>
                 </div>
-              </>
-            )}
+              </section>
+            ) : null}
 
-            {activeTab === 'sections' && (
-              <div className="editor-section">
-                <h3 className="section-title">تشغيل/إيقاف الأقسام</h3>
-                <label className="toggle-row">
-                  <span>معرض الصور (الذكريات)</span>
-                  <input type="checkbox" name="gallery" checked={sections.gallery} onChange={handleToggle} />
-                </label>
-                <label className="toggle-row">
-                  <span>برنامج الحفل (الفعاليات)</span>
-                  <input type="checkbox" name="timeline" checked={sections.timeline} onChange={handleToggle} />
-                </label>
-                <label className="toggle-row">
-                  <span>تأكيد الحضور (RSVP)</span>
-                  <input type="checkbox" name="rsvp" checked={sections.rsvp} onChange={handleToggle} />
-                </label>
-                <label className="toggle-row">
-                  <span>حفظ الموعد (التقويم)</span>
-                  <input type="checkbox" name="calendar" checked={sections.calendar} onChange={handleToggle} />
-                </label>
-              </div>
-            )}
+            {activeGroup === 'media' ? (
+              <section className="panel-section">
+                <h2>الأقسام</h2>
+                <div className="toggle-list">
+                  {Object.entries(draft.sectionConfig).map(([sectionKey, enabled]) => (
+                    <label key={sectionKey} className="toggle-row">
+                      <span>{sectionKey}</span>
+                      <input type="checkbox" checked={enabled} onChange={(event) => setSectionValue(sectionKey, event.target.checked)} />
+                    </label>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
-        </div>
+        </aside>
 
-        {/* Left Area - Iframe Preview */}
-        <div className="editor-preview-container">
-          <div className="preview-wrapper">
-            <iframe 
-              ref={iframeRef}
-              src={`/${initialData.template.slug}/index.html`}
-              className="editor-iframe"
-              title="معاينة الدعوة"
-              onLoad={() => setFormData(prev => ({...prev}))}
-            ></iframe>
+        <main className="preview-pane">
+          <div className="preview-toolbar">
+            <div className="preview-device-group">
+              <button type="button" className={previewDevice === 'desktop' ? 'active' : ''} onClick={() => setPreviewDevice('desktop')}>سطح المكتب</button>
+              <button type="button" className={previewDevice === 'tablet' ? 'active' : ''} onClick={() => setPreviewDevice('tablet')}>تابلت</button>
+              <button type="button" className={previewDevice === 'mobile' ? 'active' : ''} onClick={() => setPreviewDevice('mobile')}>موبايل</button>
+            </div>
+            <span className="preview-label">{currentManifest.nameAr}</span>
           </div>
-        </div>
+
+          <div className="preview-stage">
+            <div className="preview-frame-shell" style={{ width: previewWidth }}>
+              <RenderFrame
+                templateSlug={currentManifest.slug}
+                manifest={currentManifest}
+                renderConfig={renderConfig}
+                className="runtime-host"
+                frameClassName="runtime-frame"
+              />
+            </div>
+          </div>
+        </main>
       </div>
 
       <style jsx>{`
-        .editor-container {
+        .editor-shell {
+          min-height: 100vh;
           display: flex;
           flex-direction: column;
-          height: 100vh;
-          background-color: #fbfaf8;
-          font-family: var(--font-arabic), sans-serif;
+          background: #f6f0ea;
           direction: rtl;
         }
         .editor-topbar {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          padding: 15px 30px;
-          background-color: #fff;
-          border-bottom: 1px solid #eee;
-          z-index: 10;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 18px 24px;
+          background: rgba(255, 250, 246, 0.96);
+          border-bottom: 1px solid rgba(127, 42, 31, 0.08);
+          backdrop-filter: blur(16px);
+          position: sticky;
+          top: 0;
+          z-index: 30;
         }
-        .logo-text {
-          font-family: Georgia, serif;
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #c49a45;
-          text-decoration: none;
-        }
-        .publish-btn {
-          background: linear-gradient(135deg, #ff4d7d, #8a5cf0);
-          color: #fff;
-          border: none;
-          padding: 10px 24px;
-          border-radius: 999px;
-          font-weight: bold;
-          cursor: pointer;
-          font-family: inherit;
-          font-size: 1rem;
-          box-shadow: 0 4px 15px rgba(255, 77, 125, 0.3);
-          transition: transform 0.2s;
-        }
-        .publish-btn:hover { transform: translateY(-2px); }
-        .editor-layout {
+        .topbar-left {
           display: flex;
-          flex: 1;
-          overflow: hidden;
+          align-items: center;
+          gap: 16px;
         }
-        .editor-sidebar {
-          width: 440px;
-          background-color: #fff;
-          border-left: 1px solid #eee;
-          display: flex;
-          flex-direction: column;
-        }
-        .tabs-header {
-          display: flex;
-          border-bottom: 1px solid #eee;
-        }
-        .tab-btn {
-          flex: 1;
-          background: none;
-          border: none;
-          padding: 18px 0;
-          font-family: inherit;
-          font-weight: bold;
-          color: #888;
-          cursor: pointer;
-          border-bottom: 3px solid transparent;
-          transition: 0.2s;
-          font-size: 0.85rem;
-        }
-        .tab-btn.active {
-          color: #ff4d7d;
-          border-bottom-color: #ff4d7d;
-        }
-        .tabs-content {
-          padding: 20px;
-          overflow-y: auto;
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .editor-section {
-          background: #fff;
-          border: 1px solid #eaeaea;
-          border-radius: 12px;
-          padding: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-        .section-title {
-          font-size: 1.1rem;
-          color: #ff4d7d;
-          margin-top: 0;
-          margin-bottom: 15px;
-          border-bottom: 1px dashed #eee;
-          padding-bottom: 10px;
-        }
-        .input-group { margin-bottom: 15px; flex: 1; }
-        .input-row { display: flex; gap: 15px; }
-        .input-group label {
-          display: block;
-          font-weight: bold;
-          font-size: 0.9rem;
-          margin-bottom: 8px;
-          color: #2a2140;
-        }
-        .input-group input, .input-group textarea {
-          width: 100%;
+        .back-link {
           padding: 10px 14px;
-          border: 1.5px solid #e5e7eb;
-          border-radius: 8px;
-          font-family: inherit;
-          font-size: 0.95rem;
-          outline: none;
-          box-sizing: border-box;
+          border-radius: 999px;
+          background: #fff;
+          color: #7f2a1f;
+          font-weight: 700;
         }
-        .input-group input:focus, .input-group textarea:focus {
-          border-color: #ff4d7d;
+        .editor-title h1 {
+          margin: 0;
+          font-size: 1.25rem;
+          color: #2f2430;
         }
-        .toggle-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 0;
-          border-bottom: 1px solid #f5f5f5;
-          font-weight: bold;
-          color: #2a2140;
-          cursor: pointer;
+        .editor-title p {
+          margin: 4px 0 0;
+          color: #7b6770;
+          font-size: 0.86rem;
         }
-        .toggle-row:last-child { border-bottom: none; }
-        
-        .program-item {
+        .topbar-actions {
           display: flex;
           align-items: center;
           gap: 10px;
-          margin-bottom: 10px;
-          background: #fbfaf8;
-          padding: 10px;
-          border-radius: 8px;
-          border: 1px solid #eaeaea;
+          flex-wrap: wrap;
         }
-        .program-inputs {
+        .save-state {
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: #fff;
+          color: #6b5d67;
+          font-size: 0.85rem;
+          font-weight: 700;
+        }
+        .save-state.saving { color: #94611f; }
+        .save-state.dirty { color: #a24b45; }
+        .save-state.error { color: #c43d54; }
+        .action-btn {
+          border: none;
+          border-radius: 999px;
+          padding: 12px 18px;
+          font: inherit;
+          font-weight: 800;
+        }
+        .action-btn.primary {
+          background: linear-gradient(135deg, #7f2a1f, #bc7859);
+          color: #fff;
+        }
+        .action-btn.secondary {
+          background: #fff;
+          color: #2f2430;
+          border: 1px solid rgba(127, 42, 31, 0.12);
+        }
+        .notice-banner {
+          margin: 12px 24px 0;
+          padding: 14px 16px;
+          border-radius: 16px;
+          background: rgba(195, 154, 88, 0.14);
+          color: #6e5438;
+          font-weight: 700;
+        }
+        .editor-layout {
+          display: grid;
+          grid-template-columns: 420px minmax(0, 1fr);
+          min-height: calc(100vh - 86px);
+        }
+        .editor-sidebar {
+          border-left: 1px solid rgba(127, 42, 31, 0.08);
+          background: #fffaf6;
+          display: grid;
+          grid-template-columns: 112px minmax(0, 1fr);
+          min-height: 0;
+        }
+        .group-list {
+          padding: 14px 10px;
+          border-left: 1px solid rgba(127, 42, 31, 0.06);
           display: flex;
           flex-direction: column;
           gap: 8px;
-          flex: 1;
         }
-        .program-inputs input {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 6px;
-          font-family: inherit;
-          font-size: 0.9rem;
-          outline: none;
-        }
-        .program-inputs input:focus { border-color: #ff4d7d; }
-        .remove-program-btn {
-          background: #ffe3e3;
-          color: #ff4d4d;
+        .group-btn {
           border: none;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          font-size: 1.2rem;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          flex-shrink: 0;
+          border-radius: 16px;
+          padding: 12px 10px;
+          background: transparent;
+          color: #6f6470;
+          font: inherit;
+          font-weight: 700;
+          text-align: center;
         }
-        .remove-program-btn:hover { background: #ffcccc; }
-        .add-program-btn {
-          width: 100%;
-          padding: 12px;
-          background: #f0f2f5;
-          color: #555;
-          border: 1px dashed #ccc;
-          border-radius: 8px;
-          font-family: inherit;
-          font-weight: bold;
-          cursor: pointer;
-          margin-top: 10px;
+        .group-btn.active {
+          background: linear-gradient(180deg, rgba(195, 154, 88, 0.18), rgba(127, 42, 31, 0.08));
+          color: #7f2a1f;
         }
-        .add-program-btn:hover { background: #e4e6e9; border-color: #aaa; }
-
-        .editor-preview-container {
-          flex: 1;
-          background-color: #f0f2f5;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 30px;
-          overflow-y: auto;
+        .editor-panel {
+          overflow: auto;
+          padding: 18px;
         }
-        .preview-wrapper {
-          width: 400px;
-          height: 800px;
+        .panel-section {
           background: #fff;
-          border-radius: 40px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-          overflow: hidden;
-          border: 12px solid #333;
-          position: relative;
+          border-radius: 22px;
+          padding: 20px;
+          border: 1px solid rgba(127, 42, 31, 0.08);
+          box-shadow: 0 18px 40px rgba(83, 38, 31, 0.05);
+          margin-bottom: 16px;
         }
-        .editor-iframe {
+        .panel-section h2 {
+          margin: 0 0 16px;
+          font-size: 1.05rem;
+          color: #2f2430;
+        }
+        .panel-section h3 {
+          margin: 14px 0 10px;
+          font-size: 0.95rem;
+        }
+        .field-grid {
+          display: grid;
+          gap: 14px;
+        }
+        .field-block {
+          display: grid;
+          gap: 8px;
+          color: #5b4f5b;
+          font-weight: 700;
+          font-size: 0.92rem;
+        }
+        .field-block input,
+        .field-block textarea,
+        .field-block select {
+          width: 100%;
+          border-radius: 14px;
+          border: 1px solid rgba(127, 42, 31, 0.12);
+          background: #fffaf9;
+          padding: 12px 14px;
+          font: inherit;
+        }
+        .cards-grid {
+          display: grid;
+          gap: 10px;
+        }
+        .select-card {
+          display: grid;
+          gap: 6px;
+          text-align: right;
+          border-radius: 16px;
+          border: 1px solid rgba(127, 42, 31, 0.12);
+          background: #fffaf9;
+          padding: 14px;
+          font: inherit;
+          color: #453b45;
+        }
+        .select-card.active {
+          border-color: #7f2a1f;
+          box-shadow: 0 0 0 3px rgba(127, 42, 31, 0.08);
+        }
+        .array-editor,
+        .compare-toolbar,
+        .diff-list,
+        .revision-main,
+        .revision-actions {
+          display: grid;
+          gap: 10px;
+        }
+        .array-row,
+        .schedule-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 8px;
+          align-items: center;
+        }
+        .schedule-row {
+          grid-template-columns: 120px minmax(0, 1fr) auto;
+        }
+        .mini-btn {
+          border: none;
+          border-radius: 12px;
+          padding: 10px 12px;
+          background: rgba(195, 154, 88, 0.14);
+          color: #704d1c;
+          font: inherit;
+          font-weight: 700;
+        }
+        .mini-btn.danger {
+          background: rgba(212, 75, 106, 0.12);
+          color: #b53d58;
+        }
+        .toggle-list {
+          display: grid;
+          gap: 10px;
+        }
+        .toggle-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 14px;
+          background: #fffaf9;
+          border: 1px solid rgba(127, 42, 31, 0.08);
+        }
+        .meta-card,
+        .revision-list {
+          display: grid;
+          gap: 10px;
+        }
+        .revision-item {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 10px;
+          align-items: start;
+          padding: 12px 14px;
+          border-radius: 14px;
+          background: #fffaf9;
+        }
+        .diff-panel {
+          margin-top: 16px;
+          padding: 16px;
+          border-radius: 16px;
+          background: rgba(195, 154, 88, 0.08);
+        }
+        .diff-item {
+          display: grid;
+          gap: 4px;
+          border-radius: 12px;
+          background: #fff;
+          padding: 12px;
+        }
+        .compare-toolbar select {
+          width: 100%;
+          border-radius: 12px;
+          border: 1px solid rgba(127, 42, 31, 0.12);
+          background: #fffaf9;
+          padding: 10px 12px;
+          font: inherit;
+        }
+        .preview-pane {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+        .preview-toolbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 18px 24px;
+        }
+        .preview-device-group {
+          display: inline-flex;
+          gap: 8px;
+          padding: 6px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.72);
+          box-shadow: 0 10px 24px rgba(83, 38, 31, 0.06);
+        }
+        .preview-device-group button {
+          border: none;
+          background: transparent;
+          padding: 10px 16px;
+          border-radius: 999px;
+          font: inherit;
+          font-weight: 800;
+          color: #6f6470;
+        }
+        .preview-device-group button.active {
+          background: #7f2a1f;
+          color: #fff;
+        }
+        .preview-label {
+          color: #6f6470;
+          font-weight: 800;
+        }
+        .preview-stage {
+          flex: 1;
+          display: grid;
+          place-items: center;
+          padding: 24px;
+        }
+        .preview-frame-shell {
+          height: min(84vh, 880px);
+          border-radius: 32px;
+          overflow: hidden;
+          background: #fff;
+          box-shadow: 0 30px 90px rgba(60, 31, 27, 0.15);
+        }
+        .runtime-host,
+        .runtime-frame {
           width: 100%;
           height: 100%;
           border: none;
+        }
+        @media (max-width: 1100px) {
+          .editor-layout {
+            grid-template-columns: 1fr;
+          }
+          .editor-sidebar {
+            grid-template-columns: 1fr;
+          }
+          .group-list {
+            flex-direction: row;
+            overflow: auto;
+            border-left: none;
+            border-bottom: 1px solid rgba(127, 42, 31, 0.06);
+          }
         }
       `}</style>
     </div>

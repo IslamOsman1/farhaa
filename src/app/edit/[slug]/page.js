@@ -1,50 +1,64 @@
 import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import EditorClient from './EditorClient';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdminSession } from '@/lib/admin-session';
+import {
+  buildInvitationRenderConfig,
+  getAllTemplateManifests,
+  getOpeningBySlug,
+  getTemplateManifest,
+  normalizeInvitationData,
+  OPENING_LIBRARY,
+} from '@/lib/template-system';
 
 export const dynamic = 'force-dynamic';
 
 export default async function EditInvitationPage({ params }) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'ADMIN') {
+  try {
+    await requireAdminSession('manageInvitations');
+  } catch (error) {
     redirect('/admin/login');
   }
 
   const resolvedParams = await params;
-  const { slug } = resolvedParams;
-
-  let invitation = null;
-  try {
-    invitation = await prisma.invitation.findUnique({
-      where: { slug },
-      include: {
-        template: true
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching invitation:', error);
-  }
+  const invitation = await prisma.invitation.findUnique({
+    where: { slug: resolvedParams.slug },
+    include: {
+      template: true,
+      opening: true,
+      revisions: {
+        orderBy: { revisionNumber: 'desc' },
+        take: 10,
+      },
+    },
+  });
 
   if (!invitation) {
     return notFound();
   }
 
-  // Parse extra fields from coupleStory
-  let extraFields = {};
-  try {
-    if (invitation.coupleStory) {
-      extraFields = JSON.parse(invitation.coupleStory);
-    }
-  } catch (e) {
-    // Ignore JSON parse errors
+  const manifest = getTemplateManifest(invitation.template?.slug);
+  if (!manifest) {
+    return notFound();
   }
 
-  const enrichedInvitation = {
-    ...invitation,
-    ...extraFields
-  };
+  const normalized = normalizeInvitationData(invitation);
+  const opening = invitation.opening || getOpeningBySlug('native-template');
+  const renderConfig = buildInvitationRenderConfig({
+    invitation,
+    manifest,
+    opening,
+    preview: true,
+  });
 
-  return <EditorClient initialData={enrichedInvitation} />;
+  return (
+    <EditorClient
+      invitation={JSON.parse(JSON.stringify(invitation))}
+      manifest={manifest}
+      manifests={getAllTemplateManifests()}
+      openings={OPENING_LIBRARY}
+      normalized={normalized}
+      initialRenderConfig={renderConfig}
+    />
+  );
 }

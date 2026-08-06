@@ -8,18 +8,42 @@ datasource db {
 }
 
 model Template {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  nameAr      String
-  slug        String       @unique
-  description String?
-  descriptionAr String?
-  previewImage String?
-  colors      String       @default("{}")  // JSON
-  fonts       String       @default("{}")  // JSON
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  invitations Invitation[]
+  id                 String       @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  nameAr             String
+  slug               String       @unique
+  description        String?
+  descriptionAr      String?
+  previewImage       String?
+  previewVideo       String?
+  thumbnail          String?
+  colors             String       @default("{}") // Legacy JSON string
+  fonts              String       @default("{}") // Legacy JSON string
+  status             String       @default("ACTIVE")
+  engine             String       @default("static-html")
+  sourceType         String       @default("public-directory")
+  sourceDirectory    String?
+  version            String       @default("1.0.0")
+  manifest           Json?
+  capabilities       Json?
+  defaultConfig      Json?
+  defaultThemeConfig Json?
+  defaultSectionConfig Json?
+  preserveFields     Json?
+  supportedLanguages Json?
+  supportedEventTypes Json?
+  compatibleOpenings Json?
+  validationStatus   String       @default("PENDING")
+  validationReport   Json?
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime?    @updatedAt
+  invitations        Invitation[]
+  variants           TemplateVariant[]
+  studioSessions     StudioSession[]
+
+  @@index([status])
+  @@index([isActive])
 }
 
 model Package {
@@ -34,18 +58,29 @@ model Package {
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime? @updatedAt
 }
 
 model Invitation {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
   slug            String    @unique
+  title           String?
   clientName      String    @default("")
   clientPhone     String?
+  clientId        String?   @db.ObjectId
+  client          Client?   @relation(fields: [clientId], references: [id])
   templateId      String    @db.ObjectId
   template        Template  @relation(fields: [templateId], references: [id])
+  templateVariantId String? @db.ObjectId
+  templateVariant TemplateVariant? @relation(fields: [templateVariantId], references: [id])
+  studioSessionId String? @db.ObjectId
+  studioSession   StudioSession? @relation(fields: [studioSessionId], references: [id])
+  openingId       String?   @db.ObjectId
+  opening         Opening?  @relation(fields: [openingId], references: [id])
+  orderRequestId  String?   @db.ObjectId
   
   // Status
-  status          String    @default("PENDING") // PENDING | PUBLISHED | REJECTED
+  status          String    @default("DRAFT") // DRAFT | PENDING | PUBLISHED | ARCHIVED | REJECTED
   
   // Couple info
   groomName       String    @default("")
@@ -76,22 +111,49 @@ model Invitation {
   // Customization
   customColors    String?
   customFonts     String?
+  contentConfig   Json?
+  themeConfig     Json?
+  openingConfig   Json?
+  sectionConfig   Json?
+  seoConfig       Json?
+  shareConfig     Json?
+  legacyConfig    Json?
+  migrationState  Json?
   
   // Section visibility
   sections        String    @default("{\"opening\":true,\"music\":true,\"welcome\":true,\"countdown\":true,\"details\":true,\"schedule\":true,\"gallery\":true,\"rsvp\":true,\"calendar\":true,\"share\":true,\"qrcode\":true}")
+  draftVersion    Int       @default(1)
+  publishedVersion Int?
+  publishedAt     DateTime?
+  scheduledPublishAt DateTime?
+  expiresAt       DateTime?
+  previewToken    String?
+  previewTokenExpiresAt DateTime?
+  updatedBy       String?
+  eventType       String?
+  locale          String    @default("ar")
   
   isActive        Boolean   @default(true)
   publishStartDate DateTime?
   publishEndDate   DateTime?
   
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  updatedAt       DateTime? @updatedAt
   
   // Relations
   gallery         GalleryItem[]
   schedule        EventSchedule[]
   rsvps           RSVP[]
   visits          Visit[]
+  revisions       InvitationRevision[]
+
+  @@index([status])
+  @@index([templateId])
+  @@index([templateVariantId])
+  @@index([studioSessionId])
+  @@index([openingId])
+  @@index([clientId])
+  @@index([publishedAt])
 }
 
 model GalleryItem {
@@ -129,6 +191,9 @@ model RSVP {
   companions   Int        @default(0)
   message      String?
   createdAt    DateTime   @default(now())
+
+  @@index([invitationId])
+  @@index([status])
 }
 
 model Visit {
@@ -137,16 +202,243 @@ model Visit {
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   ip           String?
   userAgent    String?
+  referrer     String?
+  deviceType   String?
   createdAt    DateTime   @default(now())
+
+  @@index([invitationId])
+  @@index([createdAt])
 }
 
 model SiteSettings {
-  id           String     @id @default(auto()) @map("_id") @db.ObjectId
-  contactPhone String?
-  contactEmail String?
-  whatsapp     String?
-  instagram    String?
-  facebook     String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                 String     @id @default(auto()) @map("_id") @db.ObjectId
+  companyName        String?
+  logoUrl            String?
+  contactPhone       String?
+  contactEmail       String?
+  whatsapp           String?
+  instagram          String?
+  facebook           String?
+  tiktok             String?
+  defaultSeoTitle    String?
+  defaultSeoDescription String?
+  defaultShareImage  String?
+  defaultTemplateSlug String?
+  defaultOpeningSlug String?
+  promoBarSettings   Json?
+  analyticsConfig    Json?
+  rsvpSettings       Json?
+  publicationDefaults Json?
+  supportedCurrencies Json?
+  uploadLimits       Json?
+  footerConfig       Json?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime?  @updatedAt
+}
+
+model Opening {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  slug               String   @unique
+  name               String
+  nameAr             String
+  description        String?
+  descriptionAr      String?
+  type               String   @default("native-template")
+  status             String   @default("ACTIVE")
+  thumbnail          String?
+  previewMediaUrl    String?
+  previewImage       String?
+  previewVideo       String?
+  thumbnailUrl       String?
+  isDefault          Boolean  @default(false)
+  sortOrder          Int      @default(0)
+  isActive           Boolean  @default(true)
+  compatibilityRules Json?
+  compatibleTemplates Json?
+  defaultConfig      Json?
+  configSchema       Json?
+  textConfig         Json?
+  mediaConfig        Json?
+  themeConfig        Json?
+  durationMs         Int?
+  transition         String?
+  background         Json?
+  musicOptions       Json?
+  skipButtonOptions  Json?
+  autoplay           Boolean  @default(false)
+  requiresUserInteraction Boolean @default(false)
+  mobileFallback     Json?
+  reducedMotionFallback Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime? @updatedAt
+  invitations        Invitation[]
+
+  @@index([status])
+  @@index([sortOrder])
+}
+
+model InvitationRevision {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  invitationId  String   @db.ObjectId
+  invitation    Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  revisionNumber Int
+  snapshot      Json
+  status        String
+  createdBy     String?
+  changeSummary String?
+  createdAt     DateTime @default(now())
+
+  @@unique([invitationId, revisionNumber])
+  @@index([invitationId])
+}
+
+model MediaAsset {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  url              String
+  providerKey      String?
+  type             String
+  fileName         String?
+  originalName     String?
+  storageKey       String?
+  mimeType         String?
+  fileType         String?
+  sizeBytes        Int?
+  width            Int?
+  height           Int?
+  durationSeconds  Int?
+  altText          String?
+  description      String?
+  folder           String?
+  provider         String?
+  originalFilename String?
+  usageRefs        Json?
+  createdById      String?
+  uploadedBy       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime? @updatedAt
+
+  @@index([type])
+  @@index([fileType])
+}
+
+model AdminUser {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String?  @unique
+  username     String?  @unique
+  passwordHash String
+  role         String   @default("owner")
+  isActive     Boolean  @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime? @updatedAt
+  studioSessions StudioSession[]
+  templateVariants TemplateVariant[]
+}
+
+model StudioSession {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  adminId              String   @db.ObjectId
+  admin                AdminUser @relation(fields: [adminId], references: [id])
+  baseTemplateId       String   @db.ObjectId
+  baseTemplate         Template @relation(fields: [baseTemplateId], references: [id])
+  templateVariantId    String?  @db.ObjectId
+  templateVariant      TemplateVariant? @relation(fields: [templateVariantId], references: [id])
+  invitationId         String?  @db.ObjectId
+  invitations          Invitation[]
+  name                 String
+  status               String   @default("DRAFT")
+  config               Json?
+  content              Json?
+  assets               Json?
+  selectedOpeningId    String?  @db.ObjectId
+  selectedOpeningConfig Json?
+  devicePreview        Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime? @updatedAt
+  expiresAt            DateTime?
+
+  @@index([adminId])
+  @@index([baseTemplateId])
+  @@index([templateVariantId])
+  @@index([status])
+}
+
+model TemplateVariant {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  nameAr        String?
+  slug          String?  @unique
+  baseTemplateId String  @db.ObjectId
+  baseTemplate   Template @relation(fields: [baseTemplateId], references: [id])
+  manifest      Json?
+  config        Json?
+  content       Json?
+  mediaBindings Json?
+  openingId     String?  @db.ObjectId
+  openingConfig Json?
+  isInternal    Boolean  @default(true)
+  isPublished   Boolean  @default(false)
+  createdById   String   @db.ObjectId
+  createdBy     AdminUser @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime? @updatedAt
+  invitations   Invitation[]
+  studioSessions StudioSession[]
+
+  @@index([baseTemplateId])
+  @@index([createdById])
+  @@index([isInternal])
+  @@index([isPublished])
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  action     String
+  entityType String
+  entityId   String?
+  actorId    String?
+  summary    String?
+  details    Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+model Client {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String?
+  phone       String?
+  status      String       @default("ACTIVE")
+  notes       String?
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime?    @updatedAt
+  invitations Invitation[]
+
+  @@index([status])
+  @@index([phone])
+}
+
+model OrderRequest {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  phone       String
+  countryCode String?
+  occasion    String?
+  templateSlug String?
+  invitationSlug String?
+  status      String   @default("NEW")
+  notes       String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  @@index([status])
+  @@index([phone])
 }

@@ -1,36 +1,42 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPackages();
-  }, []);
-
-  const fetchPackages = async () => {
+  async function fetchPackages() {
     try {
       const res = await fetch('/api/packages');
       const data = await res.json();
       setPackages(data);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const deletePackage = async (id) => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchPackages();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  async function deletePackage(id) {
     if (!confirm('هل أنت متأكد؟')) return;
+
     try {
       await fetch(`/api/admin/packages/${id}`, { method: 'DELETE' });
       fetchPackages();
-    } catch(err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
     }
-  };
+  }
 
   return (
     <div>
@@ -52,17 +58,19 @@ export default function PackagesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="5" style={{textAlign: 'center'}}>جاري التحميل...</td></tr>
+              <tr><td colSpan="5" style={{ textAlign: 'center' }}>جارٍ التحميل...</td></tr>
             ) : packages.length === 0 ? (
-              <tr><td colSpan="5" style={{textAlign: 'center'}}>لا توجد باقات</td></tr>
-            ) : packages.map(pkg => (
+              <tr><td colSpan="5" style={{ textAlign: 'center' }}>لا توجد باقات</td></tr>
+            ) : packages.map((pkg) => (
               <tr key={pkg.id}>
                 <td>{pkg.nameAr}</td>
                 <td>{pkg.name}</td>
                 <td>{pkg.price} {pkg.currency}</td>
-                <td>{pkg.isActive ? 'مفعل' : 'معطل'}</td>
+                <td>{pkg.isActive ? 'مفعلة' : 'معطلة'}</td>
                 <td>
-                  <button onClick={() => deletePackage(pkg.id)} className="btn btn-sm" style={{background: '#ff4d4f', color: '#fff'}}>حذف</button>
+                  <button onClick={() => deletePackage(pkg.id)} className="btn btn-sm" style={{ background: '#ff4d4f', color: '#fff' }}>
+                    حذف
+                  </button>
                 </td>
               </tr>
             ))}
