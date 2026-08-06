@@ -4,7 +4,7 @@ import { apiError, apiSuccess } from '@/lib/api-response';
 import { requirePermission } from '@/lib/admin-session';
 import { findMediaUsage } from '@/lib/media-library';
 import { getRequestIp, getRequestUserAgent } from '@/lib/request-utils';
-import { persistFileLocally } from '@/lib/storage';
+import { persistUploadedFile } from '@/lib/storage';
 import { writeAuditLog } from '@/lib/admin-security';
 
 export const dynamic = 'force-dynamic';
@@ -106,7 +106,7 @@ export async function POST(request) {
         continue;
       }
 
-      const stored = await persistFileLocally(entry, folder);
+      const stored = await persistUploadedFile(entry, folder);
       const usageRefs = await findMediaUsage(stored.url);
       const asset = await prisma.mediaAsset.create({
         data: {

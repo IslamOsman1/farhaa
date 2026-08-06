@@ -4,7 +4,7 @@ import { apiError, apiSuccess } from '@/lib/api-response';
 import { requirePermission } from '@/lib/admin-session';
 import { writeAuditLog } from '@/lib/admin-security';
 import { getRequestIp, getRequestUserAgent } from '@/lib/request-utils';
-import { deleteLocalAsset } from '@/lib/storage';
+import { deleteLocalAsset, deleteRemoteAsset } from '@/lib/storage';
 import { findMediaUsage } from '@/lib/media-library';
 
 const updateSchema = z.object({
@@ -97,6 +97,14 @@ export async function DELETE(request, { params }) {
         await deleteLocalAsset(asset.storageKey);
       } catch (error) {
         console.error('Failed to delete local media file:', error);
+      }
+    }
+
+    if (asset.provider === 'cloudinary' && asset.storageKey) {
+      try {
+        await deleteRemoteAsset(asset.provider, asset.storageKey, asset.fileType || asset.type);
+      } catch (error) {
+        console.error('Failed to delete remote media file:', error);
       }
     }
 

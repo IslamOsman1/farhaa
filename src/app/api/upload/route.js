@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { apiError, apiSuccess } from '@/lib/api-response';
 import { requirePermission } from '@/lib/admin-session';
-import { persistFileLocally } from '@/lib/storage';
+import { persistUploadedFile } from '@/lib/storage';
 
 export async function POST(request) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request) {
       return apiError(new Error('No file provided'), { status: 400 });
     }
 
-    const stored = await persistFileLocally(file, 'legacy-upload');
+    const stored = await persistUploadedFile(file, 'legacy-upload');
     await prisma.mediaAsset.create({
       data: {
         url: stored.url,
