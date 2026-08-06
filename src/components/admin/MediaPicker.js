@@ -26,6 +26,7 @@ export default function MediaPicker({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -33,12 +34,22 @@ export default function MediaPicker({
 
     async function load() {
       setLoading(true);
+      setError('');
       try {
         const type = accept === 'all' ? 'all' : accept;
         const response = await fetch(`/api/media?type=${type}&search=${encodeURIComponent(search)}&pageSize=24`);
         const payload = await response.json();
-        if (!ignore && payload.success) {
-          setItems(payload.data.items);
+
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.message || payload.error || 'تعذر تحميل الوسائط.');
+        }
+
+        if (!ignore) {
+          setItems(payload.data.items || []);
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setError(loadError.message || 'تعذر تحميل الوسائط.');
         }
       } finally {
         if (!ignore) {
@@ -55,17 +66,38 @@ export default function MediaPicker({
 
   async function uploadAndSelect(file) {
     if (!file) return;
+
     setUploading(true);
+    setError('');
+
     try {
       const formData = new FormData();
       formData.append('folder', folder);
       formData.append('files', file);
+
       const response = await fetch('/api/media', { method: 'POST', body: formData });
       const payload = await response.json();
-      if (payload.success && payload.data.created[0]) {
-        onChange(payload.data.created[0].url);
-        setOpen(false);
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.message || payload.error || 'تعذر رفع الملف.');
       }
+
+      const selectedAsset = payload.data?.created?.[0] || payload.data?.duplicates?.[0];
+      if (!selectedAsset?.url) {
+        throw new Error('لم يتم إرجاع رابط الملف بعد الرفع.');
+      }
+
+      onChange(selectedAsset.url);
+      setItems((current) => {
+        if (current.some((item) => item.id === selectedAsset.id)) {
+          return current;
+        }
+
+        return [selectedAsset, ...current];
+      });
+      setOpen(false);
+    } catch (uploadError) {
+      setError(uploadError.message || 'تعذر رفع الملف.');
     } finally {
       setUploading(false);
     }
@@ -74,7 +106,13 @@ export default function MediaPicker({
   return (
     <>
       <div className="media-picker-field">
-        <input type="url" dir="ltr" value={value || ''} onChange={(event) => onChange(event.target.value)} placeholder="https://..." />
+        <input
+          type="url"
+          dir="ltr"
+          value={value || ''}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="https://..."
+        />
         <button type="button" className="mini-btn" onClick={() => setOpen(true)}>
           {label}
         </button>
@@ -87,6 +125,7 @@ export default function MediaPicker({
               <strong>{label}</strong>
               <button type="button" className="mini-btn" onClick={() => setOpen(false)}>إغلاق</button>
             </div>
+
             <div className="picker-toolbar">
               <input
                 type="search"
@@ -104,6 +143,8 @@ export default function MediaPicker({
                 />
               </label>
             </div>
+
+            {error ? <div className="picker-error">{error}</div> : null}
             {loading ? <div className="picker-empty">جارٍ التحميل...</div> : null}
             {!loading && items.length === 0 ? <div className="picker-empty">لا توجد ملفات مطابقة.</div> : null}
             {!loading && items.length > 0 ? (
@@ -181,6 +222,14 @@ export default function MediaPicker({
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
           gap: 12px;
+        }
+        .picker-error {
+          border-radius: 14px;
+          border: 1px solid rgba(127, 42, 31, .16);
+          background: #fff3f1;
+          color: #9f3428;
+          padding: 10px 12px;
+          font-size: 0.92rem;
         }
         .picker-card {
           border: 1px solid rgba(127, 42, 31, .08);
