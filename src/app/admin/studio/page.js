@@ -3,13 +3,14 @@ import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/admin-session';
 import { scanTemplateStudioInventory } from '@/lib/studio-inventory';
+import StudioSessionsGrid from './StudioSessionsGrid';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminStudioPage() {
   try {
     await requirePermission('studio.view');
-  } catch (error) {
+  } catch (_error) {
     redirect('/admin/login');
   }
 
@@ -47,6 +48,7 @@ export default async function AdminStudioPage() {
             <div><strong>{inventory.summary.audio}</strong><span>صوت</span></div>
           </div>
         </article>
+
         <article className="admin-card card-pad">
           <h3>جلساتك الأخيرة</h3>
           <div className="studio-metrics">
@@ -57,23 +59,7 @@ export default async function AdminStudioPage() {
         </article>
       </div>
 
-      <div className="admin-grid-cards">
-        {sessions.map((session) => (
-          <article key={session.id} className="admin-card card-pad studio-session-card">
-            <div className="stack-sm">
-              <div className="badge badge-warning">{session.status}</div>
-              <h3>{session.name}</h3>
-              <p>{session.baseTemplate?.nameAr || session.baseTemplate?.name || 'قالب غير معروف'}</p>
-              <div className="meta-pair"><strong>آخر تحديث:</strong><span>{new Date(session.updatedAt || session.createdAt).toLocaleString('ar-EG')}</span></div>
-              <div className="meta-pair"><strong>النسخة الداخلية:</strong><span>{session.templateVariant?.name || 'لا توجد'}</span></div>
-            </div>
-            <div className="studio-card-actions">
-              <Link className="btn-primary" href={`/admin/studio/${session.id}`}>فتح الجلسة</Link>
-              <Link className="btn-secondary" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة</Link>
-            </div>
-          </article>
-        ))}
-      </div>
+      <StudioSessionsGrid initialSessions={JSON.parse(JSON.stringify(sessions))} />
     </div>
   );
 }
