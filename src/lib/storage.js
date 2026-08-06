@@ -94,6 +94,16 @@ function getCloudinaryResourceType(fileType) {
   return 'raw';
 }
 
+function signCloudinaryParams(params, apiSecret) {
+  const stringToSign = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+
+  return createHash('sha1').update(`${stringToSign}${apiSecret}`).digest('hex');
+}
+
 async function persistFileToCloudinary(file, folder = 'general') {
   const cloudinary = getCloudinaryConfig();
   if (!cloudinary) {
@@ -106,20 +116,27 @@ async function persistFileToCloudinary(file, folder = 'general') {
   const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
   const safeBase = sanitizeFilename(file.name.replace(/\.[^.]+$/, '')) || 'asset';
   const safeFolder = sanitizeFilename(folder) || 'general';
-  const publicId = `farha/${safeFolder}/${safeBase}-${hash.slice(0, 10)}-${randomUUID().slice(0, 8)}`;
+  const cloudinaryFolder = `farha/${safeFolder}`;
+  const publicId = `${cloudinaryFolder}/${safeBase}-${hash.slice(0, 10)}-${randomUUID().slice(0, 8)}`;
   const timestamp = Math.floor(Date.now() / 1000);
-  const signaturePayload = `folder=farha/${safeFolder}&public_id=${publicId}&timestamp=${timestamp}${cloudinary.apiSecret}`;
-  const signature = createHash('sha1').update(signaturePayload).digest('hex');
+  const uploadParams = {
+    folder: cloudinaryFolder,
+    public_id: publicId,
+    timestamp: String(timestamp),
+    unique_filename: 'false',
+    use_filename: 'false',
+  };
+  const signature = signCloudinaryParams(uploadParams, cloudinary.apiSecret);
   const formData = new FormData();
 
   formData.append('file', new Blob([buffer], { type: file.type }), file.name);
   formData.append('api_key', cloudinary.apiKey);
-  formData.append('timestamp', String(timestamp));
+  formData.append('timestamp', uploadParams.timestamp);
   formData.append('signature', signature);
-  formData.append('folder', `farha/${safeFolder}`);
-  formData.append('public_id', publicId);
-  formData.append('use_filename', 'false');
-  formData.append('unique_filename', 'false');
+  formData.append('folder', uploadParams.folder);
+  formData.append('public_id', uploadParams.public_id);
+  formData.append('use_filename', uploadParams.use_filename);
+  formData.append('unique_filename', uploadParams.unique_filename);
 
   const resourceType = getCloudinaryResourceType(getFileTypeFromMime(file.type));
   const endpoint = `https://api.cloudinary.com/v1_1/${cloudinary.cloudName}/${resourceType}/upload`;
@@ -204,8 +221,13 @@ export async function deleteRemoteAsset(provider, storageKey, fileType = 'image'
 
   const resourceType = getCloudinaryResourceType(fileType);
   const timestamp = Math.floor(Date.now() / 1000);
-  const signaturePayload = `public_id=${storageKey}&timestamp=${timestamp}${cloudinary.apiSecret}`;
-  const signature = createHash('sha1').update(signaturePayload).digest('hex');
+  const signature = signCloudinaryParams(
+    {
+      public_id: storageKey,
+      timestamp: String(timestamp),
+    },
+    cloudinary.apiSecret,
+  );
   const formData = new FormData();
 
   formData.append('public_id', storageKey);
