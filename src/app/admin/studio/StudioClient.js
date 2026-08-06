@@ -20,6 +20,8 @@ const SECTION_META = {
   details: { icon: '📍', label: 'المكان والزمان', description: 'التاريخ والقاعة ورابط الخريطة' },
   schedule: { icon: '🗓', label: 'البرنامج', description: 'فقرات اليوم وجدوله' },
   media: { icon: '🖼', label: 'الوسائط', description: 'صور وفيديوهات وموسيقى الدعوة' },
+  contact: { icon: '📞', label: 'التواصل', description: 'اسم ورقم جهة التنسيق والاستفسار' },
+  closing: { icon: '✒', label: 'الخاتمة', description: 'خاتمة الدعوة والهاشتاغ والتوقيع' },
   opening: { icon: '✨', label: 'الافتتاحية', description: 'المشهد الأول وطريقة الدخول' },
   design: { icon: '🎨', label: 'التصميم', description: 'الألوان والخطوط والمظهر العام' },
   sections: { icon: '☰', label: 'الأقسام', description: 'إظهار وإخفاء وترتيب أجزاء الدعوة' },
@@ -168,6 +170,19 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
         folder={`studio-${field.type}`}
         onChange={(nextValue) => onContentChange(field.key, nextValue)}
       />
+    );
+  }
+
+  if (field.type === 'boolean') {
+    return (
+      <label className="studio-boolean-field">
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(event) => onContentChange(field.key, event.target.checked)}
+        />
+        <span>{value ? 'مفعل' : 'غير مفعل'}</span>
+      </label>
     );
   }
 

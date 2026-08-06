@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { requireAdminSession } from '@/lib/admin-session';
 import {
+  buildLegacyStoryFromContentConfig,
   buildInvitationRenderConfig,
   getOpeningBySlug,
   getTemplateManifest,
@@ -22,28 +23,6 @@ const savePayloadSchema = z.object({
   status: z.string().optional(),
   action: z.enum(['save', 'publish', 'unpublish']).optional(),
 });
-
-function buildLegacyStory(contentConfig) {
-  return {
-    verseText: contentConfig.verseText || '',
-    invitationText: contentConfig.invitationText || '',
-    groomParentsLabel: contentConfig.groomParentsLabel || '',
-    groomParents: contentConfig.groomParents || '',
-    brideParentsLabel: contentConfig.brideParentsLabel || '',
-    brideParents: contentConfig.brideParents || '',
-    closingNote: contentConfig.closingNote || '',
-    closingHashtag: contentConfig.closingHashtag || '',
-    closingFamilies: contentConfig.closingFamilies || '',
-    locationLink: contentConfig.locationLink || '',
-    program: Array.isArray(contentConfig.program) ? contentConfig.program : [],
-    notes: Array.isArray(contentConfig.notes) ? contentConfig.notes : [],
-    contactLabel: contentConfig.contactLabel || '',
-    contactName: contentConfig.contactName || '',
-    contactPhone: contentConfig.contactPhone || '',
-    venueImage: contentConfig.venueImage || '',
-    galleryImages: Array.isArray(contentConfig.galleryImages) ? contentConfig.galleryImages : [],
-  };
-}
 
 async function ensureTemplateBySlug(slug) {
   const manifest = getTemplateManifest(slug);
@@ -203,7 +182,7 @@ export async function PUT(request, { params }) {
 
     const template = await ensureTemplateBySlug(parsed.templateSlug);
     const opening = await ensureOpeningBySlug(parsed.openingSlug);
-    const legacyStory = buildLegacyStory(parsed.contentConfig);
+    const legacyStory = buildLegacyStoryFromContentConfig(parsed.contentConfig);
     const nextStatus =
       parsed.action === 'publish'
         ? 'PUBLISHED'

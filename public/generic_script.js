@@ -62,9 +62,14 @@
 
   const fallbackBindings = {
     groomName: { method: 'text', selector: '#groomName, #heroGroom' },
+    groom: { method: 'text', selector: '#groomName, #heroGroom' },
     brideName: { method: 'text', selector: '#brideName, #heroBride' },
+    bride: { method: 'text', selector: '#brideName, #heroBride' },
+    guestName: { method: 'text', selector: '#env-guest-name' },
     welcomeMessage: { method: 'text', selector: '#heroInvite, #heroSubtitle' },
+    heroSub: { method: 'text', selector: '#heroSub, #heroInvite, #heroSubtitle' },
     verseText: { method: 'text', selector: '#verseText' },
+    verse: { method: 'text', selector: '#verseText' },
     invitationText: { method: 'text', selector: '#invitationText' },
     groomParentsLabel: { method: 'text', selector: '#groomParentsLabel, .family__label:first-of-type' },
     groomParents: { method: 'text', selector: '#groomParents' },
@@ -72,19 +77,32 @@
     brideParents: { method: 'text', selector: '#brideParents' },
     venueName: { method: 'text', selector: '#venueName' },
     venueAddress: { method: 'text', selector: '#venueAddr' },
+    venueAddr: { method: 'text', selector: '#venueAddr, #heroAddr' },
     locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+    mapUrl: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
     contactLabel: { method: 'text', selector: '#contactLabel' },
     contactName: { method: 'text', selector: '#contactName' },
     contactPhone: { method: 'text', selector: '#contactPhone' },
     closingNote: { method: 'text', selector: '#closingNote' },
     closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    hashtag: { method: 'text', selector: '#closingHashtag' },
     closingFamilies: { method: 'text', selector: '#closingFamilies' },
     venueImage: { method: 'backgroundImage', selector: '#venuePhoto, #venueImage' },
+    'images.hero': { method: 'media', selector: '#heroPhotoImg' },
+    'images.background': { method: 'media', selector: '#coverBg .bg-photo, #coverBg img.bg-photo' },
+    'images.venue': { method: 'backgroundImage', selector: '#venuePhoto, #venueImage' },
     musicUrl: { method: 'media', selector: '#bgMusic, #invitation-audio' },
     galleryImages: { method: 'gallery', selector: '#galleryGrid, .mem-grid' },
     program: { method: 'schedule', selector: '#timeline, .program' },
     notes: { method: 'list', selector: '#notesList' },
     weddingDate: { method: 'computedDate', selector: '#heroDate, #weddingDate, #eventDate' },
+    dateText: { method: 'text', selector: '#heroDate, #weddingDate, #eventDate, #wipeDate' },
+    timeText: { method: 'text', selector: '#weddingTime, #wipeTime' },
+    coupleInviteLine: { method: 'text', selector: '#coupleInviteLine' },
+    groomRelationLabel: { method: 'text', selector: '#groomRelationLabel' },
+    groomRelationName: { method: 'text', selector: '#groomRelationName' },
+    brideRelationLabel: { method: 'text', selector: '#brideRelationLabel' },
+    brideRelationName: { method: 'text', selector: '#brideRelationName' },
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -148,10 +166,19 @@
         welcomeMessage: cfg.heroSub || cfg.welcomeMessage || '',
         verseText: cfg.verse || cfg.verseText || '',
         invitationText: cfg.invitationText || '',
+        guestName: cfg.guestName || '',
+        occasion: cfg.occasion || 'wedding',
         groomParentsLabel: cfg.groomParentsLabel || '',
         groomParents: cfg.groomParents || '',
         brideParentsLabel: cfg.brideParentsLabel || '',
         brideParents: cfg.brideParents || '',
+        showFamilies: cfg.showFamilies !== false,
+        brideFirst: cfg.brideFirst === true,
+        coupleInviteLine: cfg.coupleInviteLine || '',
+        groomRelationLabel: cfg.groomRelationLabel || '',
+        groomRelationName: cfg.groomRelationName || '',
+        brideRelationLabel: cfg.brideRelationLabel || '',
+        brideRelationName: cfg.brideRelationName || '',
         venueName: cfg.venueName || '',
         venueAddress: cfg.venueAddr || cfg.venueAddress || '',
         locationLink: cfg.mapUrl || cfg.locationLink || '',
@@ -163,6 +190,9 @@
         closingFamilies: cfg.closingFamilies || '',
         musicUrl: cfg.musicUrl || '',
         venueImage: cfg.images && cfg.images.venue ? cfg.images.venue : '',
+        'images.hero': cfg.images && cfg.images.hero ? cfg.images.hero : '',
+        'images.background': cfg.images && cfg.images.background ? cfg.images.background : '',
+        'images.venue': cfg.images && cfg.images.venue ? cfg.images.venue : '',
         galleryImages: Array.isArray(cfg.galleryImages) ? cfg.galleryImages : [],
         program: Array.isArray(cfg.program) ? cfg.program : [],
         notes: Array.isArray(cfg.notes) ? cfg.notes : [],
@@ -190,9 +220,17 @@
   }
 
   function applyRenderConfig(manifest, renderConfig) {
-    const fields = renderConfig.fields || {};
+    const fields = buildLegacyFields(renderConfig.fields || {});
     const bindings =
       (manifest && manifest.runtimeBindings && manifest.runtimeBindings.fieldBindings) || fallbackBindings;
+
+    window.__INVITE__ = {
+      ...(window.__INVITE__ || {}),
+      config: {
+        ...((window.__INVITE__ && window.__INVITE__.config) || {}),
+        ...fields,
+      },
+    };
 
     Object.keys(fields).forEach((fieldKey) => {
       const binding = bindings[fieldKey] || fallbackBindings[fieldKey];
@@ -205,7 +243,76 @@
     applyComputedDate(fields.weddingDate);
     applyTheme(renderConfig.theme || {});
     applySections(manifest, renderConfig.sections || {});
+    applyFamilyPresentation(fields);
+    applyMediaVisibility(fields);
     applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
+  }
+
+  function assignNestedValue(target, dottedKey, value) {
+    if (!dottedKey.includes('.')) {
+      target[dottedKey] = value;
+      return;
+    }
+
+    const parts = dottedKey.split('.');
+    let cursor = target;
+    for (let index = 0; index < parts.length - 1; index += 1) {
+      const part = parts[index];
+      if (!cursor[part] || typeof cursor[part] !== 'object') {
+        cursor[part] = {};
+      }
+      cursor = cursor[part];
+    }
+    cursor[parts[parts.length - 1]] = value;
+  }
+
+  function buildLegacyFields(sourceFields) {
+    const fields = { ...sourceFields };
+
+    Object.entries(sourceFields).forEach(([key, value]) => {
+      if (key.includes('.')) {
+        assignNestedValue(fields, key, value);
+      }
+    });
+
+    if (!fields.groom && fields.groomName) fields.groom = fields.groomName;
+    if (!fields.bride && fields.brideName) fields.bride = fields.brideName;
+    if (!fields.heroSub && fields.welcomeMessage) fields.heroSub = fields.welcomeMessage;
+    if (!fields.verse && fields.verseText) fields.verse = fields.verseText;
+    if (!fields.hashtag && fields.closingHashtag) fields.hashtag = fields.closingHashtag;
+    if (!fields.mapUrl && fields.locationLink) fields.mapUrl = fields.locationLink;
+    if (!fields.venueAddr && fields.venueAddress) fields.venueAddr = fields.venueAddress;
+    if (!fields.date && fields.weddingDate) fields.date = fields.weddingDate;
+
+    if (!fields.images || typeof fields.images !== 'object') {
+      fields.images = {};
+    }
+    if (fields.venueImage && !fields.images.venue) fields.images.venue = fields.venueImage;
+    if (sourceFields['images.hero']) fields.images.hero = sourceFields['images.hero'];
+    if (sourceFields['images.background']) fields.images.background = sourceFields['images.background'];
+    if (sourceFields['images.venue']) fields.images.venue = sourceFields['images.venue'];
+
+    if (fields.weddingDate && (!fields.dateText || !fields.timeText)) {
+      const date = new Date(fields.weddingDate);
+      if (!Number.isNaN(date.getTime())) {
+        if (!fields.dateText) {
+          fields.dateText = date.toLocaleDateString('ar-EG', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        }
+        if (!fields.timeText) {
+          fields.timeText = date.toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        }
+      }
+    }
+
+    return fields;
   }
 
   function applyBinding(binding, value, fields) {
@@ -239,7 +346,123 @@
     }
 
     if (binding.selector === '#contactPhone' && fields.contactPhone) {
-      setAttribute('#contactPhone, #contactWhatsapp', 'href', `https://wa.me/${String(fields.contactPhone).replace(/[^0-9]/g, '')}`);
+      const waLink = `https://wa.me/${String(fields.contactPhone).replace(/[^0-9]/g, '')}`;
+      setAttribute('#contactPhone, #contactWhatsapp, #contactLink', 'href', waLink);
+      setText('#contactPhoneText', fields.contactPhone);
+    }
+  }
+
+  function applyFamilyPresentation(fields) {
+    const familySection =
+      document.querySelector('.families')
+      || document.getElementById('groomParents')?.closest('.families')
+      || document.getElementById('brideParents')?.closest('.families');
+
+    const closingFamilies = document.getElementById('closingFamilies');
+    const groomFamily = document.getElementById('groomParents')?.closest('.family');
+    const brideFamily = document.getElementById('brideParents')?.closest('.family');
+    const heart = familySection?.querySelector('.families__heart, .families-jewel');
+
+    if (familySection) {
+      familySection.style.display = fields.showFamilies === false ? 'none' : '';
+    }
+    if (closingFamilies) {
+      closingFamilies.style.display = fields.showFamilies === false ? 'none' : '';
+    }
+
+    if (fields.showFamilies === false || !familySection || !groomFamily || !brideFamily || !heart) {
+      const existingRow = document.querySelector('.farha-rel-row');
+      if (existingRow) existingRow.remove();
+      return;
+    }
+
+    if (fields.brideFirst === true) {
+      familySection.replaceChildren(brideFamily, heart, groomFamily);
+    } else {
+      familySection.replaceChildren(groomFamily, heart, brideFamily);
+    }
+
+    renderRelationshipRow(fields, familySection);
+  }
+
+  function renderRelationshipRow(fields, familySection) {
+    const names = [fields.groomRelationName, fields.brideRelationName].filter(Boolean);
+    const labels = [fields.groomRelationLabel, fields.brideRelationLabel].filter(Boolean);
+    const line = fields.coupleInviteLine || '';
+    const existingRow = document.querySelector('.farha-rel-row');
+
+    if (!names.length || (!line && !labels.length)) {
+      if (existingRow) existingRow.remove();
+      return;
+    }
+
+    if (existingRow) {
+      existingRow.remove();
+    }
+
+    const row = familySection.cloneNode(true);
+    row.classList.add('farha-rel-row');
+    row.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
+
+    const rowFamilies = row.querySelectorAll('.family');
+    const rowHeart = row.querySelector('.families__heart, .families-jewel');
+    const [leftFamily, rightFamily] = rowFamilies;
+
+    configureRelationshipFamily(leftFamily, fields.groomRelationLabel, fields.groomRelationName);
+    configureRelationshipFamily(rightFamily, fields.brideRelationLabel, fields.brideRelationName);
+
+    if ((!fields.groomRelationName || !fields.brideRelationName) && rowHeart) {
+      rowHeart.style.display = 'none';
+    }
+
+    if (line) {
+      const lineNode = document.createElement('p');
+      lineNode.className = 'da3wa-relline farha-rel-line';
+      lineNode.textContent = line;
+      row.prepend(lineNode);
+    }
+
+    familySection.insertAdjacentElement('afterend', row);
+  }
+
+  function configureRelationshipFamily(familyNode, label, name) {
+    if (!familyNode) return;
+
+    const labelNode = familyNode.querySelector('.family__label, .family-label');
+    const nameNode = familyNode.querySelector('.family__names, #groomParents, #brideParents, p');
+
+    if (!name) {
+      familyNode.style.display = 'none';
+      return;
+    }
+
+    familyNode.style.display = '';
+    if (nameNode) {
+      nameNode.textContent = name;
+    }
+    if (labelNode) {
+      if (label) {
+        labelNode.textContent = label;
+        labelNode.style.display = '';
+      } else {
+        labelNode.style.display = 'none';
+      }
+    }
+  }
+
+  function applyMediaVisibility(fields) {
+    if (fields['images.hero']) {
+      queryAll('#heroPhoto').forEach((node) => {
+        node.hidden = false;
+        node.style.display = '';
+      });
+    }
+
+    if (fields['images.background']) {
+      queryAll('#coverBg .bg-photo, #coverBg img.bg-photo').forEach((node) => {
+        node.classList?.add('is-shown');
+        node.hidden = false;
+      });
     }
   }
 

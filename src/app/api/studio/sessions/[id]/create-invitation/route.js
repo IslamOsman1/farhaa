@@ -5,30 +5,9 @@ import { writeAuditLog } from '@/lib/admin-security';
 import { getRequestIp, getRequestUserAgent } from '@/lib/request-utils';
 import { ensureOpeningBySlug } from '@/lib/template-records';
 import { buildStudioDraftFromSession, studioInvitationSchema } from '@/lib/studio';
+import { buildLegacyStoryFromContentConfig } from '@/lib/template-system';
 
 export const dynamic = 'force-dynamic';
-
-function buildLegacyStory(contentConfig) {
-  return {
-    verseText: contentConfig.verseText || '',
-    invitationText: contentConfig.invitationText || '',
-    groomParentsLabel: contentConfig.groomParentsLabel || '',
-    groomParents: contentConfig.groomParents || '',
-    brideParentsLabel: contentConfig.brideParentsLabel || '',
-    brideParents: contentConfig.brideParents || '',
-    closingNote: contentConfig.closingNote || '',
-    closingHashtag: contentConfig.closingHashtag || '',
-    closingFamilies: contentConfig.closingFamilies || '',
-    locationLink: contentConfig.locationLink || '',
-    program: Array.isArray(contentConfig.program) ? contentConfig.program : [],
-    notes: Array.isArray(contentConfig.notes) ? contentConfig.notes : [],
-    contactLabel: contentConfig.contactLabel || '',
-    contactName: contentConfig.contactName || '',
-    contactPhone: contentConfig.contactPhone || '',
-    venueImage: contentConfig.venueImage || '',
-    galleryImages: Array.isArray(contentConfig.galleryImages) ? contentConfig.galleryImages : [],
-  };
-}
 
 async function createInitialRevision({ invitationId, snapshot, actorId }) {
   await prisma.invitationRevision.create({
@@ -73,7 +52,7 @@ export async function POST(request, { params }) {
     const themeConfig = session.config?.themeConfig || {};
     const sectionConfig = session.config?.sectionConfig || {};
     const openingConfig = session.selectedOpeningConfig || session.config?.openingConfig || {};
-    const legacyStory = buildLegacyStory(contentConfig);
+    const legacyStory = buildLegacyStoryFromContentConfig(contentConfig);
 
     const invitation = await prisma.invitation.create({
       data: {

@@ -17,6 +17,8 @@ const GROUPS = [
   { key: 'details', label: 'المكان والزمان' },
   { key: 'schedule', label: 'البرنامج' },
   { key: 'media', label: 'الوسائط' },
+  { key: 'contact', label: 'التواصل' },
+  { key: 'closing', label: 'الخاتمة' },
   { key: 'theme', label: 'الهوية البصرية' },
   { key: 'opening', label: 'الافتتاحية' },
   { key: 'publishing', label: 'النشر والإصدارات' },
@@ -182,6 +184,19 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
         folder={field.type}
         onChange={(nextValue) => onContentChange(field.key, nextValue)}
       />
+    );
+  }
+
+  if (field.type === 'boolean') {
+    return (
+      <label className="editor-boolean-field">
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(event) => onContentChange(field.key, event.target.checked)}
+        />
+        <span>{value ? 'مفعل' : 'غير مفعل'}</span>
+      </label>
     );
   }
 
