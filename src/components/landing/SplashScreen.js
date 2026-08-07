@@ -1,8 +1,11 @@
 'use client';
 
 import Image from 'next/image';
+import { landingCopy } from '@/lib/landing-copy';
 
-export default function SplashScreen({ visible }) {
+export default function SplashScreen({ visible, language = 'ar' }) {
+  const copy = landingCopy[language].splash;
+
   return (
     <div className={`splash-screen ${visible ? 'is-visible' : 'is-hidden'}`} aria-hidden={!visible}>
       <div className="splash-screen-inner">
@@ -17,7 +20,7 @@ export default function SplashScreen({ visible }) {
           />
         </div>
         <div className="splash-screen-brand">FARHA</div>
-        <p className="splash-screen-text">دعوات زفاف رقمية فاخرة</p>
+        <p className="splash-screen-text">{copy.tagline}</p>
         <div className="splash-screen-loader">
           <span />
         </div>

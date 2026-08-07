@@ -1,8 +1,11 @@
 'use client';
-import { useEffect, useRef } from 'react';
 
-export default function HowItWorks() {
+import { useEffect, useRef } from 'react';
+import { landingCopy } from '@/lib/landing-copy';
+
+export default function HowItWorks({ language = 'ar' }) {
   const sectionRef = useRef(null);
+  const copy = landingCopy[language].how;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -13,7 +16,7 @@ export default function HowItWorks() {
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const elements = sectionRef.current.querySelectorAll('.reveal');
@@ -24,23 +27,17 @@ export default function HowItWorks() {
     };
   }, []);
 
-  const steps = [
-    { num: '1', title: 'اختر الباقة والقالب', desc: 'تصفح قوالبنا وباقاتنا واختر ما يناسبك' },
-    { num: '2', title: 'أرسل التفاصيل', desc: 'تواصل معنا عبر الواتساب وزودنا بتفاصيل الزفاف' },
-    { num: '3', title: 'استلم دعوتك', desc: 'سنقوم بتجهيز دعوتك وإرسال الرابط لك لمشاركته' },
-  ];
-
   return (
     <section id="how-it-works" className="section" ref={sectionRef}>
-      <h2 className="section-title reveal">كيف تعمل منصة فرحة؟</h2>
-      <p className="section-subtitle reveal">خطوات بسيطة للحصول على دعوتك الرقمية المميزة</p>
-      
+      <h2 className="section-title reveal">{copy.title}</h2>
+      <p className="section-subtitle reveal">{copy.subtitle}</p>
+
       <div className="steps-container">
-        {steps.map((step, idx) => (
+        {copy.steps.map((step, idx) => (
           <div key={idx} className="step reveal" style={{ transitionDelay: `${idx * 0.2}s` }}>
-            <div className="step-number">{step.num}</div>
-            <h3>{step.title}</h3>
-            <p>{step.desc}</p>
+            <div className="step-number">{step[0]}</div>
+            <h3>{step[1]}</h3>
+            <p>{step[2]}</p>
           </div>
         ))}
       </div>

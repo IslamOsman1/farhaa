@@ -1,8 +1,12 @@
 'use client';
-import { useEffect, useRef } from 'react';
 
-export default function Packages() {
+import { useEffect, useRef } from 'react';
+import { landingCopy } from '@/lib/landing-copy';
+
+export default function Packages({ language = 'ar', whatsapp }) {
   const sectionRef = useRef(null);
+  const cleanWhatsapp = whatsapp ? whatsapp.replace(/[^0-9]/g, '') : '201001473345';
+  const copy = landingCopy[language].packages;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -13,7 +17,7 @@ export default function Packages() {
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const cards = sectionRef.current.querySelectorAll('.reveal');
@@ -27,60 +31,39 @@ export default function Packages() {
   const packages = [
     {
       id: 'basic',
-      name: 'الأساسية',
+      name: copy.list.basic,
       price: '299',
-      features: [
-        { name: 'تصميم دعوة رقمية', available: true },
-        { name: 'عداد تنازلي', available: true },
-        { name: 'خرائط جوجل', available: true },
-        { name: 'معرض صور (5 صور)', available: true },
-        { name: 'تأكيد حضور RSVP', available: false },
-        { name: 'موسيقى خلفية', available: false },
-      ],
-      popular: false
+      features: copy.features.basic.map((name, index) => ({ name, available: index < 4 })),
+      popular: false,
     },
     {
       id: 'premium',
-      name: 'المميزة',
+      name: copy.list.premium,
       price: '599',
-      features: [
-        { name: 'تصميم دعوة رقمية', available: true },
-        { name: 'عداد تنازلي', available: true },
-        { name: 'خرائط جوجل', available: true },
-        { name: 'معرض صور (15 صورة)', available: true },
-        { name: 'تأكيد حضور RSVP', available: true },
-        { name: 'موسيقى خلفية', available: true },
-      ],
-      popular: true
+      features: copy.features.premium.map((name) => ({ name, available: true })),
+      popular: true,
     },
     {
       id: 'vip',
-      name: 'الملكية',
+      name: copy.list.vip,
       price: '999',
-      features: [
-        { name: 'تصميم دعوة رقمية مخصصة', available: true },
-        { name: 'عداد تنازلي', available: true },
-        { name: 'خرائط جوجل', available: true },
-        { name: 'معرض صور مفتوح', available: true },
-        { name: 'تأكيد حضور RSVP (مع رسائل SMS)', available: true },
-        { name: 'موسيقى خلفية', available: true },
-      ],
-      popular: false
-    }
+      features: copy.features.vip.map((name) => ({ name, available: true })),
+      popular: false,
+    },
   ];
 
   return (
     <section id="packages" className="section" ref={sectionRef}>
-      <h2 className="section-title reveal">باقات وأسعار فرحة</h2>
-      <p className="section-subtitle reveal">اختر الباقة التي تناسب احتياجاتك وميزانيتك</p>
-      
+      <h2 className="section-title reveal">{copy.title}</h2>
+      <p className="section-subtitle reveal">{copy.subtitle}</p>
+
       <div className="packages-grid">
         {packages.map((pkg, idx) => (
           <div key={pkg.id} className={`package-card reveal ${pkg.popular ? 'popular' : ''}`} style={{ transitionDelay: `${idx * 0.2}s` }}>
-            {pkg.popular && <div className="popular-badge">الأكثر طلباً</div>}
+            {pkg.popular && <div className="popular-badge">{copy.popular}</div>}
             <h3 className="package-name">{pkg.name}</h3>
             <div className="package-price">
-              {pkg.price} <span>ج.م</span>
+              {pkg.price} <span>{copy.currency}</span>
             </div>
             <ul className="package-features">
               {pkg.features.map((feat, i) => (
@@ -89,8 +72,8 @@ export default function Packages() {
                 </li>
               ))}
             </ul>
-            <a href="https://wa.me/201001473345" target="_blank" rel="noopener noreferrer" className="btn-outline">
-              اطلب الآن
+            <a href={`https://wa.me/${cleanWhatsapp}`} target="_blank" rel="noopener noreferrer" className="btn-outline">
+              {copy.order}
             </a>
           </div>
         ))}

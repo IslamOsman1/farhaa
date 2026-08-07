@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { buildFooterConfig, defaultFaqItems, extractFaqItems } from '@/lib/site-settings';
 
 // Middleware to check admin session
 async function requireAdmin() {
@@ -86,21 +87,39 @@ export async function createAdminInvitation(data) {
 export async function getSiteSettings() {
   await requireAdmin();
   const settings = await prisma.siteSettings.findFirst();
-  return settings || {};
+  if (!settings) {
+    return { faqItems: defaultFaqItems };
+  }
+
+  return {
+    ...settings,
+    faqItems: extractFaqItems(settings),
+  };
 }
 
 export async function updateSiteSettings(data) {
   await requireAdmin();
   const existing = await prisma.siteSettings.findFirst();
+  const faqItems = Array.isArray(data?.faqItems) ? data.faqItems : [];
+  const payload = {
+    contactPhone: data?.contactPhone || '',
+    contactEmail: data?.contactEmail || '',
+    whatsapp: data?.whatsapp || '',
+    instagram: data?.instagram || '',
+    facebook: data?.facebook || '',
+    footerConfig: buildFooterConfig(existing, faqItems),
+  };
+
   if (existing) {
     await prisma.siteSettings.update({
       where: { id: existing.id },
-      data
+      data: payload,
     });
   } else {
-    await prisma.siteSettings.create({ data });
+    await prisma.siteSettings.create({ data: payload });
   }
   revalidatePath('/admin/settings');
+  revalidatePath('/');
   return { success: true };
 }
 

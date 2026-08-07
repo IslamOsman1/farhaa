@@ -1,16 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { landingCopy } from '@/lib/landing-copy';
 
-const heroSlides = [
-  '/images/hero-bg.jpg',
-  '/imperial/preview.jpg',
-  '/toscana/preview.jpg',
-];
+const heroSlides = ['/images/hero-bg.jpg', '/imperial/preview.jpg', '/toscana/preview.jpg'];
 
-export default function Hero({ whatsapp }) {
+export default function Hero({ whatsapp, language = 'ar' }) {
   const cleanWhatsapp = whatsapp ? whatsapp.replace(/[^0-9]/g, '') : '201001473345';
   const [activeSlide, setActiveSlide] = useState(0);
+  const copy = landingCopy[language].hero;
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -36,23 +34,20 @@ export default function Hero({ whatsapp }) {
 
       <div className="hero-shell">
         <div className="hero-copy">
-          <div className="hero-kicker">دعوات رقمية فاخرة بتوقيع FARHA</div>
+          <div className="hero-kicker">{copy.kicker}</div>
 
           <h1 className="hero-title">
-            دعوة أنيقة
-            <span> تليق بمناسبتك</span>
+            {copy.titleTop}
+            <span> {copy.titleAccent}</span>
             <br />
-            وتبهر ضيوفك من أول لحظة
+            {copy.titleBottom}
           </h1>
 
-          <p className="hero-subtitle">
-            نصمم لك صفحة دعوة زفاف راقية، سهلة المشاركة، ومتوافقة مع الجوال
-            لتظهر تفاصيل يومكم الكبير بأسلوب فاخر وواضح.
-          </p>
+          <p className="hero-subtitle">{copy.subtitle}</p>
 
           <div className="hero-cta">
             <a href="#templates" className="btn-primary">
-              تصفح القوالب
+              {copy.browse}
             </a>
             <a
               href={`https://wa.me/${cleanWhatsapp}`}
@@ -60,16 +55,13 @@ export default function Hero({ whatsapp }) {
               rel="noopener noreferrer"
               className="btn-outline hero-outline"
             >
-              اطلب عبر واتساب
+              {copy.order}
             </a>
           </div>
 
-          <div className="hero-dots" aria-label="شرائح الهيرو">
+          <div className="hero-dots" aria-label={copy.dots}>
             {heroSlides.map((slide, index) => (
-              <span
-                key={slide}
-                className={`hero-dot ${index === activeSlide ? 'active' : ''}`}
-              />
+              <span key={slide} className={`hero-dot ${index === activeSlide ? 'active' : ''}`} />
             ))}
           </div>
         </div>

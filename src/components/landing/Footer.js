@@ -1,45 +1,49 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { landingCopy } from '@/lib/landing-copy';
 
-export default function Footer({ settings }) {
+export default function Footer({ settings, language = 'ar' }) {
+  const copy = landingCopy[language].footer;
+
   return (
     <footer className="footer">
       <div className="footer-brand">
         <Image src="/assets/logo.png" alt="FARHA logo" width={94} height={94} />
         <div>
           <Link href="/" className="footer-logo">
-            فرحة
+            {copy.title}
           </Link>
-          <p className="footer-tagline">دعوات رقمية بطابع رومانسي راقٍ</p>
+          <p className="footer-tagline">{copy.tagline}</p>
         </div>
       </div>
 
       <div className="footer-links">
-        <Link href="#templates">القوالب</Link>
-        <Link href="#features">المميزات</Link>
-        <Link href="#packages">الباقات</Link>
-        <Link href="#how-it-works">كيف نعمل</Link>
+        <Link href="#templates">{copy.templates}</Link>
+        <Link href="#features">{copy.features}</Link>
+        <Link href="#packages">{copy.packages}</Link>
+        <Link href="#how-it-works">{copy.howItWorks}</Link>
+        <Link href="#faq">{copy.faq}</Link>
       </div>
 
       {(settings?.instagram || settings?.facebook || settings?.contactPhone || settings?.contactEmail) && (
         <div className="footer-social">
           {settings.instagram && (
             <a href={settings.instagram} target="_blank" rel="noopener noreferrer">
-              انستجرام
+              {copy.instagram}
             </a>
           )}
           {settings.facebook && (
             <a href={settings.facebook} target="_blank" rel="noopener noreferrer">
-              فيسبوك
+              {copy.facebook}
             </a>
           )}
-          {settings.contactPhone && <a href={`tel:${settings.contactPhone}`}>اتصل بنا</a>}
-          {settings.contactEmail && <a href={`mailto:${settings.contactEmail}`}>البريد</a>}
+          {settings.contactPhone && <a href={`tel:${settings.contactPhone}`}>{copy.call}</a>}
+          {settings.contactEmail && <a href={`mailto:${settings.contactEmail}`}>{copy.email}</a>}
         </div>
       )}
 
       <div className="footer-bottom">
-        <p>&copy; {new Date().getFullYear()} فرحة FARHA. جميع الحقوق محفوظة.</p>
+        <p>&copy; {new Date().getFullYear()} FARHA. {copy.copyright}</p>
       </div>
     </footer>
   );
