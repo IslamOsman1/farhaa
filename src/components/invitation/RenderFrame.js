@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getTemplateManifest } from '@/lib/template-system';
 
-const OPENING_LAYER_SELECTORS = '#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #stage, #envelope, #env';
-const MAIN_CONTENT_SELECTORS = '#invitation-container, #main-content';
+const OPENING_LAYER_SELECTORS = '#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #envelope, #env';
+const MAIN_CONTENT_SELECTORS = '#invitation-container, #main-content, #invite, .invite, #site, .site, #allrecords, .hero, #hero, .stage, #stage, .card, .wrap, .sheet';
 
 function isElementVisible(node) {
   if (!node) return false;
@@ -153,7 +153,9 @@ export default function RenderFrame({
       const mainContent = Array.from(openingDocument.querySelectorAll(MAIN_CONTENT_SELECTORS));
       const hasVisibleMainContent = mainContent.some(isElementVisible);
 
-      if ((openingLayers.length > 0 && visibleOpeningLayers.length === 0) || hasVisibleMainContent) {
+      const bodyUnlocked = !openingDocument.body?.classList?.contains('locked');
+
+      if ((openingLayers.length > 0 && visibleOpeningLayers.length === 0) || hasVisibleMainContent || bodyUnlocked) {
         setOpeningVisible(false);
       }
     }, 500);
