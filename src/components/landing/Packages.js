@@ -2,8 +2,30 @@
 
 import { useEffect, useRef } from 'react';
 import { landingCopy } from '@/lib/landing-copy';
+import { getPackageDisplayFeatures } from '@/lib/packages';
 
-export default function Packages({ language = 'ar', whatsapp }) {
+function formatPackagePrice(price, currency, language) {
+  if (typeof price !== 'number' || Number.isNaN(price)) {
+    return { amount: '', currencyLabel: currency || '' };
+  }
+
+  const amount = new Intl.NumberFormat(language === 'en' ? 'en-US' : 'ar-EG', {
+    maximumFractionDigits: 0,
+  }).format(price);
+
+  const currencyLabelMap = {
+    EGP: language === 'en' ? 'EGP' : 'ج.م',
+    SAR: language === 'en' ? 'SAR' : 'ر.س',
+    USD: language === 'en' ? 'USD' : 'دولار',
+  };
+
+  return {
+    amount,
+    currencyLabel: currencyLabelMap[currency] || currency || '',
+  };
+}
+
+export default function Packages({ language = 'ar', packages = [], whatsapp }) {
   const sectionRef = useRef(null);
   const cleanWhatsapp = whatsapp ? whatsapp.replace(/[^0-9]/g, '') : '201001473345';
   const copy = landingCopy[language].packages;
@@ -28,29 +50,37 @@ export default function Packages({ language = 'ar', whatsapp }) {
     };
   }, []);
 
-  const packages = [
-    {
-      id: 'basic',
-      name: copy.list.basic,
-      price: '299',
-      features: copy.features.basic.map((name, index) => ({ name, available: index < 4 })),
-      popular: false,
-    },
-    {
-      id: 'premium',
-      name: copy.list.premium,
-      price: '599',
-      features: copy.features.premium.map((name) => ({ name, available: true })),
-      popular: true,
-    },
-    {
-      id: 'vip',
-      name: copy.list.vip,
-      price: '999',
-      features: copy.features.vip.map((name) => ({ name, available: true })),
-      popular: false,
-    },
-  ];
+  const resolvedPackages = packages.length
+    ? packages.map((pkg) => ({
+        id: pkg.id,
+        name: language === 'en' ? pkg.name || pkg.nameAr : pkg.nameAr || pkg.name,
+        price: formatPackagePrice(pkg.price, pkg.currency, language),
+        features: getPackageDisplayFeatures(pkg, language).map((name) => ({ name, available: true })),
+        popular: Boolean(pkg.isPopular),
+      }))
+    : [
+        {
+          id: 'basic',
+          name: copy.list.basic,
+          price: { amount: '299', currencyLabel: copy.currency },
+          features: copy.features.basic.map((name, index) => ({ name, available: index < 4 })),
+          popular: false,
+        },
+        {
+          id: 'premium',
+          name: copy.list.premium,
+          price: { amount: '599', currencyLabel: copy.currency },
+          features: copy.features.premium.map((name) => ({ name, available: true })),
+          popular: true,
+        },
+        {
+          id: 'vip',
+          name: copy.list.vip,
+          price: { amount: '999', currencyLabel: copy.currency },
+          features: copy.features.vip.map((name) => ({ name, available: true })),
+          popular: false,
+        },
+      ];
 
   return (
     <section id="packages" className="section" ref={sectionRef}>
@@ -58,12 +88,12 @@ export default function Packages({ language = 'ar', whatsapp }) {
       <p className="section-subtitle reveal">{copy.subtitle}</p>
 
       <div className="packages-grid">
-        {packages.map((pkg, idx) => (
+        {resolvedPackages.map((pkg, idx) => (
           <div key={pkg.id} className={`package-card reveal ${pkg.popular ? 'popular' : ''}`} style={{ transitionDelay: `${idx * 0.2}s` }}>
             {pkg.popular && <div className="popular-badge">{copy.popular}</div>}
             <h3 className="package-name">{pkg.name}</h3>
             <div className="package-price">
-              {pkg.price} <span>{copy.currency}</span>
+              {pkg.price.amount} <span>{pkg.price.currencyLabel}</span>
             </div>
             <ul className="package-features">
               {pkg.features.map((feat, i) => (

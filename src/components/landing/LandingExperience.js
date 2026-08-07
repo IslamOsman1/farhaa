@@ -15,7 +15,7 @@ import FloatingWhatsApp from '@/components/landing/FloatingWhatsApp';
 import { landingCopy } from '@/lib/landing-copy';
 import { extractFaqItems } from '@/lib/site-settings';
 
-export default function LandingExperience({ settings, whatsappNumber }) {
+export default function LandingExperience({ settings, packages = [], whatsappNumber }) {
   const [showSplash, setShowSplash] = useState(true);
   const [language, setLanguage] = useState('ar');
   const [darkMode, setDarkMode] = useState(false);
@@ -75,7 +75,7 @@ export default function LandingExperience({ settings, whatsappNumber }) {
           <Hero whatsapp={whatsappNumber} language={language} />
           <TemplatesShowcase language={language} />
           <Features language={language} />
-          <Packages language={language} whatsapp={whatsappNumber} />
+          <Packages language={language} packages={packages} whatsapp={whatsappNumber} />
           <HowItWorks language={language} />
           <FaqSection items={faqItems} language={language} />
           <Contact whatsapp={whatsappNumber} language={language} />

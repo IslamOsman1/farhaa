@@ -19,8 +19,23 @@ async function loadSiteSettingsWithTimeout(timeoutMs = 3000) {
   return Promise.race([prisma.siteSettings.findFirst(), timeoutPromise]);
 }
 
+async function loadPackagesWithTimeout(timeoutMs = 3000) {
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`Packages query timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  return Promise.race([
+    prisma.package.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    }),
+    timeoutPromise,
+  ]);
+}
+
 export default async function LandingPage() {
   let settings = null;
+  let packages = [];
 
   try {
     settings = await loadSiteSettingsWithTimeout();
@@ -28,7 +43,13 @@ export default async function LandingPage() {
     console.error('Failed to load site settings:', error);
   }
 
+  try {
+    packages = await loadPackagesWithTimeout();
+  } catch (error) {
+    console.error('Failed to load packages:', error);
+  }
+
   const whatsappNumber = settings?.whatsapp || '201001473345';
 
-  return <LandingExperience settings={settings} whatsappNumber={whatsappNumber} />;
+  return <LandingExperience settings={settings} packages={packages} whatsappNumber={whatsappNumber} />;
 }
