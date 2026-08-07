@@ -149,6 +149,11 @@
     brideName: { method: 'text', selector: '#brideName, #heroBride' },
     bride: { method: 'text', selector: '#brideName, #heroBride' },
     guestName: { method: 'text', selector: '#env-guest-name' },
+    openingKicker: { method: 'text', selector: '#coverKicker, .cover__kick, .cover-kicker, .env__kicker, .preloader-cta__label', skipIfEmpty: true },
+    openingNames: { method: 'text', selector: '#coverNames, .cover__names, .env__names, .cover-names', skipIfEmpty: true },
+    openingHint: { method: 'text', selector: '#coverHint, #knockHint, .cover__hint, .env__hint, .preloader-text, .tap-hint', skipIfEmpty: true },
+    openingPoem: { method: 'text', selector: '.cover__poem', skipIfEmpty: true },
+    openingEyebrow: { method: 'text', selector: '.hero__eyebrow', skipIfEmpty: true },
     welcomeMessage: { method: 'text', selector: '#heroInvite, #heroSubtitle' },
     heroSub: { method: 'text', selector: '#heroSub, #heroInvite, #heroSubtitle' },
     verseText: { method: 'text', selector: '#verseText' },
@@ -402,6 +407,10 @@
   }
 
   function applyBinding(binding, value, fields) {
+    if (binding.skipIfEmpty && (value === '' || value == null)) {
+      return;
+    }
+
     switch (binding.method) {
       case 'text':
         setText(binding.selector, value);
