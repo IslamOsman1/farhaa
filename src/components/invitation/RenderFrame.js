@@ -52,6 +52,7 @@ export default function RenderFrame({
     }
     if (renderConfig?.opening?.slug === 'no-opening' || renderConfig?.opening?.type === 'template-opening') {
       params.set('farhaOpening', '0');
+      params.set('autoopen', '1');
     }
 
     const query = params.toString();
