@@ -33,7 +33,6 @@
       #opening-screen,
       #cover,
       #gate,
-      #stage,
       #envelope,
       #env,
       #preloaderPoster,
@@ -57,13 +56,7 @@
       #site,
       .site,
       #allrecords,
-      .invite,
-      #stage,
-      .stage,
-      .card,
-      .wrap,
-      .sheet,
-      .hero {
+      .invite {
         display: block !important;
         opacity: 1 !important;
         visibility: visible !important;
@@ -793,7 +786,7 @@
   }
 
   function hideNativeOpeningLayers() {
-    queryAll('#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #stage, #envelope, #env').forEach((node) => {
+    queryAll('#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #envelope, #env').forEach((node) => {
       node.style.display = 'none';
       node.classList?.add('hidden');
       node.classList?.add('fade-out');
@@ -818,7 +811,7 @@
       node.style.pointerEvents = 'auto';
       node.style.display = '';
     });
-    queryAll('#site, .site, #allrecords, #stage, .stage, .card, .wrap, .sheet, .hero').forEach((node) => {
+    queryAll('#site, .site, #allrecords, .stage, .card, .wrap, .sheet, .hero').forEach((node) => {
       node.classList?.add('visible');
       node.classList?.add('is-visible', 'is-ready', 'is-in', 'is-clear');
       node.classList?.remove('hidden', 'hidden-opacity', 'locked');
@@ -826,7 +819,6 @@
       node.style.opacity = '1';
       node.style.visibility = 'visible';
       node.style.pointerEvents = 'auto';
-      node.style.display = '';
     });
     document.body.classList.remove('locked');
     unlockPageScroll();
