@@ -53,9 +53,17 @@
       }
       #invitation-container,
       #main-content,
+      #invite,
       #site,
       .site,
-      #allrecords {
+      #allrecords,
+      .invite,
+      #stage,
+      .stage,
+      .card,
+      .wrap,
+      .sheet,
+      .hero {
         display: block !important;
         opacity: 1 !important;
         visibility: visible !important;
@@ -63,9 +71,12 @@
       }
       #main-content.opacity-0,
       #invitation-container.hidden,
+      #invite.hidden,
       #main-content.hidden,
       #site.hidden,
-      #allrecords.hidden {
+      #allrecords.hidden,
+      .invite.hidden,
+      #invite[aria-hidden="true"] {
         opacity: 1 !important;
       }
     `;
@@ -797,15 +808,20 @@
       node.classList?.add('hidden');
       node.classList?.add('fade-out');
     });
-    queryAll('#invitation-container, #main-content').forEach((node) => {
+    queryAll('#invitation-container, #main-content, #invite, .invite').forEach((node) => {
       node.classList.remove('hidden', 'hidden-opacity');
+      node.classList.add('visible', 'is-visible', 'is-ready');
+      node.setAttribute?.('aria-hidden', 'false');
+      node.hidden = false;
       node.style.opacity = '1';
+      node.style.visibility = 'visible';
       node.style.pointerEvents = 'auto';
       node.style.display = '';
     });
-    queryAll('#site, .site, #allrecords').forEach((node) => {
+    queryAll('#site, .site, #allrecords, #stage, .stage, .card, .wrap, .sheet, .hero').forEach((node) => {
       node.classList?.add('visible');
-      node.classList?.remove('hidden', 'hidden-opacity');
+      node.classList?.add('is-visible', 'is-ready', 'is-in', 'is-clear');
+      node.classList?.remove('hidden', 'hidden-opacity', 'locked');
       node.hidden = false;
       node.style.opacity = '1';
       node.style.visibility = 'visible';
