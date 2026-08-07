@@ -39,8 +39,18 @@ function ensureSealMonogram(brideName, groomName) {
   const sealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
   if (!sealLink) return;
 
-  if (getComputedStyle(sealLink).position === 'static') {
-    sealLink.style.position = 'relative';
+  sealLink.style.position = 'relative';
+  sealLink.style.display = 'block';
+  sealLink.style.width = '100%';
+  sealLink.style.height = '100%';
+  sealLink.style.overflow = 'hidden';
+
+  const sealImage = query('img', sealLink);
+  if (sealImage) {
+    sealImage.style.display = 'block';
+    sealImage.style.width = '100%';
+    sealImage.style.height = '100%';
+    sealImage.style.objectFit = 'contain';
   }
 
   let monogram = sealLink.querySelector('[data-farha-seal-monogram]');
@@ -48,19 +58,24 @@ function ensureSealMonogram(brideName, groomName) {
     monogram = document.createElement('span');
     monogram.setAttribute('data-farha-seal-monogram', 'true');
     monogram.style.position = 'absolute';
-    monogram.style.inset = '0';
+    monogram.style.top = '50%';
+    monogram.style.left = '50%';
+    monogram.style.width = '100%';
+    monogram.style.height = '100%';
     monogram.style.display = 'flex';
     monogram.style.alignItems = 'center';
     monogram.style.justifyContent = 'center';
     monogram.style.pointerEvents = 'none';
+    monogram.style.zIndex = '4';
     monogram.style.fontFamily = '"Times New Roman", "Georgia", serif';
     monogram.style.fontStyle = 'italic';
     monogram.style.fontWeight = '600';
-    monogram.style.fontSize = '42px';
-    monogram.style.letterSpacing = '1px';
+    monogram.style.fontSize = '46px';
+    monogram.style.letterSpacing = '1.5px';
+    monogram.style.lineHeight = '1';
     monogram.style.color = '#d9b56b';
-    monogram.style.textShadow = '0 1px 0 rgba(92, 25, 35, 0.5), 0 0 8px rgba(246, 223, 159, 0.18)';
-    monogram.style.transform = 'translateY(2px)';
+    monogram.style.textShadow = '0 1px 0 rgba(92, 25, 35, 0.55), 0 0 10px rgba(246, 223, 159, 0.22)';
+    monogram.style.transform = 'translate(-50%, -50%)';
     sealLink.appendChild(monogram);
   }
 
