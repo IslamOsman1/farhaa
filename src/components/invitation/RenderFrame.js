@@ -50,10 +50,13 @@ export default function RenderFrame({
     if (!showPromoBar) {
       params.set('farhaPromoBar', '0');
     }
+    if (renderConfig?.opening?.slug === 'no-opening' || renderConfig?.opening?.type === 'template-opening') {
+      params.set('farhaOpening', '0');
+    }
 
     const query = params.toString();
     return `/${templateSlug}/index.html${query ? `?${query}` : ''}`;
-  }, [showPromoBar, templateSlug]);
+  }, [renderConfig?.opening?.slug, renderConfig?.opening?.type, showPromoBar, templateSlug]);
   const openingFrameSrc = useMemo(() => {
     if (!sourceTemplateSlug) {
       return '';

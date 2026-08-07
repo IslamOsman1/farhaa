@@ -222,6 +222,14 @@ function MediaSummaryCard({ label, value, type, onClear, onChange }) {
   );
 }
 
+const QUICK_MEDIA_KEYS = new Set([
+  'venueImage',
+  'images.hero',
+  'images.background',
+  'images.venue',
+  'musicUrl',
+]);
+
 export default function StudioClient({ session, manifests, openings, inventory }) {
   const router = useRouter();
   const [draft, setDraft] = useState(session.draft);
@@ -443,6 +451,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
     const sectionMeta = SECTION_META[sectionKey];
     const isOpen = openSection === sectionKey;
     const fields = groupedFields[sectionKey] || [];
+    const visibleFields = sectionKey === 'media'
+      ? fields.filter((field) => !QUICK_MEDIA_KEYS.has(field.key))
+      : fields;
 
     return (
       <section key={sectionKey} className={`studio-accordion ${isOpen ? 'open' : ''}`}>
@@ -597,6 +608,20 @@ export default function StudioClient({ session, manifests, openings, inventory }
             {sectionKey === 'media' ? (
               <div className="studio-media-grid">
                 <MediaSummaryCard
+                  label="صورة العروسين داخل القالب"
+                  type="image"
+                  value={draft.contentConfig['images.hero']}
+                  onChange={(value) => setContentValue('images.hero', value)}
+                  onClear={() => setContentValue('images.hero', '')}
+                />
+                <MediaSummaryCard
+                  label="خلفية المشهد"
+                  type="image"
+                  value={draft.contentConfig['images.background']}
+                  onChange={(value) => setContentValue('images.background', value)}
+                  onClear={() => setContentValue('images.background', '')}
+                />
+                <MediaSummaryCard
                   label="صورة الغلاف"
                   type="image"
                   value={draft.contentConfig.venueImage}
@@ -610,12 +635,19 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   onChange={(value) => setContentValue('musicUrl', value)}
                   onClear={() => setContentValue('musicUrl', '')}
                 />
+                <MediaSummaryCard
+                  label="صورة القاعة"
+                  type="image"
+                  value={draft.contentConfig['images.venue']}
+                  onChange={(value) => setContentValue('images.venue', value)}
+                  onClear={() => setContentValue('images.venue', '')}
+                />
               </div>
             ) : null}
 
-            {fields.length > 0 ? (
+            {visibleFields.length > 0 ? (
               <div className="studio-form-grid">
-                {fields.map((field) => (
+                {visibleFields.map((field) => (
                   <label
                     key={field.key}
                     className={`studio-field ${field.type === 'textarea' || field.type === 'gallery' || field.type === 'schedule' || field.type === 'list' ? 'studio-field--full' : ''}`}

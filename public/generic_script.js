@@ -1,6 +1,7 @@
 (() => {
   const initialSearchParams = new URLSearchParams(window.location.search);
   const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
+  const initialOpeningDisabled = initialSearchParams.get('farhaOpening') === '0';
 
   if (initialPromoBarDisabled && !document.getElementById('farha-disable-promo-style')) {
     const style = document.createElement('style');
@@ -16,6 +17,47 @@
       }
       body {
         padding-bottom: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  if (initialOpeningDisabled && !document.getElementById('farha-disable-opening-style')) {
+    const style = document.createElement('style');
+    style.id = 'farha-disable-opening-style';
+    style.textContent = `
+      #envelope-screen,
+      #intro-layer,
+      #popup-overlay,
+      #preloader,
+      #opening-screen,
+      #preloaderPoster,
+      #preloaderVideo,
+      #doorGlow,
+      #preloaderWhite,
+      #preloaderNight,
+      #poster-container {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+      #invitation-container,
+      #main-content,
+      #site,
+      .site,
+      #allrecords {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+      }
+      #main-content.opacity-0,
+      #invitation-container.hidden,
+      #main-content.hidden,
+      #site.hidden,
+      #allrecords.hidden {
+        opacity: 1 !important;
       }
     `;
     document.head.appendChild(style);
@@ -88,9 +130,9 @@
     hashtag: { method: 'text', selector: '#closingHashtag' },
     closingFamilies: { method: 'text', selector: '#closingFamilies' },
     venueImage: { method: 'backgroundImage', selector: '#venuePhoto, #venueImage' },
-    'images.hero': { method: 'media', selector: '#heroPhotoImg' },
-    'images.background': { method: 'media', selector: '#coverBg .bg-photo, #coverBg img.bg-photo' },
-    'images.venue': { method: 'backgroundImage', selector: '#venuePhoto, #venueImage' },
+    'images.hero': { method: 'media', selector: '#heroPhotoImg, [data-farha-slot="hero-image"]' },
+    'images.background': { method: 'media', selector: '#coverBg .bg-photo, #coverBg img.bg-photo, [data-farha-slot="background-image"]' },
+    'images.venue': { method: 'backgroundImage', selector: '#venuePhoto, #venueImage, [data-farha-slot="venue-image"]' },
     musicUrl: { method: 'media', selector: '#bgMusic, #invitation-audio' },
     galleryImages: { method: 'gallery', selector: '#galleryGrid, .mem-grid' },
     program: { method: 'schedule', selector: '#timeline, .program' },
@@ -110,6 +152,9 @@
 
     hideLegacyTemplateBars();
     setupNativeOpeningGuard();
+    if (initialOpeningDisabled) {
+      hideNativeOpeningLayers();
+    }
     if (!runtimeState.showPromoBar) {
       startPromoGuard();
     }
@@ -452,7 +497,7 @@
 
   function applyMediaVisibility(fields) {
     if (fields['images.hero']) {
-      queryAll('#heroPhoto').forEach((node) => {
+      queryAll('#heroPhoto, [data-farha-slot="hero-image-wrapper"]').forEach((node) => {
         node.hidden = false;
         node.style.display = '';
       });

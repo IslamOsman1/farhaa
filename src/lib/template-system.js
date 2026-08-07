@@ -725,7 +725,7 @@ const sharedFields = [
     section: 'media',
     bindTo: 'images.hero',
     bindingMethod: 'media',
-    selector: '#heroPhotoImg',
+    selector: '#heroPhotoImg, [data-farha-slot="hero-image"]',
     shareOnTemplateSwitch: true,
   },
   {
@@ -737,7 +737,7 @@ const sharedFields = [
     section: 'media',
     bindTo: 'images.background',
     bindingMethod: 'media',
-    selector: '#coverBg .bg-photo, #coverBg img.bg-photo',
+    selector: '#coverBg .bg-photo, #coverBg img.bg-photo, [data-farha-slot="background-image"]',
     shareOnTemplateSwitch: true,
   },
   {
@@ -749,7 +749,7 @@ const sharedFields = [
     section: 'media',
     bindTo: 'images.venue',
     bindingMethod: 'backgroundImage',
-    selector: '#venuePhoto, #venueImage',
+    selector: '#venuePhoto, #venueImage, [data-farha-slot="venue-image"]',
     shareOnTemplateSwitch: true,
   },
   {
