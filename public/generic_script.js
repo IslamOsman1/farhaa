@@ -1146,12 +1146,10 @@
       .hero__scroll,
       .venue__btn,
       .contact__link,
-      #musicToggle,
-      #farha-runtime-audio-toggle {
+      #musicToggle {
         ${theme.accentColor ? `border-color: ${theme.accentColor} !important;` : ''}
       }
       #musicToggle,
-      #farha-runtime-audio-toggle,
       .venue__btn,
       .hero__scroll {
         ${theme.accentColor ? `background: ${theme.accentColor} !important;` : ''}
@@ -1234,16 +1232,8 @@
   function ensureMusicControls(musicUrl) {
     if (!musicUrl) return;
 
-    let audio = findPrimaryAudio();
-
-    if (!audio) {
-      audio = document.createElement('audio');
-      audio.id = 'farha-runtime-audio';
-      audio.loop = true;
-      audio.preload = 'auto';
-      audio.style.display = 'none';
-      document.body.appendChild(audio);
-    }
+    const audio = findPrimaryAudio();
+    if (!audio) return;
 
     if (audio.getAttribute('src') !== musicUrl) {
       audio.setAttribute('src', musicUrl);
@@ -1254,7 +1244,6 @@
     }
 
     revealNativeAudioButtons();
-    ensureRuntimeAudioToggle(audio);
   }
 
   function applySections(manifest, sectionConfig) {
