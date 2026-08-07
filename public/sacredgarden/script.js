@@ -20,6 +20,41 @@ function setText(selector, value, root = document) {
   });
 }
 
+function setHtmlMany(selectors, value) {
+  selectors.forEach((selector) => setHtml(selector, value));
+}
+
+function setTextMany(selectors, value) {
+  selectors.forEach((selector) => setText(selector, value));
+}
+
+function formatDisplayDate(dateValue) {
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) return '';
+
+  return parsedDate
+    .toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+    })
+    .replace(/\//g, '.');
+}
+
+function getCountdownParts(targetDate) {
+  if (!(targetDate instanceof Date) || Number.isNaN(targetDate.getTime())) {
+    return { days: '00', hours: '00', minutes: '00', seconds: '00' };
+  }
+
+  const diff = Math.max(0, targetDate.getTime() - Date.now());
+  return {
+    days: String(Math.floor(diff / 86400000)).padStart(2, '0'),
+    hours: String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0'),
+    minutes: String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0'),
+    seconds: String(Math.floor((diff % 60000) / 1000)).padStart(2, '0'),
+  };
+}
+
 function buildCountdownMarkup(dateValue) {
   const targetDate = new Date(dateValue);
   const initialParts = getCountdownParts(targetDate);
@@ -107,96 +142,119 @@ function buildCountdownMarkup(dateValue) {
   </html>`;
 }
 
-function getCountdownParts(targetDate) {
-  if (!(targetDate instanceof Date) || Number.isNaN(targetDate.getTime())) {
-    return { days: '00', hours: '00', minutes: '00', seconds: '00' };
-  }
-
-  const diff = Math.max(0, targetDate.getTime() - Date.now());
-  return {
-    days: String(Math.floor(diff / 86400000)).padStart(2, '0'),
-    hours: String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0'),
-    minutes: String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0'),
-    seconds: String(Math.floor((diff % 60000) / 1000)).padStart(2, '0'),
-  };
-}
-
 function applySacredGardenConfig() {
   const config = window.__INVITE__?.config;
   if (!config) return;
 
   const groom = config.groomName || config.groom || '';
   const bride = config.brideName || config.bride || '';
-  const dateValue = config.weddingDate || config.date || '';
+  const combinedNames = [groom, bride].filter(Boolean).join(' <br /><br />');
+  const inlineNames = [groom, bride].filter(Boolean).join(' and ');
+
+  const displayDate = formatDisplayDate(config.weddingDate || config.date || '');
+  const openingTitle = config.openingKicker || config.titleInvitation || '';
+  const openingHint = config.openingHint || '';
+  const introLine = config.welcomeMessage || config.heroSub || '';
+  const invitationText = config.invitationText || '';
+  const openingPoem = config.openingPoem || config.poemText || '';
+  const scrollText = config.openingNames || config.ctaText || '';
+  const titleCountdown = config.titleCountdown || '';
+  const titleVenue = config.titleVenue || '';
+  const titleRsvp = config.contactLabel || config.rsvpTitle || '';
+  const rsvpDescription = config.contactName || config.rsvpDescription || '';
+  const recapTitle = config.titleNotes || config.recapTitle || '';
   const venueName = config.venueName || '';
   const venueAddress = config.venueAddress || config.venueAddr || '';
-  const invitationText = config.invitationText || '';
-  const openingHint = config.openingHint || '';
-  const openingTitle = config.openingKicker || config.titleInvitation || '';
-  const scrollText = config.openingNames || '';
-  const introLine = config.welcomeMessage || config.heroSub || '';
 
-  if (groom || bride) {
-    const combined = [groom, bride].filter(Boolean).join(' <br /><br />');
-    const inlineCombined = [groom, bride].filter(Boolean).join(' and ');
-
-    setHtml('[data-elem-id="1763402147625"] .tn-atom', combined);
-    setText('[data-elem-id="1772813849329000001"] .tn-atom', inlineCombined);
+  if (combinedNames) {
+    setHtml('#rec2487446043 [data-elem-id="1763402147625"] .tn-atom', combinedNames);
   }
 
-  if (dateValue) {
-    const parsedDate = new Date(dateValue);
-    if (!Number.isNaN(parsedDate.getTime())) {
-      const longDate = parsedDate.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit',
-      }).replace(/\//g, '.');
+  if (inlineNames) {
+    setText('#rec2487446253 [data-elem-id="1772813849329000001"] .tn-atom', inlineNames);
+  }
 
-      setText('[data-elem-id="176340401720454780"] .tn-atom', longDate);
-
-      const countdownHost = query('[data-elem-id="1771277551711000001"] .tn-atom__html');
-      if (countdownHost) {
-        countdownHost.innerHTML = buildCountdownMarkup(parsedDate.toISOString());
-      }
-    }
+  if (displayDate) {
+    setText('#rec2487446043 [data-elem-id="176340401720454780"] .tn-atom', displayDate);
   }
 
   if (openingTitle) {
-    setText('[data-elem-id="176340398328864790"] .tn-atom', openingTitle);
+    setText('#rec2487446043 [data-elem-id="176340398328864790"] .tn-atom', openingTitle);
   }
 
   if (introLine) {
-    setHtml('[data-elem-id="1780748008617000003"] .tn-atom', String(introLine).replace(/\n/g, '<br />'));
+    setHtml('#rec2487446043 [data-elem-id="1780748008617000003"] .tn-atom', String(introLine).replace(/\n/g, '<br />'));
   }
 
   if (invitationText) {
-    setHtml('[data-elem-id="1780748008617000005"] .tn-atom', String(invitationText).replace(/\n/g, '<br />'));
+    setHtmlMany(
+      [
+        '#rec2487446043 [data-elem-id="1780748008617000005"] .tn-atom',
+        '#rec2487446233 .t702__descr',
+      ],
+      String(invitationText).replace(/\n/g, '<br />'),
+    );
+  }
+
+  if (openingPoem) {
+    setHtml('#rec2487446223 [data-elem-id="1772813849329000001"] .tn-atom', String(openingPoem).replace(/\n/g, '<br />'));
   }
 
   if (scrollText) {
-    setText('[data-elem-id="1782235970225000002"] .tn-atom', scrollText);
+    setTextMany(
+      [
+        '#rec2487446043 [data-elem-id="1782235970225000002"] .tn-atom',
+        '#rec2487446223 [data-elem-id="1782316019612"] .tn-atom',
+      ],
+      scrollText,
+    );
+  }
+
+  if (titleCountdown) {
+    setText('#rec2487446093 [data-elem-id="1771277026942000001"] .tn-atom', titleCountdown);
+  }
+
+  if (titleVenue) {
+    setText('#rec2487446123 [data-elem-id="1771277026942000001"] .tn-atom', titleVenue);
+  }
+
+  if (titleRsvp) {
+    setTextMany(
+      [
+        '#rec2487446223 [data-elem-id="1763405219328"] .tn-atom',
+        '#popuptitle_2487446233',
+      ],
+      titleRsvp,
+    );
+  }
+
+  if (rsvpDescription) {
+    setHtml('#rec2487446233 .t702__descr', String(rsvpDescription).replace(/\n/g, '<br />'));
+  }
+
+  if (recapTitle) {
+    setText('#rec2487446253 [data-elem-id="1763405219328"] .tn-atom', recapTitle);
   }
 
   if (venueName) {
-    setText('[data-elem-id="1772804808869"] .tn-atom', venueName);
+    setText('#rec2487446123 [data-elem-id="1772804808869"] .tn-atom', venueName);
   }
 
   if (venueAddress) {
     const normalizedAddress = /^address:/i.test(venueAddress) ? venueAddress : `Address: ${venueAddress}`;
-    setText('[data-elem-id="1772813480591000001"] .tn-atom', normalizedAddress);
-  }
-
-  if (config.titleVenue) {
-    setText('[data-elem-id="1771277026942000001"] .tn-atom', config.titleVenue);
-  }
-
-  if (config.titleCountdown) {
-    setText('[data-elem-id="1763405219328"] .tn-atom', config.titleCountdown);
+    setText('#rec2487446123 [data-elem-id="1772813480591000001"] .tn-atom', normalizedAddress);
   }
 
   if (openingHint) {
     setText('#weiTapLabel', openingHint);
+  }
+
+  const countdownHost = query('#rec2487446093 [data-elem-id="1771277551711000001"] .tn-atom__html');
+  if (countdownHost && (config.weddingDate || config.date)) {
+    const parsedDate = new Date(config.weddingDate || config.date);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      countdownHost.innerHTML = buildCountdownMarkup(parsedDate.toISOString());
+    }
   }
 
   const music = query('#weiAudio');
@@ -206,7 +264,7 @@ function applySacredGardenConfig() {
     queryAll('source', music).forEach((sourceNode) => {
       sourceNode.setAttribute('src', musicUrl);
     });
-    music.load?.();
+    if (typeof music.load === 'function') music.load();
   }
 }
 
@@ -215,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('message', (event) => {
     if (event.origin !== window.location.origin) return;
-
     if (event.data?.type === 'FARHA_RENDER_CONFIG') {
       window.setTimeout(applySacredGardenConfig, 60);
     }
@@ -228,12 +285,16 @@ document.addEventListener('DOMContentLoaded', () => {
       groom: config.groomName || config.groom || '',
       bride: config.brideName || config.bride || '',
       date: config.weddingDate || config.date || '',
+      invitationText: config.invitationText || '',
+      openingPoem: config.openingPoem || config.poemText || '',
+      musicUrl: config.musicUrl || '',
       venueName: config.venueName || '',
       venueAddress: config.venueAddress || config.venueAddr || '',
-      invitationText: config.invitationText || '',
-      musicUrl: config.musicUrl || '',
-      titleVenue: config.titleVenue || '',
+      openingTitle: config.openingKicker || config.titleInvitation || '',
       titleCountdown: config.titleCountdown || '',
+      titleVenue: config.titleVenue || '',
+      titleRsvp: config.contactLabel || config.rsvpTitle || '',
+      recapTitle: config.titleNotes || config.recapTitle || '',
     });
 
     if (signature !== lastSignature) {
@@ -268,13 +329,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (normalizedKey.includes('name') || normalizedKey.includes('nom')) {
           data.guestName = val;
-        } else if (normalizedKey.includes('attend') || normalizedKey.includes('come') || normalizedKey.includes('presence') || normalizedKey.includes('viens')) {
-          if (normalizedValue.includes('yes') || normalizedValue.includes('accept') || normalizedValue.includes('oui') || normalizedValue.includes('pleasure') || normalizedValue.includes('will')) {
+        } else if (
+          normalizedKey.includes('attend') ||
+          normalizedKey.includes('come') ||
+          normalizedKey.includes('presence') ||
+          normalizedKey.includes('viens')
+        ) {
+          if (
+            normalizedValue.includes('yes') ||
+            normalizedValue.includes('accept') ||
+            normalizedValue.includes('oui') ||
+            normalizedValue.includes('pleasure') ||
+            normalizedValue.includes('will')
+          ) {
             data.status = 'confirmed';
-          } else if (normalizedValue.includes('no') || normalizedValue.includes('decline') || normalizedValue.includes('non') || normalizedValue.includes('regret') || normalizedValue.includes('not')) {
+          } else if (
+            normalizedValue.includes('no') ||
+            normalizedValue.includes('decline') ||
+            normalizedValue.includes('non') ||
+            normalizedValue.includes('regret') ||
+            normalizedValue.includes('not')
+          ) {
             data.status = 'declined';
           }
-        } else if (normalizedKey.includes('guest') || normalizedKey.includes('companion') || normalizedKey.includes('person') || normalizedKey.includes('number') || normalizedKey.includes('combien')) {
+        } else if (
+          normalizedKey.includes('guest') ||
+          normalizedKey.includes('companion') ||
+          normalizedKey.includes('person') ||
+          normalizedKey.includes('number') ||
+          normalizedKey.includes('combien')
+        ) {
           const parsed = parseInt(val, 10);
           if (!Number.isNaN(parsed)) {
             data.companions = parsed;
