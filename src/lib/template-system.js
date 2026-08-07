@@ -234,7 +234,7 @@ const CORE_OPENING_LIBRARY = [
   },
 ];
 
-const TEMPLATE_OPENING_LIBRARY = SHARED_TEMPLATE_DEFINITIONS.map((definition, index) => ({
+const TEMPLATE_OPENING_LIBRARY = SHARED_TEMPLATE_DEFINITIONS.filter((definition) => definition.sourceType === 'structured-static').map((definition, index) => ({
   slug: `template-opening:${definition.slug}`,
   name: `${definition.name} Opening`,
   nameAr: `افتتاحية ${definition.nameAr}`,
