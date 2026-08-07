@@ -39,9 +39,6 @@
       #preloaderPoster,
       #preloaderVideo,
       #doorVid,
-      #heroVid,
-      #loopVid,
-      #flightVid,
       #doorGlow,
       #preloaderWhite,
       #preloaderNight,
@@ -827,7 +824,7 @@
       node.classList?.add('is-revealed');
       node.classList?.add('is-arrived');
     });
-    queryAll('#preloaderPoster, #preloaderVideo, #doorGlow, #preloaderWhite, #preloaderNight, #poster-container, #doorVid, #heroVid, #loopVid, #flightVid').forEach((node) => {
+    queryAll('#preloaderPoster, #preloaderVideo, #doorGlow, #preloaderWhite, #preloaderNight, #poster-container, #doorVid').forEach((node) => {
       node.style.display = 'none';
       node.classList?.add('hidden');
       node.classList?.add('fade-out');
