@@ -2,6 +2,7 @@
   const initialSearchParams = new URLSearchParams(window.location.search);
   const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
   const initialOpeningDisabled = initialSearchParams.get('farhaOpening') === '0';
+  const initialOpeningOnly = initialSearchParams.get('farhaOpeningOnly') === '1';
 
   if (initialPromoBarDisabled && !document.getElementById('farha-disable-promo-style')) {
     const style = document.createElement('style');
@@ -71,6 +72,36 @@
       .invite.hidden,
       #invite[aria-hidden="true"] {
         opacity: 1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  if (initialOpeningOnly && !document.getElementById('farha-opening-only-style')) {
+    const style = document.createElement('style');
+    style.id = 'farha-opening-only-style';
+    style.textContent = `
+      #invitation-container,
+      #main-content,
+      #invite,
+      #site,
+      .site,
+      #allrecords,
+      .invite,
+      .hero,
+      #hero,
+      .stage,
+      #stage,
+      .card,
+      .wrap,
+      .sheet {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+      }
+      body {
+        overflow: hidden !important;
       }
     `;
     document.head.appendChild(style);

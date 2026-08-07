@@ -64,6 +64,7 @@ export default function RenderFrame({
 
     const params = new URLSearchParams();
     params.set('farhaPromoBar', '0');
+    params.set('farhaOpeningOnly', '1');
     return `/${sourceTemplateSlug}/index.html?${params.toString()}`;
   }, [sourceTemplateSlug]);
 
