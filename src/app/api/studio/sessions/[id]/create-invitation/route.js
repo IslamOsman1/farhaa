@@ -52,7 +52,12 @@ export async function POST(request, { params }) {
     const themeConfig = session.config?.themeConfig || {};
     const sectionConfig = session.config?.sectionConfig || {};
     const openingConfig = session.selectedOpeningConfig || session.config?.openingConfig || {};
-    const legacyStory = buildLegacyStoryFromContentConfig(contentConfig);
+    const uiConfig = session.config?.uiConfig || { bilingualEnabled: false, defaultLocale: 'ar' };
+    const contentConfigWithUi = {
+      ...contentConfig,
+      __uiConfig: uiConfig,
+    };
+    const legacyStory = buildLegacyStoryFromContentConfig(contentConfigWithUi);
 
     const invitation = await prisma.invitation.create({
       data: {
@@ -73,7 +78,8 @@ export async function POST(request, { params }) {
         musicUrl: contentConfig.musicUrl || null,
         coverImage: contentConfig.venueImage || null,
         status: 'DRAFT',
-        contentConfig,
+        locale: uiConfig.defaultLocale === 'en' ? 'en' : 'ar',
+        contentConfig: contentConfigWithUi,
         themeConfig,
         sectionConfig,
         openingConfig,
@@ -92,7 +98,8 @@ export async function POST(request, { params }) {
         studioSessionId: session.id,
         templateSlug: session.baseTemplate.slug,
         openingSlug: draft.openingSlug,
-        contentConfig,
+        contentConfig: contentConfigWithUi,
+        uiConfig,
         themeConfig,
         sectionConfig,
         openingConfig,

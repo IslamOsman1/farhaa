@@ -36,7 +36,7 @@ function buildPreviewInvitation(session, draft) {
   return {
     id: session.id,
     slug: `studio-${session.id}`,
-    locale: 'ar',
+    locale: draft.uiConfig?.defaultLocale || 'ar',
     groomName: draft.contentConfig.groomName || '',
     brideName: draft.contentConfig.brideName || '',
     weddingDate: draft.contentConfig.weddingDate ? new Date(draft.contentConfig.weddingDate) : null,
@@ -48,15 +48,51 @@ function buildPreviewInvitation(session, draft) {
     themeConfig: draft.themeConfig,
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
+    uiConfig: draft.uiConfig,
     opening: { slug: draft.openingSlug },
     template: { slug: draft.templateSlug },
   };
 }
 
+function getEnglishKey(key) {
+  return `${key}__en`;
+}
+
+function isTranslatableField(field) {
+  return ['text', 'textarea', 'list', 'schedule'].includes(field.type);
+}
+
 function renderField({ field, draft, onContentChange, onScheduleChange, onListChange }) {
   const value = draft.contentConfig[field.key];
+  const bilingualEnabled = Boolean(draft.uiConfig?.bilingualEnabled);
+  const englishKey = getEnglishKey(field.key);
+  const englishValue = draft.contentConfig[englishKey];
 
   if (field.type === 'textarea') {
+    if (bilingualEnabled && isTranslatableField(field)) {
+      return (
+        <div className="studio-bilingual-stack">
+          <label className="studio-subfield">
+            <span>العربي</span>
+            <textarea
+              rows={4}
+              value={value || ''}
+              onChange={(event) => onContentChange(field.key, event.target.value)}
+            />
+          </label>
+          <label className="studio-subfield">
+            <span>English</span>
+            <textarea
+              rows={4}
+              dir="ltr"
+              value={englishValue || ''}
+              onChange={(event) => onContentChange(englishKey, event.target.value)}
+            />
+          </label>
+        </div>
+      );
+    }
+
     return (
       <textarea
         rows={4}
@@ -86,13 +122,27 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             <button
               type="button"
               className="mini-btn danger"
-              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+              onClick={() => {
+                onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index));
+                if (bilingualEnabled) {
+                  onContentChange(englishKey, englishItems.filter((_, itemIndex) => itemIndex !== index));
+                }
+              }}
             >
               حذف
             </button>
           </div>
         ))}
-        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, ''])}>
+        <button
+          type="button"
+          className="mini-btn"
+          onClick={() => {
+            onContentChange(field.key, [...items, '']);
+            if (bilingualEnabled) {
+              onContentChange(englishKey, [...englishItems, '']);
+            }
+          }}
+        >
           إضافة صورة
         </button>
       </div>
@@ -101,6 +151,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
 
   if (field.type === 'schedule') {
     const items = arrayValue(value);
+    const englishItems = arrayValue(englishValue);
     return (
       <div className="array-editor">
         {items.map((item, index) => (
@@ -117,16 +168,39 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
               placeholder="الفقرة"
               onChange={(event) => onScheduleChange(field.key, index, 'title', event.target.value)}
             />
+            {bilingualEnabled ? (
+              <input
+                type="text"
+                dir="ltr"
+                value={englishItems[index]?.title || ''}
+                placeholder="Title (EN)"
+                onChange={(event) => onScheduleChange(englishKey, index, 'title', event.target.value)}
+              />
+            ) : null}
             <button
               type="button"
               className="mini-btn danger"
-              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+              onClick={() => {
+                onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index));
+                if (bilingualEnabled) {
+                  onContentChange(englishKey, englishItems.filter((_, itemIndex) => itemIndex !== index));
+                }
+              }}
             >
               حذف
             </button>
           </div>
         ))}
-        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, { time: '', title: '' }])}>
+        <button
+          type="button"
+          className="mini-btn"
+          onClick={() => {
+            onContentChange(field.key, [...items, { time: '', title: '' }]);
+            if (bilingualEnabled) {
+              onContentChange(englishKey, [...englishItems, { time: '', title: '' }]);
+            }
+          }}
+        >
           إضافة فقرة
         </button>
       </div>
@@ -135,6 +209,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
 
   if (field.type === 'list') {
     const items = arrayValue(value);
+    const englishItems = arrayValue(englishValue);
     return (
       <div className="array-editor">
         {items.map((item, index) => (
@@ -145,16 +220,39 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
               placeholder="عنصر"
               onChange={(event) => onListChange(field.key, index, event.target.value)}
             />
+            {bilingualEnabled ? (
+              <input
+                type="text"
+                dir="ltr"
+                value={englishItems[index] || ''}
+                placeholder="Item (EN)"
+                onChange={(event) => onListChange(englishKey, index, event.target.value)}
+              />
+            ) : null}
             <button
               type="button"
               className="mini-btn danger"
-              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+              onClick={() => {
+                onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index));
+                if (bilingualEnabled) {
+                  onContentChange(englishKey, englishItems.filter((_, itemIndex) => itemIndex !== index));
+                }
+              }}
             >
               حذف
             </button>
           </div>
         ))}
-        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, ''])}>
+        <button
+          type="button"
+          className="mini-btn"
+          onClick={() => {
+            onContentChange(field.key, [...items, '']);
+            if (bilingualEnabled) {
+              onContentChange(englishKey, [...englishItems, '']);
+            }
+          }}
+        >
           إضافة عنصر
         </button>
       </div>
@@ -190,6 +288,30 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
     datetime: 'datetime-local',
     url: 'url',
   }[field.type] || 'text';
+
+  if (bilingualEnabled && isTranslatableField(field) && inputType === 'text') {
+    return (
+      <div className="studio-bilingual-stack">
+        <label className="studio-subfield">
+          <span>العربي</span>
+          <input
+            type="text"
+            value={value || ''}
+            onChange={(event) => onContentChange(field.key, event.target.value)}
+          />
+        </label>
+        <label className="studio-subfield">
+          <span>English</span>
+          <input
+            type="text"
+            dir="ltr"
+            value={englishValue || ''}
+            onChange={(event) => onContentChange(englishKey, event.target.value)}
+          />
+        </label>
+      </div>
+    );
+  }
 
   return (
     <input
@@ -362,6 +484,16 @@ export default function StudioClient({ session, manifests, openings, inventory }
       ...current,
       themeConfig: {
         ...current.themeConfig,
+        [key]: value,
+      },
+    }));
+  }
+
+  function setUiValue(key, value) {
+    setDraft((current) => ({
+      ...current,
+      uiConfig: {
+        ...current.uiConfig,
         [key]: value,
       },
     }));
@@ -688,6 +820,14 @@ export default function StudioClient({ session, manifests, openings, inventory }
             <div className="studio-canvas__badge">{livePreviewBadge}</div>
           </div>
           <div className="studio-toolbar-groups">
+            <label className="studio-boolean-field studio-toolbar-toggle">
+              <input
+                type="checkbox"
+                checked={Boolean(draft.uiConfig?.bilingualEnabled)}
+                onChange={(event) => setUiValue('bilingualEnabled', event.target.checked)}
+              />
+              <span>دعوة بلغتين</span>
+            </label>
             <div className="studio-toolbar-group">
               {Object.entries(DEVICE_PRESETS).map(([key, preset]) => (
                 <button

@@ -128,6 +128,22 @@
     blush: { arabicName: 'وردة' },
   };
 
+  const MUSIC_SELECTORS = [
+    '#bgMusic',
+    '#invitation-audio',
+    '#weiAudio',
+    'audio[data-farha-slot="music"]',
+    'audio[data-role="bg-music"]',
+    'main audio[loop]',
+    '#allrecords audio[loop]',
+  ].join(', ');
+
+  const NATIVE_AUDIO_BUTTON_SELECTORS = [
+    '#musicToggle',
+    '#weiAudioBtn',
+    '#da3wa-music',
+  ].join(', ');
+
   const runtimeState = {
     templateSlug: '',
     manifest: null,
@@ -139,6 +155,12 @@
     promoBarMounted: false,
     scrollLocked: false,
     lockedScrollY: 0,
+    themeStyleTag: null,
+    audioToggle: null,
+    audioSyncHandler: null,
+    baseFields: null,
+    activeLocale: 'ar',
+    languageToggle: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -184,7 +206,7 @@
     'images.hero': { method: 'media', selector: '#heroPhotoImg, [data-farha-slot="hero-image"]' },
     'images.background': { method: 'media', selector: '#coverBg .bg-photo, #coverBg img.bg-photo, [data-farha-slot="background-image"]' },
     'images.venue': { method: 'backgroundImage', selector: '#venuePhoto, #venueImage, [data-farha-slot="venue-image"]' },
-    musicUrl: { method: 'media', selector: '#bgMusic, #invitation-audio' },
+    musicUrl: { method: 'media', selector: MUSIC_SELECTORS },
     galleryImages: { method: 'gallery', selector: '#galleryGrid, .mem-grid' },
     program: { method: 'schedule', selector: '#timeline, .program' },
     notes: { method: 'list', selector: '#notesList' },
@@ -196,6 +218,64 @@
     groomRelationName: { method: 'text', selector: '#groomRelationName' },
     brideRelationLabel: { method: 'text', selector: '#brideRelationLabel' },
     brideRelationName: { method: 'text', selector: '#brideRelationName' },
+  };
+
+  const STATIC_FIELD_TRANSLATIONS = {
+    openingKicker: {
+      selector: '#coverKicker, .cover__kick, .cover-kicker, .env__kicker, .preloader-cta__label',
+      en: 'Wedding Invitation',
+    },
+    openingHint: {
+      selector: '#coverHint, #knockHint, .cover__hint, .env__hint, .preloader-text, .tap-hint',
+      en: 'Tap to open the invitation',
+    },
+    titleInvitation: {
+      selector: '.invitation .sec__title, .invitation .section__title, .sheet__kick, .card__kick, .sec-title span',
+      en: 'Invitation',
+    },
+    titleCountdown: {
+      selector: '.count .sec__title, .when .section__title, .countdown-title, #countdownTitle',
+      en: 'Countdown',
+    },
+    titleProgram: {
+      selector: '.program .sec__title, .program .section__title, #program-section h2, .program-title',
+      en: 'Event Schedule',
+    },
+    titleVenue: {
+      selector: '.venue .sec__title, .venue .section__title, #venue-section h2, .venue-title',
+      en: 'Venue',
+    },
+    titleNotes: {
+      selector: '.notes .sec__title, .notes .section__title, #notes-section h2, .notes-title',
+      en: 'Notes',
+    },
+    contactLabel: {
+      selector: '#contactLabel, .contact__label, .rsvp-title',
+      en: 'Contact & RSVP',
+    },
+  };
+
+  const STATIC_TEXT_TRANSLATIONS = {
+    en: {
+      'بطاقة دعوة': 'Invitation Card',
+      'باب على فرحنا': 'A Door to Our Joy',
+      'مكان الحفل': 'Venue',
+      'المكان': 'Venue',
+      'المكان والزمان': 'Venue & Time',
+      'العد التنازلي': 'Countdown',
+      'العائلات': 'Families',
+      'عائلاتنا': 'Our Families',
+      'البرنامج': 'Event Schedule',
+      'تفاصيل الدعوة': 'Invitation Details',
+      'تأكيد الحضور': 'RSVP',
+      'للتواصل والتأكيد': 'Contact & RSVP',
+      'اضغط لفتح الدعوة': 'Tap to open the invitation',
+      'اضغط لفتح الدعوة...': 'Tap to open the invitation',
+      'اضغط على الشاشة': 'Tap the screen',
+      'اضغط على الظرف': 'Tap the envelope',
+      'دق لفتح الدعوة': 'Knock to open the invitation',
+      'اكتشف التفاصيل': 'Discover the details',
+    },
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -320,6 +400,9 @@
     const bindings =
       (manifest && manifest.runtimeBindings && manifest.runtimeBindings.fieldBindings) || fallbackBindings;
 
+    runtimeState.baseFields = fields;
+    runtimeState.activeLocale = renderConfig.ui?.defaultLocale || renderConfig.locale || 'ar';
+
     window.__INVITE__ = {
       ...(window.__INVITE__ || {}),
       config: {
@@ -328,19 +411,11 @@
       },
     };
 
-    Object.keys(fields).forEach((fieldKey) => {
-      const binding = bindings[fieldKey] || fallbackBindings[fieldKey];
-      if (!binding) return;
-
-      const value = fields[fieldKey];
-      applyBinding(binding, value, fields);
-    });
-
-    applyComputedDate(fields.weddingDate);
+    applyLocalizedContent(bindings, fields, runtimeState.activeLocale);
     applyTheme(renderConfig.theme || {});
     applySections(manifest, renderConfig.sections || {});
-    applyFamilyPresentation(fields);
-    applyMediaVisibility(fields);
+    ensureLanguageToggle(renderConfig, bindings);
+    ensureMusicControls(fields.musicUrl || '');
     applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
   }
 
@@ -409,6 +484,164 @@
     }
 
     return fields;
+  }
+
+  function buildLocalizedFields(sourceFields, locale) {
+    const localized = { ...sourceFields };
+    if (locale !== 'en') return localized;
+
+    Object.keys(sourceFields).forEach((key) => {
+      if (key.endsWith('__en') || key === '__uiConfig') return;
+      const localizedKey = `${key}__en`;
+      const localizedValue = sourceFields[localizedKey];
+      if (localizedValue == null || localizedValue === '') return;
+      localized[key] = localizedValue;
+    });
+
+    return localized;
+  }
+
+  function applyLocalizedContent(bindings, baseFields, locale) {
+    const localizedFields = buildLocalizedFields(baseFields, locale);
+
+    window.__INVITE__ = {
+      ...(window.__INVITE__ || {}),
+      config: {
+        ...((window.__INVITE__ && window.__INVITE__.config) || {}),
+        ...localizedFields,
+      },
+    };
+
+    Object.keys(localizedFields).forEach((fieldKey) => {
+      if (fieldKey.endsWith('__en') || fieldKey === '__uiConfig') return;
+      const binding = bindings[fieldKey] || fallbackBindings[fieldKey];
+      if (!binding) return;
+
+      applyBinding(binding, localizedFields[fieldKey], localizedFields);
+    });
+
+    applyComputedDate(localizedFields.weddingDate, locale);
+    applyFamilyPresentation(localizedFields);
+    applyMediaVisibility(localizedFields);
+    applyStaticLocaleTranslations(localizedFields, locale);
+  }
+
+  function applyStaticLocaleTranslations(fields, locale) {
+    Object.entries(STATIC_FIELD_TRANSLATIONS).forEach(([fieldKey, config]) => {
+      const localizedValue = fields[fieldKey];
+      if (localizedValue != null && localizedValue !== '') {
+        setTranslatedText(config.selector, localizedValue);
+        return;
+      }
+
+      if (locale === 'en' && config.en) {
+        setTranslatedText(config.selector, config.en);
+        return;
+      }
+
+      restoreTranslatedText(config.selector);
+    });
+
+    applyStaticTextDictionary(locale);
+  }
+
+  function applyStaticTextDictionary(locale) {
+    const dictionary = STATIC_TEXT_TRANSLATIONS[locale];
+    const candidates = queryAll(
+      'h1, h2, h3, h4, h5, h6, p, span, div, a, button, small, strong, em, label'
+    );
+
+    candidates.forEach((node) => {
+      if (!node || node.children.length > 0) return;
+
+      const currentText = (node.textContent || '').trim();
+      if (!currentText) return;
+
+      if (!node.dataset.farhaOriginalText) {
+        node.dataset.farhaOriginalText = currentText;
+      }
+
+      if (!dictionary) {
+        if (node.dataset.farhaOriginalText) {
+          node.textContent = node.dataset.farhaOriginalText;
+        }
+        return;
+      }
+
+      const originalText = node.dataset.farhaOriginalText || currentText;
+      const translated = dictionary[originalText];
+      if (translated) {
+        node.textContent = translated;
+      }
+    });
+  }
+
+  function setTranslatedText(selector, value) {
+    const safe = value == null ? '' : String(value);
+    queryAll(selector).forEach((node) => {
+      if (!node.dataset.farhaOriginalText) {
+        node.dataset.farhaOriginalText = (node.textContent || '').trim();
+      }
+      node.textContent = safe;
+    });
+  }
+
+  function restoreTranslatedText(selector) {
+    queryAll(selector).forEach((node) => {
+      if (node.dataset.farhaOriginalText) {
+        node.textContent = node.dataset.farhaOriginalText;
+      }
+    });
+  }
+
+  function ensureLanguageToggle(renderConfig, bindings) {
+    const bilingualEnabled = Boolean(renderConfig.ui?.bilingualEnabled);
+
+    if (!bilingualEnabled) {
+      if (runtimeState.languageToggle?.parentNode) {
+        runtimeState.languageToggle.parentNode.removeChild(runtimeState.languageToggle);
+      }
+      runtimeState.languageToggle = null;
+      return;
+    }
+
+    if (!runtimeState.languageToggle) {
+      const button = document.createElement('button');
+      button.id = 'farha-language-toggle';
+      button.type = 'button';
+      button.style.cssText = [
+        'position:fixed',
+        'top:14px',
+        'left:50%',
+        'transform:translateX(-50%)',
+        'z-index:2147483646',
+        'padding:8px 14px',
+        'border-radius:999px',
+        'border:1px solid rgba(0,0,0,.12)',
+        'background:rgba(255,255,255,.92)',
+        'backdrop-filter:blur(8px)',
+        'font:700 13px Tajawal, system-ui, sans-serif',
+        'color:#1f2937',
+        'box-shadow:0 10px 30px rgba(0,0,0,.12)',
+        'cursor:pointer',
+      ].join(';');
+      button.addEventListener('click', () => {
+        runtimeState.activeLocale = runtimeState.activeLocale === 'ar' ? 'en' : 'ar';
+        applyLocalizedContent(bindings, runtimeState.baseFields || {}, runtimeState.activeLocale);
+        updateLanguageToggleLabel();
+      });
+      document.body.appendChild(button);
+      runtimeState.languageToggle = button;
+    }
+
+    updateLanguageToggleLabel();
+  }
+
+  function updateLanguageToggleLabel() {
+    if (!runtimeState.languageToggle) return;
+    runtimeState.languageToggle.textContent = runtimeState.activeLocale === 'ar' ? 'EN' : 'AR';
+    document.documentElement.lang = runtimeState.activeLocale === 'en' ? 'en' : 'ar';
+    document.documentElement.dir = runtimeState.activeLocale === 'en' ? 'ltr' : 'rtl';
   }
 
   function applyBinding(binding, value, fields) {
@@ -603,6 +836,13 @@
           node.setAttribute('src', safe);
         }
         if (tagName === 'audio' || tagName === 'video') {
+          if (tagName === 'audio') {
+            node.querySelectorAll('source').forEach((sourceNode) => {
+              sourceNode.setAttribute('src', safe);
+            });
+            node.loop = true;
+            node.preload = 'auto';
+          }
           node.load?.();
         }
         node.hidden = false;
@@ -653,25 +893,27 @@
     });
   }
 
-  function applyComputedDate(dateValue) {
+  function applyComputedDate(dateValue, locale = 'ar') {
     if (!dateValue) return;
 
     const date = new Date(dateValue);
     if (Number.isNaN(date.getTime())) return;
 
-    const longDate = date.toLocaleDateString('ar-EG', {
+    const targetLocale = locale === 'en' ? 'en-US' : 'ar-EG';
+
+    const longDate = date.toLocaleDateString(targetLocale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
-    const shortTime = date.toLocaleTimeString('ar-EG', {
+    const shortTime = date.toLocaleTimeString(targetLocale, {
       hour: '2-digit',
       minute: '2-digit',
     });
-    const monthYear = date.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-    const dayNum = date.toLocaleDateString('ar-EG', { day: 'numeric' });
-    const weekDay = date.toLocaleDateString('ar-EG', { weekday: 'long' });
+    const monthYear = date.toLocaleDateString(targetLocale, { month: 'long', year: 'numeric' });
+    const dayNum = date.toLocaleDateString(targetLocale, { day: 'numeric' });
+    const weekDay = date.toLocaleDateString(targetLocale, { weekday: 'long' });
 
     setText('#heroDate, #eventDate, #weddingDate', longDate);
     setText('#weddingTime', shortTime);
@@ -786,9 +1028,17 @@
         '--wine',
         '--wood',
         '--wood-deep',
+        '--wood-soft',
+        '--ink',
+        '--ink-soft',
+        '--rose',
         '--rose-deep',
+        '--rose-ink',
         '--mauve',
+        '--taupe',
+        '--night-2',
         '--night-3',
+        '--night-4',
       ].forEach((token) => root.style.setProperty(token, theme.primaryColor));
     }
 
@@ -804,6 +1054,8 @@
         '--lilac-2',
         '--lilac-deep',
         '--star-1',
+        '--star-2',
+        '--sun',
       ].forEach((token) => root.style.setProperty(token, theme.accentColor));
     }
 
@@ -818,6 +1070,9 @@
         '--ivory',
         '--ivory-2',
         '--ivory-3',
+        '--paper',
+        '--paper-2',
+        '--bg-soft',
       ].forEach((token) => root.style.setProperty(token, theme.surfaceColor));
     }
 
@@ -830,6 +1085,7 @@
         '--ruqaa',
         '--flow',
         '--font-script',
+        '--font-verse',
       ].forEach((token) => root.style.setProperty(token, displayFont));
     }
 
@@ -842,8 +1098,163 @@
         '--body',
         '--kufi',
         '--font-ar',
+        '--font-en',
       ].forEach((token) => root.style.setProperty(token, bodyFont));
     }
+
+    if (runtimeState.themeStyleTag?.parentNode) {
+      runtimeState.themeStyleTag.parentNode.removeChild(runtimeState.themeStyleTag);
+    }
+
+    const themeCss = `
+      body,
+      .t-body,
+      #allrecords,
+      .card,
+      .sheet,
+      .wrap,
+      .panel,
+      .surface,
+      .t396__artboard {
+        ${theme.surfaceColor ? `background-color: ${theme.surfaceColor} !important;` : ''}
+      }
+      h1, h2, h3, h4,
+      .section__title,
+      .sec__title,
+      .hero__name,
+      .family__names,
+      .venue__name,
+      .hero__eyebrow,
+      .closing__hashtag,
+      .closing__note,
+      .tn-atom {
+        ${theme.primaryColor ? `color: ${theme.primaryColor} !important;` : ''}
+        ${theme.fontHeading ? `font-family: ${wrapFont(theme.fontHeading)} !important;` : ''}
+      }
+      body, p, span, a, li, small, input, textarea, select, label,
+      .hero__invite,
+      .invitation__text,
+      .when__date,
+      .when__time,
+      .venue__addr,
+      .notes__list,
+      .family__label {
+        ${theme.fontBody ? `font-family: ${wrapUiFont(theme.fontBody)} !important;` : ''}
+      }
+      button,
+      .btn,
+      .hero__scroll,
+      .venue__btn,
+      .contact__link,
+      #musicToggle,
+      #farha-runtime-audio-toggle {
+        ${theme.accentColor ? `border-color: ${theme.accentColor} !important;` : ''}
+      }
+      #musicToggle,
+      #farha-runtime-audio-toggle,
+      .venue__btn,
+      .hero__scroll {
+        ${theme.accentColor ? `background: ${theme.accentColor} !important;` : ''}
+        ${theme.primaryColor ? `color: ${theme.primaryColor} !important;` : ''}
+      }
+    `;
+
+    runtimeState.themeStyleTag = document.createElement('style');
+    runtimeState.themeStyleTag.id = 'farha-runtime-theme-style';
+    runtimeState.themeStyleTag.textContent = themeCss;
+    document.head.appendChild(runtimeState.themeStyleTag);
+  }
+
+  function findPrimaryAudio() {
+    return queryAll(MUSIC_SELECTORS).find((node) => (node.tagName || '').toLowerCase() === 'audio') || null;
+  }
+
+  function syncAudioToggleState(audio) {
+    if (!audio || !runtimeState.audioToggle) return;
+    runtimeState.audioToggle.textContent = audio.paused ? 'تشغيل الصوت' : 'كتم الصوت';
+    runtimeState.audioToggle.setAttribute('aria-pressed', audio.paused ? 'false' : 'true');
+  }
+
+  function ensureRuntimeAudioToggle(audio) {
+    if (!audio) return;
+
+    if (!runtimeState.audioToggle) {
+      const button = document.createElement('button');
+      button.id = 'farha-runtime-audio-toggle';
+      button.type = 'button';
+      button.style.cssText = [
+        'position:fixed',
+        'right:18px',
+        'bottom:18px',
+        'z-index:2147483646',
+        'border:1px solid rgba(0,0,0,.08)',
+        'border-radius:999px',
+        'padding:10px 16px',
+        'font:600 14px Tajawal, system-ui, sans-serif',
+        'box-shadow:0 10px 30px rgba(0,0,0,.16)',
+        'cursor:pointer',
+      ].join(';');
+      button.addEventListener('click', () => {
+        const currentAudio = findPrimaryAudio();
+        if (!currentAudio) return;
+        if (currentAudio.paused) {
+          currentAudio.play?.().catch(() => {});
+        } else {
+          currentAudio.pause?.();
+        }
+        syncAudioToggleState(currentAudio);
+      });
+      document.body.appendChild(button);
+      runtimeState.audioToggle = button;
+    }
+
+    if (runtimeState.audioSyncHandler) {
+      audio.removeEventListener('play', runtimeState.audioSyncHandler);
+      audio.removeEventListener('pause', runtimeState.audioSyncHandler);
+      audio.removeEventListener('ended', runtimeState.audioSyncHandler);
+    }
+
+    runtimeState.audioSyncHandler = () => syncAudioToggleState(audio);
+    audio.addEventListener('play', runtimeState.audioSyncHandler);
+    audio.addEventListener('pause', runtimeState.audioSyncHandler);
+    audio.addEventListener('ended', runtimeState.audioSyncHandler);
+    syncAudioToggleState(audio);
+  }
+
+  function revealNativeAudioButtons() {
+    queryAll(NATIVE_AUDIO_BUTTON_SELECTORS).forEach((button) => {
+      button.hidden = false;
+      button.style.display = '';
+      button.style.visibility = 'visible';
+      button.style.opacity = '1';
+      button.classList?.remove('hidden');
+    });
+  }
+
+  function ensureMusicControls(musicUrl) {
+    if (!musicUrl) return;
+
+    let audio = findPrimaryAudio();
+
+    if (!audio) {
+      audio = document.createElement('audio');
+      audio.id = 'farha-runtime-audio';
+      audio.loop = true;
+      audio.preload = 'auto';
+      audio.style.display = 'none';
+      document.body.appendChild(audio);
+    }
+
+    if (audio.getAttribute('src') !== musicUrl) {
+      audio.setAttribute('src', musicUrl);
+      audio.querySelectorAll('source').forEach((sourceNode) => {
+        sourceNode.setAttribute('src', musicUrl);
+      });
+      audio.load?.();
+    }
+
+    revealNativeAudioButtons();
+    ensureRuntimeAudioToggle(audio);
   }
 
   function applySections(manifest, sectionConfig) {

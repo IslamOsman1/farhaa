@@ -14,6 +14,7 @@ export const studioDraftSchema = z.object({
   themeConfig: studioRecordSchema.default({}),
   sectionConfig: z.record(z.boolean()).default({}),
   openingConfig: studioRecordSchema.default({}),
+  uiConfig: studioRecordSchema.default({ bilingualEnabled: false, defaultLocale: 'ar' }),
   devicePreview: studioRecordSchema.default({ mode: 'mobile', width: 390, height: 844 }),
 });
 
@@ -47,25 +48,22 @@ function arrayValue(value) {
 
 function splitMediaFields(manifest, contentConfig = {}) {
   const mediaFieldTypes = new Set(['image', 'video', 'audio', 'gallery']);
-  const fields = manifest?.editableFields || [];
+  const fieldMap = new Map((manifest?.editableFields || []).map((field) => [field.key, field]));
 
-  return fields.reduce(
-    (accumulator, field) => {
-      const value = contentConfig[field.key];
-      if (value == null || value === '') {
-        return accumulator;
-      }
-
-      if (mediaFieldTypes.has(field.type)) {
-        accumulator.assets[field.key] = value;
-      } else {
-        accumulator.content[field.key] = value;
-      }
-
+  return Object.entries(contentConfig).reduce((accumulator, [key, value]) => {
+    if (value == null || value === '') {
       return accumulator;
-    },
-    { content: {}, assets: {} },
-  );
+    }
+
+    const field = fieldMap.get(key);
+    if (field && mediaFieldTypes.has(field.type)) {
+      accumulator.assets[key] = value;
+    } else {
+      accumulator.content[key] = value;
+    }
+
+    return accumulator;
+  }, { content: {}, assets: {} });
 }
 
 export function createStudioDraftFromManifest(manifest, seed = {}) {
@@ -95,6 +93,11 @@ export function createStudioDraftFromManifest(manifest, seed = {}) {
       allowSkip: true,
       ...seed.openingConfig,
     },
+    uiConfig: {
+      bilingualEnabled: false,
+      defaultLocale: 'ar',
+      ...seed.uiConfig,
+    },
     devicePreview: {
       mode: 'mobile',
       width: 390,
@@ -116,7 +119,19 @@ export function createStudioDraftFromInvitation({ invitation, manifest }) {
     themeConfig: normalized.themeConfig,
     sectionConfig: normalized.sectionConfig,
     openingConfig: normalized.openingConfig,
+    uiConfig: invitation?.uiConfig || parseUiConfig(invitation),
   });
+}
+
+function parseUiConfig(invitation) {
+  const fromContent = invitation?.contentConfig && typeof invitation.contentConfig === 'object'
+    ? invitation.contentConfig.__uiConfig
+    : undefined;
+  return {
+    bilingualEnabled: false,
+    defaultLocale: invitation?.locale === 'en' ? 'en' : 'ar',
+    ...(fromContent && typeof fromContent === 'object' ? fromContent : {}),
+  };
 }
 
 export function buildStudioDraftFromSession({ session, manifest }) {
@@ -133,6 +148,7 @@ export function buildStudioDraftFromSession({ session, manifest }) {
     themeConfig: session.config?.themeConfig || {},
     sectionConfig: session.config?.sectionConfig || {},
     openingConfig: session.selectedOpeningConfig || session.config?.openingConfig || {},
+    uiConfig: session.config?.uiConfig || {},
     devicePreview: session.devicePreview || {},
   });
 }
@@ -154,6 +170,7 @@ export function buildStudioSessionUpdateData({ manifest, draft, openingId = null
       themeConfig: parsed.themeConfig,
       sectionConfig: parsed.sectionConfig,
       openingConfig: parsed.openingConfig,
+      uiConfig: parsed.uiConfig,
     },
     content,
     assets,
@@ -185,6 +202,7 @@ export function buildStudioRenderPayload({ session, manifest, opening }) {
     themeConfig: draft.themeConfig,
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
+    uiConfig: draft.uiConfig,
   };
 
   return {

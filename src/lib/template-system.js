@@ -1019,6 +1019,7 @@ export const invitationRenderConfigSchema = z.object({
   theme: z.record(z.any()),
   preview: z.boolean().default(false),
   locale: z.string().default('ar'),
+  ui: z.record(z.any()).default({}),
 });
 
 export function parseJsonSafely(value, fallback) {
@@ -1352,6 +1353,17 @@ export function buildInvitationRenderConfig({ invitation, manifest, opening, pre
     },
     preview,
     locale: invitation?.locale || 'ar',
+    ui: {
+      bilingualEnabled: Boolean(
+        invitation?.uiConfig?.bilingualEnabled
+        || invitation?.contentConfig?.__uiConfig?.bilingualEnabled,
+      ),
+      defaultLocale:
+        invitation?.uiConfig?.defaultLocale
+        || invitation?.contentConfig?.__uiConfig?.defaultLocale
+        || invitation?.locale
+        || 'ar',
+    },
   });
 }
 
