@@ -28,6 +28,50 @@ function setTextMany(selectors, value) {
   selectors.forEach((selector) => setText(selector, value));
 }
 
+function getInitial(name) {
+  if (!name) return '';
+  const trimmed = String(name).trim();
+  if (!trimmed) return '';
+  return Array.from(trimmed)[0] || '';
+}
+
+function ensureSealMonogram(brideName, groomName) {
+  const sealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
+  if (!sealLink) return;
+
+  if (getComputedStyle(sealLink).position === 'static') {
+    sealLink.style.position = 'relative';
+  }
+
+  let monogram = sealLink.querySelector('[data-farha-seal-monogram]');
+  if (!monogram) {
+    monogram = document.createElement('span');
+    monogram.setAttribute('data-farha-seal-monogram', 'true');
+    monogram.style.position = 'absolute';
+    monogram.style.inset = '0';
+    monogram.style.display = 'flex';
+    monogram.style.alignItems = 'center';
+    monogram.style.justifyContent = 'center';
+    monogram.style.pointerEvents = 'none';
+    monogram.style.fontFamily = '"Times New Roman", "Georgia", serif';
+    monogram.style.fontStyle = 'italic';
+    monogram.style.fontWeight = '600';
+    monogram.style.fontSize = '42px';
+    monogram.style.letterSpacing = '1px';
+    monogram.style.color = '#d9b56b';
+    monogram.style.textShadow = '0 1px 0 rgba(92, 25, 35, 0.5), 0 0 8px rgba(246, 223, 159, 0.18)';
+    monogram.style.transform = 'translateY(2px)';
+    sealLink.appendChild(monogram);
+  }
+
+  const brideInitial = getInitial(brideName);
+  const groomInitial = getInitial(groomName);
+  const text = [brideInitial, groomInitial].filter(Boolean).join('&');
+  if (text) {
+    monogram.textContent = text;
+  }
+}
+
 function formatDisplayDate(dateValue) {
   const parsedDate = new Date(dateValue);
   if (Number.isNaN(parsedDate.getTime())) return '';
@@ -169,6 +213,8 @@ function applySacredGardenConfig() {
   if (combinedNames) {
     setHtml('#rec2487446043 [data-elem-id="1763402147625"] .tn-atom', combinedNames);
   }
+
+  ensureSealMonogram(bride, groom);
 
   if (inlineNames) {
     setText('#rec2487446253 [data-elem-id="1772813849329000001"] .tn-atom', inlineNames);
