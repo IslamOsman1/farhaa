@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getTemplateManifest } from '@/lib/template-system';
 
-const OPENING_LAYER_SELECTORS = '#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen';
+const OPENING_LAYER_SELECTORS = '#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #stage, #envelope, #env';
 const MAIN_CONTENT_SELECTORS = '#invitation-container, #main-content';
 
 function isElementVisible(node) {

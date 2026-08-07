@@ -31,8 +31,17 @@
       #popup-overlay,
       #preloader,
       #opening-screen,
+      #cover,
+      #gate,
+      #stage,
+      #envelope,
+      #env,
       #preloaderPoster,
       #preloaderVideo,
+      #doorVid,
+      #heroVid,
+      #loopVid,
+      #flightVid,
       #doorGlow,
       #preloaderWhite,
       #preloaderNight,
@@ -773,12 +782,17 @@
   }
 
   function hideNativeOpeningLayers() {
-    queryAll('#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen').forEach((node) => {
+    queryAll('#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #stage, #envelope, #env').forEach((node) => {
       node.style.display = 'none';
       node.classList?.add('hidden');
       node.classList?.add('fade-out');
+      node.classList?.add('is-gone');
+      node.classList?.add('is-done');
+      node.classList?.add('is-open');
+      node.classList?.add('is-revealed');
+      node.classList?.add('is-arrived');
     });
-    queryAll('#preloaderPoster, #preloaderVideo, #doorGlow, #preloaderWhite').forEach((node) => {
+    queryAll('#preloaderPoster, #preloaderVideo, #doorGlow, #preloaderWhite, #preloaderNight, #poster-container, #doorVid, #heroVid, #loopVid, #flightVid').forEach((node) => {
       node.style.display = 'none';
       node.classList?.add('hidden');
       node.classList?.add('fade-out');
