@@ -494,11 +494,43 @@
   function setMedia(selector, value) {
     const safe = value == null ? '' : String(value);
     queryAll(selector).forEach((node) => {
-      if ('src' in node && safe) {
+      if (!safe) return;
+
+      const tagName = (node.tagName || '').toLowerCase();
+
+      if (tagName === 'img' || tagName === 'audio' || tagName === 'video' || tagName === 'iframe') {
         if (node.getAttribute('src') !== safe) {
           node.setAttribute('src', safe);
         }
+        if (tagName === 'audio' || tagName === 'video') {
+          node.load?.();
+        }
+        node.hidden = false;
+        node.style.display = '';
+        return;
       }
+
+      if (tagName === 'source') {
+        if (node.getAttribute('src') !== safe) {
+          node.setAttribute('src', safe);
+        }
+        node.parentElement?.load?.();
+        return;
+      }
+
+      if ('src' in node) {
+        if (node.getAttribute('src') !== safe) {
+          node.setAttribute('src', safe);
+        }
+        node.hidden = false;
+        node.style.display = '';
+        return;
+      }
+
+      node.style.backgroundImage = `url("${safe}")`;
+      node.hidden = false;
+      node.style.display = '';
+      node.classList?.add('is-shown');
     });
   }
 
@@ -507,7 +539,17 @@
     if (!safe) return;
 
     queryAll(selector).forEach((node) => {
-      node.style.backgroundImage = `url("${safe}")`;
+      const tagName = (node.tagName || '').toLowerCase();
+
+      if (tagName === 'img') {
+        node.setAttribute('src', safe);
+      } else {
+        node.style.backgroundImage = `url("${safe}")`;
+      }
+
+      node.hidden = false;
+      node.style.display = '';
+      node.classList?.add('is-shown');
     });
   }
 
