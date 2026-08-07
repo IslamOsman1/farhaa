@@ -1049,37 +1049,37 @@
         direction: rtl;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
         justify-content: space-between;
-        padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
         background: rgba(255, 252, 249, .97);
         border-top: 1px solid rgba(127, 42, 31, .1);
-        box-shadow: 0 -14px 34px rgba(83, 38, 31, .08);
+        box-shadow: 0 -10px 24px rgba(83, 38, 31, .08);
         backdrop-filter: blur(14px);
         font-family: "Tajawal", system-ui, sans-serif;
       }
       #farha-template-bar .ftb-copy { flex: 1; min-width: 0; text-align: right; }
-      #farha-template-bar .ftb-title { margin: 0; color: #2f2430; font-size: 1.35rem; font-weight: 900; }
-      #farha-template-bar .ftb-sub { margin: 6px 0 0; color: #756774; font-size: 1rem; line-height: 1.65; }
-      #farha-template-bar .ftb-note { margin: 5px 0 0; color: #8f7f78; font-size: .86rem; line-height: 1.6; }
-      #farha-template-bar .ftb-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+      #farha-template-bar .ftb-title { margin: 0; color: #2f2430; font-size: 1.02rem; font-weight: 900; line-height: 1.2; }
+      #farha-template-bar .ftb-sub { margin: 3px 0 0; color: #756774; font-size: .78rem; line-height: 1.45; }
+      #farha-template-bar .ftb-note { margin: 2px 0 0; color: #8f7f78; font-size: .68rem; line-height: 1.4; }
+      #farha-template-bar .ftb-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
       #farha-template-bar .ftb-order {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        height: 56px;
-        padding: 0 28px;
+        height: 40px;
+        padding: 0 16px;
         border-radius: 999px;
         background: linear-gradient(135deg, #ff4d7d, #ff6f8f);
         color: #fff;
         text-decoration: none;
-        font-size: 1.05rem;
+        font-size: .82rem;
         font-weight: 900;
         white-space: nowrap;
       }
       #farha-template-bar .ftb-wa {
-        width: 54px;
-        height: 54px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         display: grid;
         place-items: center;
@@ -1088,23 +1088,28 @@
         text-decoration: none;
         flex-shrink: 0;
       }
+      #farha-template-bar .ftb-wa svg {
+        width: 18px;
+        height: 18px;
+      }
       #farha-template-bar .ftb-close {
-        width: 38px;
-        height: 38px;
+        width: 28px;
+        height: 28px;
         border: none;
         background: transparent;
         color: #a396aa;
-        font-size: 28px;
+        font-size: 22px;
         line-height: 1;
         border-radius: 999px;
         display: grid;
         place-items: center;
       }
-      body { padding-bottom: 110px !important; box-sizing: border-box; }
+      body { padding-bottom: 64px !important; box-sizing: border-box; }
       @media (max-width: 620px) {
         #farha-template-bar {
           flex-wrap: wrap;
-          padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+          gap: 6px;
+          padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
         }
         #farha-template-bar .ftb-copy {
           order: 2;
@@ -1113,6 +1118,38 @@
         #farha-template-bar .ftb-actions {
           order: 1;
           width: 100%;
+        }
+        #farha-template-bar .ftb-title {
+          font-size: .92rem;
+        }
+        #farha-template-bar .ftb-sub {
+          font-size: .72rem;
+          line-height: 1.35;
+        }
+        #farha-template-bar .ftb-note {
+          font-size: .62rem;
+          line-height: 1.3;
+        }
+        #farha-template-bar .ftb-order {
+          height: 36px;
+          padding: 0 14px;
+          font-size: .74rem;
+        }
+        #farha-template-bar .ftb-wa {
+          width: 36px;
+          height: 36px;
+        }
+        #farha-template-bar .ftb-wa svg {
+          width: 16px;
+          height: 16px;
+        }
+        #farha-template-bar .ftb-close {
+          width: 24px;
+          height: 24px;
+          font-size: 18px;
+        }
+        body {
+          padding-bottom: 56px !important;
         }
       }
     `;
