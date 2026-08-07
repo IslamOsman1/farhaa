@@ -154,6 +154,11 @@
     openingHint: { method: 'text', selector: '#coverHint, #knockHint, .cover__hint, .env__hint, .preloader-text, .tap-hint', skipIfEmpty: true },
     openingPoem: { method: 'text', selector: '.cover__poem', skipIfEmpty: true },
     openingEyebrow: { method: 'text', selector: '.hero__eyebrow', skipIfEmpty: true },
+    titleInvitation: { method: 'text', selector: '.invitation .sec__title, .invitation .section__title, .sheet__kick, .card__kick, .sec-title span', skipIfEmpty: true },
+    titleCountdown: { method: 'text', selector: '.count .sec__title, .when .section__title', skipIfEmpty: true },
+    titleProgram: { method: 'text', selector: '.program .sec__title, .program .section__title, #program-section h2', skipIfEmpty: true },
+    titleVenue: { method: 'text', selector: '.venue .sec__title, .venue .section__title', skipIfEmpty: true },
+    titleNotes: { method: 'text', selector: '.notes .sec__title, .notes .section__title', skipIfEmpty: true },
     welcomeMessage: { method: 'text', selector: '#heroInvite, #heroSubtitle' },
     heroSub: { method: 'text', selector: '#heroSub, #heroInvite, #heroSubtitle' },
     verseText: { method: 'text', selector: '#verseText' },
@@ -765,11 +770,80 @@
 
   function applyTheme(theme) {
     const root = document.documentElement;
-    if (theme.primaryColor) root.style.setProperty('--farha-primary', theme.primaryColor);
-    if (theme.accentColor) root.style.setProperty('--farha-accent', theme.accentColor);
-    if (theme.surfaceColor) root.style.setProperty('--farha-surface', theme.surfaceColor);
-    if (theme.fontHeading) root.style.setProperty('--farha-font-heading', theme.fontHeading);
-    if (theme.fontBody) root.style.setProperty('--farha-font-body', theme.fontBody);
+    const wrapFont = (fontName) => {
+      if (!fontName) return '';
+      return `"${String(fontName).replace(/"/g, '')}", serif`;
+    };
+
+    const wrapUiFont = (fontName) => {
+      if (!fontName) return '';
+      return `"${String(fontName).replace(/"/g, '')}", system-ui, sans-serif`;
+    };
+
+    if (theme.primaryColor) {
+      root.style.setProperty('--farha-primary', theme.primaryColor);
+      [
+        '--wine',
+        '--wood',
+        '--wood-deep',
+        '--rose-deep',
+        '--mauve',
+        '--night-3',
+      ].forEach((token) => root.style.setProperty(token, theme.primaryColor));
+    }
+
+    if (theme.accentColor) {
+      root.style.setProperty('--farha-accent', theme.accentColor);
+      [
+        '--gold',
+        '--gold-2',
+        '--gold-lt',
+        '--gold-hi',
+        '--gold-dp',
+        '--lilac',
+        '--lilac-2',
+        '--lilac-deep',
+        '--star-1',
+      ].forEach((token) => root.style.setProperty(token, theme.accentColor));
+    }
+
+    if (theme.surfaceColor) {
+      root.style.setProperty('--farha-surface', theme.surfaceColor);
+      [
+        '--surface',
+        '--cream',
+        '--cream-1',
+        '--cream-2',
+        '--cream-hi',
+        '--ivory',
+        '--ivory-2',
+        '--ivory-3',
+      ].forEach((token) => root.style.setProperty(token, theme.surfaceColor));
+    }
+
+    if (theme.fontHeading) {
+      const displayFont = wrapFont(theme.fontHeading);
+      root.style.setProperty('--farha-font-heading', theme.fontHeading);
+      [
+        '--font-display',
+        '--font-disp',
+        '--ruqaa',
+        '--flow',
+        '--font-script',
+      ].forEach((token) => root.style.setProperty(token, displayFont));
+    }
+
+    if (theme.fontBody) {
+      const bodyFont = wrapUiFont(theme.fontBody);
+      root.style.setProperty('--farha-font-body', theme.fontBody);
+      [
+        '--font-body',
+        '--font-ui',
+        '--body',
+        '--kufi',
+        '--font-ar',
+      ].forEach((token) => root.style.setProperty(token, bodyFont));
+    }
   }
 
   function applySections(manifest, sectionConfig) {
