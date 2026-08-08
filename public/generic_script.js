@@ -165,6 +165,7 @@
     baseFields: null,
     activeLocale: 'ar',
     languageToggle: null,
+    selectedCustomElementId: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -1933,58 +1934,215 @@
   function initDragHandlers() {
     if (runtimeState.dragHandlersInitialized) return;
     runtimeState.dragHandlersInitialized = true;
-    
-    let draggingEl = null;
-    let startX, startY, initialX, initialY, elId;
-    
-    document.addEventListener('mousedown', (e) => {
-      const wrapper = e.target.closest('.farha-custom-element');
-      if (wrapper && runtimeState.preview) {
-        const isEditableTarget =
-          e.target?.isContentEditable ||
-          e.target?.closest?.('[contenteditable="true"], input, textarea, select, button');
-        if (isEditableTarget) return;
-        e.preventDefault();
-        e.stopPropagation();
-        draggingEl = wrapper;
-        elId = wrapper.dataset.id;
-        startX = e.clientX;
-        startY = e.clientY;
-        initialX = parseFloat(wrapper.style.left) || 0;
-        initialY = parseFloat(wrapper.style.top) || 0;
-        wrapper.style.opacity = '0.7';
-        wrapper.style.zIndex = '99999';
-        
-        window.parent.postMessage({
-          type: 'FARHA_CUSTOM_ELEMENT_SELECT',
-          payload: { id: elId }
-        }, '*');
-      }
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-      if (!draggingEl) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      draggingEl.style.left = (initialX + dx) + 'px';
-      draggingEl.style.top = (initialY + dy) + 'px';
-    });
-    
-    document.addEventListener('mouseup', (e) => {
-      if (!draggingEl) return;
-      const newX = parseFloat(draggingEl.style.left) || 0;
-      const newY = parseFloat(draggingEl.style.top) || 0;
-      
-      draggingEl.style.opacity = '1';
-      draggingEl.style.zIndex = '';
-      
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const getPoint = (event) => {
+      const point = event.touches?.[0] || event.changedTouches?.[0] || event;
+      return { x: point.clientX, y: point.clientY };
+    };
+    const toPxNumber = (value, fallback) => {
+      const parsed = parseFloat(String(value || ''));
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const persistUpdate = (id, updates) => {
       window.parent.postMessage({
         type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-        payload: { id: elId, updates: { x: newX, y: newY } }
+        payload: { id, updates },
       }, '*');
-      
-      draggingEl = null;
-    });
+    };
+
+    let activeTransform = null;
+
+    const selectElement = (id) => {
+      runtimeState.selectedCustomElementId = id || null;
+      const container = document.getElementById('farha-custom-elements');
+      if (!container) return;
+      Array.from(container.children).forEach((wrapper) => {
+        const isSelected = String(wrapper.dataset.id) === String(runtimeState.selectedCustomElementId || '');
+        wrapper.dataset.selected = isSelected ? 'true' : 'false';
+        const controls = wrapper.querySelector('.farha-custom-element__controls');
+        const resize = wrapper.querySelector('.farha-custom-element__resize');
+        if (controls) controls.style.display = isSelected ? 'flex' : 'none';
+        if (resize) resize.style.display = isSelected ? 'block' : 'none';
+        wrapper.style.boxShadow = isSelected
+          ? '0 0 0 2px rgba(255,255,255,0.95), 0 0 0 4px rgba(127, 42, 31, 0.45)'
+          : 'none';
+      });
+      if (id) {
+        window.parent.postMessage({
+          type: 'FARHA_CUSTOM_ELEMENT_SELECT',
+          payload: { id },
+        }, '*');
+      }
+    };
+
+    const startTransform = (kind, wrapper, point) => {
+      const contentNode = wrapper.querySelector('.farha-custom-element__content');
+      const imageNode = wrapper.querySelector('.farha-custom-element__image');
+      activeTransform = {
+        kind,
+        wrapper,
+        id: wrapper.dataset.id,
+        startX: point.x,
+        startY: point.y,
+        startLeft: toPxNumber(wrapper.style.left, 0),
+        startTop: toPxNumber(wrapper.style.top, 0),
+        startWidth: toPxNumber(wrapper.style.width, wrapper.offsetWidth || 150),
+        startHeight: toPxNumber(wrapper.style.height, wrapper.offsetHeight || 150),
+        startFontSize: toPxNumber(contentNode?.style.fontSize || wrapper.dataset.fontSize, 24),
+        startCropX: toPxNumber(wrapper.dataset.cropX, 50),
+        startCropY: toPxNumber(wrapper.dataset.cropY, 50),
+        imageNode,
+        contentNode,
+      };
+      wrapper.style.opacity = '0.92';
+      wrapper.style.zIndex = '99999';
+      selectElement(activeTransform.id);
+    };
+
+    const handleStart = (event) => {
+      if (!runtimeState.preview) return;
+      const target = event.target;
+      const actionNode = target.closest('[data-farha-action]');
+      const wrapper = target.closest('.farha-custom-element');
+
+      if (!wrapper) {
+        if (!target.closest('.farha-studio-editable')) {
+          selectElement(null);
+        }
+        return;
+      }
+
+      const point = getPoint(event);
+      if (!point) return;
+
+      selectElement(wrapper.dataset.id);
+
+      const action = actionNode?.dataset?.farhaAction;
+      if (action === 'delete') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_CUSTOM_ELEMENT_DELETE',
+          payload: { id: wrapper.dataset.id },
+        }, '*');
+        return;
+      }
+
+      if (action === 'crop-toggle') {
+        event.preventDefault();
+        event.stopPropagation();
+        const nextCropMode = wrapper.dataset.cropMode === 'true' ? 'false' : 'true';
+        wrapper.dataset.cropMode = nextCropMode;
+        const cropButton = wrapper.querySelector('[data-farha-action="crop-toggle"]');
+        if (cropButton) {
+          cropButton.style.background = nextCropMode === 'true' ? '#7f2a1f' : 'rgba(255,255,255,0.96)';
+          cropButton.style.color = nextCropMode === 'true' ? '#fff' : '#7f2a1f';
+        }
+        return;
+      }
+
+      const isEditableTarget =
+        target?.isContentEditable ||
+        target?.closest?.('[contenteditable="true"], input, textarea, select');
+      if (isEditableTarget && !action) {
+        return;
+      }
+
+      const actionKind =
+        action === 'resize'
+          ? 'resize'
+          : wrapper.dataset.cropMode === 'true' && target.closest('.farha-custom-element__image')
+            ? 'crop'
+            : 'move';
+
+      event.preventDefault();
+      event.stopPropagation();
+      startTransform(actionKind, wrapper, point);
+    };
+
+    const handleMove = (event) => {
+      if (!activeTransform) return;
+      const point = getPoint(event);
+      if (!point) return;
+      event.preventDefault();
+
+      const dx = point.x - activeTransform.startX;
+      const dy = point.y - activeTransform.startY;
+      const { wrapper, kind, imageNode, contentNode } = activeTransform;
+
+      if (kind === 'move') {
+        wrapper.style.left = `${activeTransform.startLeft + dx}px`;
+        wrapper.style.top = `${activeTransform.startTop + dy}px`;
+        return;
+      }
+
+      if (kind === 'resize') {
+        if (wrapper.dataset.type === 'text') {
+          const nextFontSize = clamp(activeTransform.startFontSize + ((dx + dy) * 0.08), 12, 120);
+          wrapper.dataset.fontSize = `${nextFontSize}px`;
+          if (contentNode) {
+            contentNode.style.fontSize = `${nextFontSize}px`;
+          }
+        } else {
+          const nextWidth = clamp(activeTransform.startWidth + dx, 60, 900);
+          const nextHeight = clamp(activeTransform.startHeight + dy, 60, 900);
+          wrapper.style.width = `${nextWidth}px`;
+          wrapper.style.height = `${nextHeight}px`;
+        }
+        return;
+      }
+
+      if (kind === 'crop' && imageNode) {
+        const width = Math.max(activeTransform.startWidth, 1);
+        const height = Math.max(activeTransform.startHeight, 1);
+        const nextCropX = clamp(activeTransform.startCropX - ((dx / width) * 100), 0, 100);
+        const nextCropY = clamp(activeTransform.startCropY - ((dy / height) * 100), 0, 100);
+        wrapper.dataset.cropX = String(nextCropX);
+        wrapper.dataset.cropY = String(nextCropY);
+        imageNode.style.objectPosition = `${nextCropX}% ${nextCropY}%`;
+      }
+    };
+
+    const handleEnd = () => {
+      if (!activeTransform) return;
+      const { wrapper, id, kind, imageNode, contentNode } = activeTransform;
+      wrapper.style.opacity = '1';
+      wrapper.style.zIndex = '';
+
+      if (kind === 'move') {
+        persistUpdate(id, {
+          x: toPxNumber(wrapper.style.left, 0),
+          y: toPxNumber(wrapper.style.top, 0),
+        });
+      } else if (kind === 'resize') {
+        if (wrapper.dataset.type === 'text') {
+          persistUpdate(id, {
+            fontSize: contentNode?.style.fontSize || wrapper.dataset.fontSize || '24px',
+          });
+        } else {
+          persistUpdate(id, {
+            width: wrapper.style.width || `${wrapper.offsetWidth}px`,
+            height: wrapper.style.height || `${wrapper.offsetHeight}px`,
+          });
+        }
+      } else if (kind === 'crop' && imageNode) {
+        persistUpdate(id, {
+          cropX: toPxNumber(wrapper.dataset.cropX, 50),
+          cropY: toPxNumber(wrapper.dataset.cropY, 50),
+        });
+      }
+
+      activeTransform = null;
+    };
+
+    document.addEventListener('mousedown', handleStart);
+    document.addEventListener('touchstart', handleStart, { passive: false });
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchend', handleEnd);
+    document.addEventListener('touchcancel', handleEnd);
   }
 
   function applyCustomElements(elements) {
@@ -2003,10 +2161,10 @@
       const target = document.getElementById('allrecords') || document.body;
       target.appendChild(container);
     }
-    
+
     const existingWrappers = Array.from(container.children);
     const newIds = elements.map(el => String(el.id));
-    
+
     existingWrappers.forEach(wrapper => {
       if (!newIds.includes(String(wrapper.dataset.id))) {
         wrapper.remove();
@@ -2020,11 +2178,12 @@
     if (runtimeState.preview) {
       runtimeState.canvasClickHandler = (e) => {
         if (e.target.closest('.farha-studio-editable') || e.target.closest('.farha-custom-element') || e.target.closest('button') || e.target.closest('a')) return;
-        
+
+        runtimeState.selectedCustomElementId = null;
         const rect = container.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        
+
         window.parent.postMessage({
           type: 'FARHA_CANVAS_CLICK',
           payload: { x, y }
@@ -2042,77 +2201,192 @@
         wrapper.style.position = 'absolute';
         container.appendChild(wrapper);
       }
-      
-      wrapper.style.left = el.x + 'px';
-      wrapper.style.top = el.y + 'px';
+
+      wrapper.dataset.type = el.type;
+      wrapper.dataset.cropX = String(Number.isFinite(parseFloat(el.cropX)) ? parseFloat(el.cropX) : 50);
+      wrapper.dataset.cropY = String(Number.isFinite(parseFloat(el.cropY)) ? parseFloat(el.cropY) : 50);
+      wrapper.dataset.cropMode = wrapper.dataset.cropMode || 'false';
+      wrapper.style.left = `${el.x || 0}px`;
+      wrapper.style.top = `${el.y || 0}px`;
       wrapper.style.pointerEvents = 'auto';
-      wrapper.style.cursor = runtimeState.preview ? 'move' : 'default';
-      
-      if (el.width) wrapper.style.width = el.width;
-      if (el.height) wrapper.style.height = el.height;
-      
-      let isEditing = false;
-      if (el.type === 'text') {
-         const innerDiv = wrapper.querySelector('div');
-         if (innerDiv && innerDiv === document.activeElement) {
-           isEditing = true;
-         }
+      wrapper.style.touchAction = 'none';
+      wrapper.style.userSelect = 'none';
+      wrapper.style.cursor = runtimeState.preview ? 'default' : 'inherit';
+      wrapper.style.maxWidth = 'calc(100% - 12px)';
+
+      if (el.type === 'image') {
+        const nextWidth = el.width || '150px';
+        const nextHeight = el.height && el.height !== 'auto' ? el.height : nextWidth;
+        wrapper.style.width = nextWidth;
+        wrapper.style.height = nextHeight;
+        wrapper.style.borderRadius = '18px';
+        wrapper.style.overflow = 'hidden';
+        wrapper.style.background = 'rgba(255,255,255,0.14)';
+      } else {
+        wrapper.style.width = 'fit-content';
+        wrapper.style.height = 'auto';
+        wrapper.style.borderRadius = '14px';
+        wrapper.style.overflow = 'visible';
+        wrapper.dataset.fontSize = el.fontSize || wrapper.dataset.fontSize || '24px';
       }
-      
-      if (!isEditing) {
-        wrapper.innerHTML = '';
-        let inner;
-        if (el.type === 'text') {
+
+      let contentRoot = wrapper.querySelector('.farha-custom-element__content');
+      if (!contentRoot) {
+        contentRoot = document.createElement('div');
+        contentRoot.className = 'farha-custom-element__content';
+        wrapper.appendChild(contentRoot);
+      }
+
+      let controlsRoot = wrapper.querySelector('.farha-custom-element__controls');
+      if (!controlsRoot) {
+        controlsRoot = document.createElement('div');
+        controlsRoot.className = 'farha-custom-element__controls';
+        wrapper.appendChild(controlsRoot);
+      }
+
+      let resizeHandle = wrapper.querySelector('.farha-custom-element__resize');
+      if (!resizeHandle) {
+        resizeHandle = document.createElement('button');
+        resizeHandle.type = 'button';
+        resizeHandle.className = 'farha-custom-element__resize';
+        resizeHandle.dataset.farhaAction = 'resize';
+        resizeHandle.textContent = '◢';
+        wrapper.appendChild(resizeHandle);
+      }
+
+      if (el.type === 'text') {
+        let inner = contentRoot.querySelector('.farha-custom-element__text');
+        if (!inner) {
           inner = document.createElement('div');
+          inner.className = 'farha-custom-element__text';
+          contentRoot.appendChild(inner);
+        }
+        if (document.activeElement !== inner) {
           inner.innerHTML = String(el.content || '').replace(/\n/g, '<br>');
-          if (el.fontSize) inner.style.fontSize = el.fontSize;
-          if (el.color) inner.style.color = el.color;
-          if (el.fontFamily) inner.style.fontFamily = el.fontFamily;
-          
-          if (runtimeState.preview) {
-            inner.contentEditable = "true";
-            inner.style.outline = "none";
-            inner.style.minWidth = "50px";
-            inner.style.minHeight = "20px";
-            inner.style.cursor = "text";
-            inner.style.padding = "4px";
-            inner.style.border = "1px dashed transparent";
-            
-            inner.addEventListener('focus', () => {
-              inner.style.border = "1px dashed #00796b";
-            });
-            inner.addEventListener('blur', () => {
-              inner.style.border = "1px dashed transparent";
-              window.parent.postMessage({
-                type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-                payload: { id: el.id, updates: { content: inner.innerText } }
-              }, '*');
-            });
-            
-            inner.addEventListener('mousedown', (e) => {
-              e.stopPropagation();
-            });
-            
-            inner.addEventListener('input', (e) => {
-              window.parent.postMessage({
-                type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-                payload: { id: el.id, updates: { content: inner.innerText } }
-              }, '*');
-            });
-          }
-        } else if (el.type === 'image') {
+        }
+        inner.style.fontSize = el.fontSize || wrapper.dataset.fontSize || '24px';
+        inner.style.color = el.color || '#111827';
+        inner.style.fontFamily = el.fontFamily || '';
+        inner.style.lineHeight = '1.35';
+        inner.style.whiteSpace = 'pre-wrap';
+        inner.style.minWidth = '56px';
+        inner.style.minHeight = '28px';
+        inner.style.padding = '6px 8px';
+        inner.style.background = 'rgba(255,255,255,0.14)';
+        inner.style.borderRadius = '12px';
+        inner.style.cursor = 'text';
+        inner.style.outline = 'none';
+
+        if (runtimeState.preview) {
+          inner.contentEditable = 'true';
+          inner.addEventListener('focus', () => {
+            runtimeState.selectedCustomElementId = el.id;
+            inner.style.boxShadow = 'inset 0 0 0 1px rgba(127, 42, 31, 0.35)';
+          });
+          inner.addEventListener('blur', () => {
+            inner.style.boxShadow = 'none';
+            window.parent.postMessage({
+              type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+              payload: { id: el.id, updates: { content: inner.innerText } }
+            }, '*');
+          });
+          inner.addEventListener('mousedown', (e) => e.stopPropagation());
+          inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+          inner.oninput = () => {
+            window.parent.postMessage({
+              type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+              payload: { id: el.id, updates: { content: inner.innerText } }
+            }, '*');
+          };
+        } else {
+          inner.removeAttribute('contenteditable');
+        }
+      } else {
+        let frame = contentRoot.querySelector('.farha-custom-element__image-frame');
+        if (!frame) {
+          frame = document.createElement('div');
+          frame.className = 'farha-custom-element__image-frame';
+          contentRoot.appendChild(frame);
+        }
+        frame.style.width = '100%';
+        frame.style.height = '100%';
+        frame.style.overflow = 'hidden';
+        frame.style.borderRadius = 'inherit';
+        frame.style.background = 'rgba(255,255,255,0.08)';
+
+        let inner = frame.querySelector('.farha-custom-element__image');
+        if (!inner) {
           inner = document.createElement('img');
+          inner.className = 'farha-custom-element__image';
           inner.draggable = false;
-          inner.src = el.content;
-          inner.style.display = 'block';
-          inner.style.width = '100%';
-          inner.style.height = 'auto';
-          inner.style.objectFit = 'contain';
+          frame.appendChild(inner);
         }
-        
-        if (inner) {
-          wrapper.appendChild(inner);
+        inner.src = el.content;
+        inner.style.display = 'block';
+        inner.style.width = '100%';
+        inner.style.height = '100%';
+        inner.style.objectFit = 'cover';
+        inner.style.objectPosition = `${wrapper.dataset.cropX}% ${wrapper.dataset.cropY}%`;
+        inner.style.userSelect = 'none';
+        inner.style.pointerEvents = 'auto';
+      }
+
+      if (runtimeState.preview) {
+        const isSelected = String(runtimeState.selectedCustomElementId || '') === String(el.id);
+        controlsRoot.innerHTML = '';
+        controlsRoot.style.position = 'absolute';
+        controlsRoot.style.top = '-42px';
+        controlsRoot.style.left = '0';
+        controlsRoot.style.display = isSelected ? 'flex' : 'none';
+        controlsRoot.style.gap = '6px';
+        controlsRoot.style.pointerEvents = 'auto';
+        controlsRoot.style.zIndex = '2';
+
+        const makeActionButton = (label, action) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.dataset.farhaAction = action;
+          button.textContent = label;
+          button.style.width = '32px';
+          button.style.height = '32px';
+          button.style.border = 'none';
+          button.style.borderRadius = '999px';
+          button.style.background = 'rgba(255,255,255,0.96)';
+          button.style.boxShadow = '0 8px 24px rgba(15, 23, 42, 0.18)';
+          button.style.color = '#7f2a1f';
+          button.style.fontSize = '16px';
+          button.style.cursor = 'pointer';
+          return button;
+        };
+
+        controlsRoot.appendChild(makeActionButton('✥', 'move'));
+        if (el.type === 'image') {
+          const cropButton = makeActionButton('✂', 'crop-toggle');
+          if (wrapper.dataset.cropMode === 'true') {
+            cropButton.style.background = '#7f2a1f';
+            cropButton.style.color = '#fff';
+          }
+          controlsRoot.appendChild(cropButton);
         }
+        const deleteButton = makeActionButton('×', 'delete');
+        deleteButton.style.color = '#b42318';
+        controlsRoot.appendChild(deleteButton);
+
+        resizeHandle.style.position = 'absolute';
+        resizeHandle.style.bottom = '-16px';
+        resizeHandle.style.right = '-16px';
+        resizeHandle.style.width = '34px';
+        resizeHandle.style.height = '34px';
+        resizeHandle.style.border = 'none';
+        resizeHandle.style.borderRadius = '999px';
+        resizeHandle.style.background = '#7f2a1f';
+        resizeHandle.style.color = '#fff';
+        resizeHandle.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.22)';
+        resizeHandle.style.cursor = 'nwse-resize';
+        resizeHandle.style.display = isSelected ? 'block' : 'none';
+      } else {
+        controlsRoot.style.display = 'none';
+        resizeHandle.style.display = 'none';
       }
     });
   }

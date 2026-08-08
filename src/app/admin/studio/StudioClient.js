@@ -477,6 +477,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
           newEls[idx] = { ...newEls[idx], ...event.data.payload.updates };
           return { ...current, customElements: newEls };
         });
+      } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
+        setDraft(current => ({
+          ...current,
+          customElements: (current.customElements || []).filter((item) => item.id !== event.data.payload.id),
+        }));
       } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
         setOpenSection('custom-elements');
       } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
