@@ -167,6 +167,7 @@
     activeLocale: 'ar',
     languageToggle: null,
     selectedCustomElementId: null,
+    activeTextEditor: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -368,6 +369,114 @@
     });
   }
 
+  function closeFloatingTextEditor(commit = true) {
+    const active = runtimeState.activeTextEditor;
+    if (!active) return;
+
+    const { editor, target, cleanup, onCommit } = active;
+    const nextValue = editor.value;
+
+    if (commit) {
+      target.innerText = nextValue;
+      if (typeof onCommit === 'function') {
+        onCommit(nextValue);
+      }
+    }
+
+    cleanup?.();
+    editor.remove();
+    target.classList.remove('farha-studio-editing');
+    runtimeState.activeTextEditor = null;
+  }
+
+  function openFloatingTextEditor({ target, initialValue = '', onCommit }) {
+    if (!runtimeState.preview || !target) return;
+
+    if (runtimeState.activeTextEditor?.target === target) {
+      runtimeState.activeTextEditor.editor.focus();
+      return;
+    }
+
+    closeFloatingTextEditor(true);
+
+    const editor = document.createElement('textarea');
+    editor.className = 'farha-floating-text-editor';
+    editor.value = initialValue;
+    editor.setAttribute('dir', 'auto');
+    editor.spellcheck = false;
+
+    const applyPosition = () => {
+      const rect = target.getBoundingClientRect();
+      editor.style.position = 'fixed';
+      editor.style.left = `${Math.max(8, rect.left)}px`;
+      editor.style.top = `${Math.max(8, rect.top)}px`;
+      editor.style.width = `${Math.max(120, rect.width || 120)}px`;
+      editor.style.minHeight = `${Math.max(44, rect.height || 44)}px`;
+      editor.style.height = `${Math.max(52, rect.height + 20 || 52)}px`;
+      editor.style.zIndex = '2147483647';
+      editor.style.padding = '10px 12px';
+      editor.style.borderRadius = '12px';
+      editor.style.border = '2px solid #7f2a1f';
+      editor.style.background = 'rgba(255,255,255,0.98)';
+      editor.style.color = window.getComputedStyle(target).color || '#111827';
+      editor.style.font = window.getComputedStyle(target).font || '600 16px Tajawal, sans-serif';
+      editor.style.lineHeight = window.getComputedStyle(target).lineHeight || '1.5';
+      editor.style.textAlign = window.getComputedStyle(target).textAlign || 'right';
+      editor.style.direction = window.getComputedStyle(target).direction || 'rtl';
+      editor.style.resize = 'both';
+      editor.style.boxShadow = '0 18px 48px rgba(15, 23, 42, 0.18)';
+      editor.style.outline = 'none';
+    };
+
+    applyPosition();
+    document.body.appendChild(editor);
+    target.classList.add('farha-studio-editing');
+
+    const handleWindowChange = () => applyPosition();
+    const handleInput = () => {
+      target.innerText = editor.value;
+    };
+    const handleKeydown = (event) => {
+      event.stopPropagation();
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeFloatingTextEditor(false);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        closeFloatingTextEditor(true);
+      }
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('resize', handleWindowChange);
+      window.removeEventListener('scroll', handleWindowChange, true);
+      editor.removeEventListener('input', handleInput);
+      editor.removeEventListener('keydown', handleKeydown);
+      editor.removeEventListener('blur', handleBlur);
+    };
+
+    const handleBlur = () => {
+      closeFloatingTextEditor(true);
+    };
+
+    editor.addEventListener('input', handleInput);
+    editor.addEventListener('keydown', handleKeydown);
+    editor.addEventListener('blur', handleBlur);
+    window.addEventListener('resize', handleWindowChange);
+    window.addEventListener('scroll', handleWindowChange, true);
+
+    runtimeState.activeTextEditor = {
+      editor,
+      target,
+      onCommit,
+      cleanup,
+    };
+
+    editor.focus();
+    editor.select();
+  }
+
   function installMessageBridge() {
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin) return;
@@ -388,6 +497,8 @@
       runtimeState.invitationSlug = payload.renderConfig.invitationSlug || null;
 
       applyRenderConfig(payload.manifest, payload.renderConfig);
+      document.querySelectorAll('form.t-form, form.js-form-proccess, #rsvp-form, #da3wa-rsvp-form, form.rsvp-form')
+        .forEach((form) => syncRsvpFormReferences(form));
       if (runtimeState.preview || !runtimeState.showPromoBar) {
         removePromoBar();
         startPromoGuard();
@@ -1589,6 +1700,7 @@
     forms.forEach((form) => {
       if (form.dataset.farhaBound === 'true' && !forceRebind) return;
 
+      syncRsvpFormReferences(form);
       form.dataset.farhaBound = 'true';
       form.removeAttribute('action');
       restorePersistedRsvpTicket(form);
@@ -1701,6 +1813,46 @@
     return payload;
   }
 
+  function syncRsvpFormReferences(form) {
+    if (!form) return;
+
+    const invitationId =
+      runtimeState.invitationId ||
+      runtimeState.renderConfig?.invitationId ||
+      window.__INVITE__?.renderConfig?.invitationId ||
+      window.__INVITE__?.config?.id ||
+      '';
+    const invitationSlug =
+      runtimeState.invitationSlug ||
+      runtimeState.renderConfig?.invitationSlug ||
+      window.__INVITE__?.renderConfig?.invitationSlug ||
+      '';
+
+    if (invitationId) {
+      form.setAttribute('data-invitation-id', invitationId);
+      let hiddenIdInput = form.querySelector('input[name="invitationId"]');
+      if (!hiddenIdInput) {
+        hiddenIdInput = document.createElement('input');
+        hiddenIdInput.type = 'hidden';
+        hiddenIdInput.name = 'invitationId';
+        form.appendChild(hiddenIdInput);
+      }
+      hiddenIdInput.value = invitationId;
+    }
+
+    if (invitationSlug) {
+      form.setAttribute('data-invitation-slug', invitationSlug);
+      let hiddenSlugInput = form.querySelector('input[name="invitationSlug"]');
+      if (!hiddenSlugInput) {
+        hiddenSlugInput = document.createElement('input');
+        hiddenSlugInput.type = 'hidden';
+        hiddenSlugInput.name = 'invitationSlug';
+        form.appendChild(hiddenSlugInput);
+      }
+      hiddenSlugInput.value = invitationSlug;
+    }
+  }
+
   function findRsvpFeedbackTarget(form) {
     return (
       form.querySelector('#rsvpMsg, #da3wa-err, .js-successbox') ||
@@ -1766,11 +1918,14 @@
   function renderRsvpQrTicket(form, result) {
     if (!result || !result.qrCodeDataUrl) return;
 
-    let host = form.parentElement?.querySelector('.farha-rsvp-ticket');
+    const feedback = findRsvpFeedbackTarget(form);
+    let host = form.parentElement?.querySelector('.farha-rsvp-ticket') || feedback;
     if (!host) {
       host = document.createElement('div');
       host.className = 'farha-rsvp-ticket';
       form.insertAdjacentElement('afterend', host);
+    } else {
+      host.classList.add('farha-rsvp-ticket');
     }
 
     host.style.display = 'block';
@@ -1781,6 +1936,8 @@
     host.style.border = '1px solid rgba(127,42,31,.18)';
     host.style.boxShadow = '0 18px 40px rgba(15,23,42,.08)';
     host.style.textAlign = 'center';
+    host.style.minHeight = 'auto';
+    host.style.color = '';
 
     host.innerHTML = `
       <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">QR Code الخاص بحضورك</div>
@@ -2099,6 +2256,11 @@
           background: rgba(255,255,255,0.18) !important;
           border-radius: 8px;
         }
+        .farha-studio-editing {
+          outline: 2px solid #7f2a1f !important;
+          outline-offset: 4px !important;
+          border-radius: 8px;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -2112,7 +2274,7 @@
         el.classList.add('farha-studio-editable');
         el.dataset.farhaStudioField = fieldKey;
         el.dataset.farhaInlineEditable = 'true';
-        el.contentEditable = 'true';
+        el.contentEditable = 'false';
         el.spellcheck = false;
         el.setAttribute('tabindex', '0');
         el.style.userSelect = 'text';
@@ -2129,48 +2291,24 @@
           }, { passive: true });
           el.addEventListener('click', (event) => {
             event.stopPropagation();
-            el.focus();
+            openFloatingTextEditor({
+              target: el,
+              initialValue: el.innerText || '',
+              onCommit: (nextValue) => {
+                window.parent.postMessage({
+                  type: 'FARHA_TEXT_OVERRIDE',
+                  payload: {
+                    path: fieldKey,
+                    text: nextValue.trim(),
+                  },
+                }, '*');
+              },
+            });
           });
-          el.addEventListener('keydown', (event) => {
-            event.stopPropagation();
-          });
-          el.addEventListener('keyup', (event) => {
-            event.stopPropagation();
-          });
-          el.addEventListener('focus', handleStudioElementFocus);
-          el.addEventListener('input', handleStudioElementInput);
-          el.addEventListener('blur', handleStudioElementBlur);
           el.dataset.farhaInlineBound = 'true';
         }
       });
     });
-  }
-
-  function emitStudioInlineUpdate(node) {
-    const fieldKey = node?.dataset?.farhaStudioField;
-    if (fieldKey) {
-      window.parent.postMessage({
-        type: 'FARHA_TEXT_OVERRIDE',
-        payload: {
-          path: fieldKey,
-          text: (node.innerText || '').trim(),
-        }
-      }, '*');
-    }
-  }
-
-  function handleStudioElementFocus(e) {
-    e.stopPropagation();
-  }
-
-  function handleStudioElementInput(e) {
-    e.stopPropagation();
-    emitStudioInlineUpdate(e.currentTarget);
-  }
-
-  function handleStudioElementBlur(e) {
-    e.stopPropagation();
-    emitStudioInlineUpdate(e.currentTarget);
   }
 
 
@@ -2563,33 +2701,25 @@
         inner.style.webkitTouchCallout = 'default';
 
         if (runtimeState.preview) {
-          inner.contentEditable = 'true';
+          inner.contentEditable = 'false';
           inner.setAttribute('tabindex', '0');
-          inner.addEventListener('focus', () => {
-            runtimeState.selectedCustomElementId = el.id;
-            inner.style.boxShadow = 'inset 0 0 0 1px rgba(127, 42, 31, 0.35)';
-          });
-          inner.addEventListener('blur', () => {
-            inner.style.boxShadow = 'none';
-            window.parent.postMessage({
-              type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-              payload: { id: el.id, updates: { content: inner.innerText } }
-            }, '*');
-          });
           inner.addEventListener('mousedown', (e) => e.stopPropagation());
           inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
           inner.addEventListener('click', (e) => {
             e.stopPropagation();
-            inner.focus();
+            runtimeState.selectedCustomElementId = el.id;
+            openFloatingTextEditor({
+              target: inner,
+              initialValue: inner.innerText || '',
+              onCommit: (nextValue) => {
+                inner.style.boxShadow = 'none';
+                window.parent.postMessage({
+                  type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+                  payload: { id: el.id, updates: { content: nextValue } }
+                }, '*');
+              },
+            });
           });
-          inner.addEventListener('keydown', (e) => e.stopPropagation());
-          inner.addEventListener('keyup', (e) => e.stopPropagation());
-          inner.oninput = () => {
-            window.parent.postMessage({
-              type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-              payload: { id: el.id, updates: { content: inner.innerText } }
-            }, '*');
-          };
         } else {
           inner.removeAttribute('contenteditable');
         }
