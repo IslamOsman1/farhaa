@@ -446,6 +446,63 @@ export default function StudioClient({ session, manifests, openings, inventory }
     return () => clearTimeout(autosaveRef.current);
   }, [draft]);
 
+  useEffect(() => {
+    function handleMessage(event) {
+      if (event.data?.type === 'FARHA_EDIT_FIELD') {
+        const fieldKey = event.data.fieldKey;
+        
+        let targetSection = null;
+        Object.entries(groupedFields).forEach(([section, fields]) => {
+          if (fields.some(f => f.key === fieldKey)) {
+            targetSection = section;
+          }
+        });
+
+        if (QUICK_MEDIA_KEYS.has(fieldKey)) {
+          targetSection = 'media';
+        }
+
+        if (targetSection) {
+          setOpenSection(targetSection);
+          
+          setTimeout(() => {
+            const elId = QUICK_MEDIA_KEYS.has(fieldKey) 
+              ? `studio-media-${fieldKey.replace('.', '-')}` 
+              : `studio-field-${fieldKey}`;
+              
+            const el = document.getElementById(elId);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              
+              // Add a highlight effect
+              el.style.transition = 'box-shadow 0.3s';
+              el.style.boxShadow = '0 0 0 3px rgba(255, 77, 125, 0.5)';
+              setTimeout(() => {
+                el.style.boxShadow = 'none';
+              }, 1500);
+
+              const input = el.querySelector('input, textarea, button');
+              if (input) {
+                if (targetSection === 'media') {
+                  const mediaBtn = Array.from(el.querySelectorAll('button')).find(b => b.textContent.includes('اختيار'));
+                  if (mediaBtn) {
+                    mediaBtn.click();
+                  } else {
+                    input.focus();
+                  }
+                } else {
+                  input.focus();
+                }
+              }
+            }
+          }, 300);
+        }
+      }
+    }
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [groupedFields]);
+
   useEffect(() => () => clearTimeout(autosaveRef.current), []);
 
   useEffect(() => {
@@ -739,41 +796,51 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
             {sectionKey === 'media' ? (
               <div className="studio-media-grid">
-                <MediaSummaryCard
-                  label="صورة العروسين داخل القالب"
-                  type="image"
-                  value={draft.contentConfig['images.hero']}
-                  onChange={(value) => setContentValue('images.hero', value)}
-                  onClear={() => setContentValue('images.hero', '')}
-                />
-                <MediaSummaryCard
-                  label="خلفية المشهد"
-                  type="image"
-                  value={draft.contentConfig['images.background']}
-                  onChange={(value) => setContentValue('images.background', value)}
-                  onClear={() => setContentValue('images.background', '')}
-                />
-                <MediaSummaryCard
-                  label="صورة الغلاف"
-                  type="image"
-                  value={draft.contentConfig.venueImage}
-                  onChange={(value) => setContentValue('venueImage', value)}
-                  onClear={() => setContentValue('venueImage', '')}
-                />
-                <MediaSummaryCard
-                  label="الموسيقى"
-                  type="audio"
-                  value={draft.contentConfig.musicUrl}
-                  onChange={(value) => setContentValue('musicUrl', value)}
-                  onClear={() => setContentValue('musicUrl', '')}
-                />
-                <MediaSummaryCard
-                  label="صورة القاعة"
-                  type="image"
-                  value={draft.contentConfig['images.venue']}
-                  onChange={(value) => setContentValue('images.venue', value)}
-                  onClear={() => setContentValue('images.venue', '')}
-                />
+                <div id="studio-media-images-hero">
+                  <MediaSummaryCard
+                    label="صورة العروسين داخل القالب"
+                    type="image"
+                    value={draft.contentConfig['images.hero']}
+                    onChange={(value) => setContentValue('images.hero', value)}
+                    onClear={() => setContentValue('images.hero', '')}
+                  />
+                </div>
+                <div id="studio-media-images-background">
+                  <MediaSummaryCard
+                    label="خلفية المشهد"
+                    type="image"
+                    value={draft.contentConfig['images.background']}
+                    onChange={(value) => setContentValue('images.background', value)}
+                    onClear={() => setContentValue('images.background', '')}
+                  />
+                </div>
+                <div id="studio-media-venueImage">
+                  <MediaSummaryCard
+                    label="صورة الغلاف"
+                    type="image"
+                    value={draft.contentConfig.venueImage}
+                    onChange={(value) => setContentValue('venueImage', value)}
+                    onClear={() => setContentValue('venueImage', '')}
+                  />
+                </div>
+                <div id="studio-media-musicUrl">
+                  <MediaSummaryCard
+                    label="الموسيقى"
+                    type="audio"
+                    value={draft.contentConfig.musicUrl}
+                    onChange={(value) => setContentValue('musicUrl', value)}
+                    onClear={() => setContentValue('musicUrl', '')}
+                  />
+                </div>
+                <div id="studio-media-images-venue">
+                  <MediaSummaryCard
+                    label="صورة القاعة"
+                    type="image"
+                    value={draft.contentConfig['images.venue']}
+                    onChange={(value) => setContentValue('images.venue', value)}
+                    onClear={() => setContentValue('images.venue', '')}
+                  />
+                </div>
               </div>
             ) : null}
 
@@ -782,6 +849,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
                 {visibleFields.map((field) => (
                   <label
                     key={field.key}
+                    id={`studio-field-${field.key}`}
                     className={`studio-field ${field.type === 'textarea' || field.type === 'gallery' || field.type === 'schedule' || field.type === 'list' ? 'studio-field--full' : ''}`}
                   >
                     <span>{field.labelAr}</span>

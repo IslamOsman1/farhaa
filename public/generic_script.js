@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   const initialSearchParams = new URLSearchParams(window.location.search);
   const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
   const initialOpeningDisabled = initialSearchParams.get('farhaOpening') === '0';
@@ -109,27 +109,27 @@
   }
 
   const TEMPLATE_META = {
-    jathuandthanu: { arabicName: 'جاثو وثانو' },
-    royal: { arabicName: 'الملكي' },
-    majestic: { arabicName: 'ماجستيك' },
-    twilight: { arabicName: 'تويلايت' },
-    imperial: { arabicName: 'إمبريال' },
-    toscana: { arabicName: 'توسكانا' },
-    sacredgarden: { arabicName: 'الحديقة المقدسة' },
-    blossomoud: { arabicName: 'بلوسوم عود' },
-    dolcevita: { arabicName: 'دولتشي فيتا' },
-    destinationlove: { arabicName: 'حب السفر' },
-    classic: { arabicName: 'كلاسيك' },
-    bab: { arabicName: 'باب الفرح' },
-    reverie: { arabicName: 'حُلم وردي' },
-    ring: { arabicName: 'الخاتم' },
-    letter: { arabicName: 'رسالة' },
-    disney: { arabicName: 'ديزني' },
-    rozana: { arabicName: 'روزنة' },
-    hadeel: { arabicName: 'هديل' },
-    wisal: { arabicName: 'وِصال' },
-    vangogh: { arabicName: 'ليلة النجوم' },
-    blush: { arabicName: 'وردة' },
+    jathuandthanu: { arabicName: 'Ø¬Ø§Ø«Ùˆ ÙˆØ«Ø§Ù†Ùˆ' },
+    royal: { arabicName: 'Ø§Ù„Ù…Ù„ÙƒÙŠ' },
+    majestic: { arabicName: 'Ù…Ø§Ø¬Ø³ØªÙŠÙƒ' },
+    twilight: { arabicName: 'ØªÙˆÙŠÙ„Ø§ÙŠØª' },
+    imperial: { arabicName: 'Ø¥Ù…Ø¨Ø±ÙŠØ§Ù„' },
+    toscana: { arabicName: 'ØªÙˆØ³ÙƒØ§Ù†Ø§' },
+    sacredgarden: { arabicName: 'Ø§Ù„Ø­Ø¯ÙŠÙ‚Ø© Ø§Ù„Ù…Ù‚Ø¯Ø³Ø©' },
+    blossomoud: { arabicName: 'Ø¨Ù„ÙˆØ³ÙˆÙ… Ø¹ÙˆØ¯' },
+    dolcevita: { arabicName: 'Ø¯ÙˆÙ„ØªØ´ÙŠ ÙÙŠØªØ§' },
+    destinationlove: { arabicName: 'Ø­Ø¨ Ø§Ù„Ø³ÙØ±' },
+    classic: { arabicName: 'ÙƒÙ„Ø§Ø³ÙŠÙƒ' },
+    bab: { arabicName: 'Ø¨Ø§Ø¨ Ø§Ù„ÙØ±Ø­' },
+    reverie: { arabicName: 'Ø­ÙÙ„Ù… ÙˆØ±Ø¯ÙŠ' },
+    ring: { arabicName: 'Ø§Ù„Ø®Ø§ØªÙ…' },
+    letter: { arabicName: 'Ø±Ø³Ø§Ù„Ø©' },
+    disney: { arabicName: 'Ø¯ÙŠØ²Ù†ÙŠ' },
+    rozana: { arabicName: 'Ø±ÙˆØ²Ù†Ø©' },
+    hadeel: { arabicName: 'Ù‡Ø¯ÙŠÙ„' },
+    wisal: { arabicName: 'ÙˆÙØµØ§Ù„' },
+    vangogh: { arabicName: 'Ù„ÙŠÙ„Ø© Ø§Ù„Ù†Ø¬ÙˆÙ…' },
+    blush: { arabicName: 'ÙˆØ±Ø¯Ø©' },
   };
 
   const MUSIC_SELECTORS = [
@@ -261,24 +261,24 @@
 
   const STATIC_TEXT_TRANSLATIONS = {
     en: {
-      'بطاقة دعوة': 'Invitation Card',
-      'باب على فرحنا': 'A Door to Our Joy',
-      'مكان الحفل': 'Venue',
-      'المكان': 'Venue',
-      'المكان والزمان': 'Venue & Time',
-      'العد التنازلي': 'Countdown',
-      'العائلات': 'Families',
-      'عائلاتنا': 'Our Families',
-      'البرنامج': 'Event Schedule',
-      'تفاصيل الدعوة': 'Invitation Details',
-      'تأكيد الحضور': 'RSVP',
-      'للتواصل والتأكيد': 'Contact & RSVP',
-      'اضغط لفتح الدعوة': 'Tap to open the invitation',
-      'اضغط لفتح الدعوة...': 'Tap to open the invitation',
-      'اضغط على الشاشة': 'Tap the screen',
-      'اضغط على الظرف': 'Tap the envelope',
-      'دق لفتح الدعوة': 'Knock to open the invitation',
-      'اكتشف التفاصيل': 'Discover the details',
+      'Ø¨Ø·Ø§Ù‚Ø© Ø¯Ø¹ÙˆØ©': 'Invitation Card',
+      'Ø¨Ø§Ø¨ Ø¹Ù„Ù‰ ÙØ±Ø­Ù†Ø§': 'A Door to Our Joy',
+      'Ù…ÙƒØ§Ù† Ø§Ù„Ø­ÙÙ„': 'Venue',
+      'Ø§Ù„Ù…ÙƒØ§Ù†': 'Venue',
+      'Ø§Ù„Ù…ÙƒØ§Ù† ÙˆØ§Ù„Ø²Ù…Ø§Ù†': 'Venue & Time',
+      'Ø§Ù„Ø¹Ø¯ Ø§Ù„ØªÙ†Ø§Ø²Ù„ÙŠ': 'Countdown',
+      'Ø§Ù„Ø¹Ø§Ø¦Ù„Ø§Øª': 'Families',
+      'Ø¹Ø§Ø¦Ù„Ø§ØªÙ†Ø§': 'Our Families',
+      'Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬': 'Event Schedule',
+      'ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¯Ø¹ÙˆØ©': 'Invitation Details',
+      'ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¶ÙˆØ±': 'RSVP',
+      'Ù„Ù„ØªÙˆØ§ØµÙ„ ÙˆØ§Ù„ØªØ£ÙƒÙŠØ¯': 'Contact & RSVP',
+      'Ø§Ø¶ØºØ· Ù„ÙØªØ­ Ø§Ù„Ø¯Ø¹ÙˆØ©': 'Tap to open the invitation',
+      'Ø§Ø¶ØºØ· Ù„ÙØªØ­ Ø§Ù„Ø¯Ø¹ÙˆØ©...': 'Tap to open the invitation',
+      'Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø´Ø§Ø´Ø©': 'Tap the screen',
+      'Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø¸Ø±Ù': 'Tap the envelope',
+      'Ø¯Ù‚ Ù„ÙØªØ­ Ø§Ù„Ø¯Ø¹ÙˆØ©': 'Knock to open the invitation',
+      'Ø§ÙƒØªØ´Ù Ø§Ù„ØªÙØ§ØµÙŠÙ„': 'Discover the details',
     },
   };
 
@@ -399,8 +399,33 @@
     applyRenderConfig(null, renderConfig);
   }
 
-  function applyRenderConfig(manifest, renderConfig) {
+    function applyRenderConfig(manifest, renderConfig) {
     const fields = buildLegacyFields(renderConfig.fields || {});
+    const bindings =
+      (manifest && manifest.runtimeBindings && manifest.runtimeBindings.fieldBindings) || fallbackBindings;
+
+    runtimeState.baseFields = fields;
+    runtimeState.activeLocale = renderConfig.ui?.defaultLocale || renderConfig.locale || 'ar';
+
+    window.__INVITE__ = {
+      ...(window.__INVITE__ || {}),
+      renderConfig,
+      opening: renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} },
+      config: {
+        ...((window.__INVITE__ && window.__INVITE__.config) || {}),
+        ...fields,
+      },
+    };
+
+    applyLocalizedContent(bindings, fields, runtimeState.activeLocale);
+    applyTheme(renderConfig.theme || {});
+    applySections(manifest, renderConfig.sections || {});
+    ensureLanguageToggle(renderConfig, bindings);
+    ensureMusicControls(fields.musicUrl || '');
+    applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
+    
+    attachStudioInlineEditors(bindings);
+  });
     const bindings =
       (manifest && manifest.runtimeBindings && manifest.runtimeBindings.fieldBindings) || fallbackBindings;
 
@@ -945,7 +970,7 @@
         img.src = imageUrl;
         img.loading = 'lazy';
         img.decoding = 'async';
-        img.alt = `ذكرى ${index + 1}`;
+        img.alt = `Ø°ÙƒØ±Ù‰ ${index + 1}`;
         figure.appendChild(img);
         host.appendChild(figure);
       });
@@ -1175,7 +1200,7 @@
 
   function syncAudioToggleState(audio) {
     if (!audio || !runtimeState.audioToggle) return;
-    runtimeState.audioToggle.textContent = audio.paused ? 'تشغيل الصوت' : 'كتم الصوت';
+    runtimeState.audioToggle.textContent = audio.paused ? 'ØªØ´ØºÙŠÙ„ Ø§Ù„ØµÙˆØª' : 'ÙƒØªÙ… Ø§Ù„ØµÙˆØª';
     runtimeState.audioToggle.setAttribute('aria-pressed', audio.paused ? 'false' : 'true');
   }
 
@@ -1437,8 +1462,8 @@
     overlay.innerHTML = `
       <div class="fmo-card">
         <div class="fmo-mark">FARHA</div>
-        <p class="fmo-text">لحظة واحدة... دعوتكم تُفتح الآن</p>
-        <button type="button" class="fmo-skip">تخطي</button>
+        <p class="fmo-text">Ù„Ø­Ø¸Ø© ÙˆØ§Ø­Ø¯Ø©... Ø¯Ø¹ÙˆØªÙƒÙ… ØªÙÙØªØ­ Ø§Ù„Ø¢Ù†</p>
+        <button type="button" class="fmo-skip">ØªØ®Ø·ÙŠ</button>
       </div>
     `;
 
@@ -1525,12 +1550,12 @@
 
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = runtimeState.preview ? 'معاينة...' : 'جاري الإرسال...';
+          submitButton.textContent = runtimeState.preview ? 'Ù…Ø¹Ø§ÙŠÙ†Ø©...' : 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„...';
         }
 
         try {
           if (runtimeState.preview) {
-            showFeedback(feedback, 'هذه معاينة فقط. تم حفظ الرد تجريبيًا داخل المعاينة.', true);
+            showFeedback(feedback, 'Ù‡Ø°Ù‡ Ù…Ø¹Ø§ÙŠÙ†Ø© ÙÙ‚Ø·. ØªÙ… Ø­ÙØ¸ Ø§Ù„Ø±Ø¯ ØªØ¬Ø±ÙŠØ¨ÙŠÙ‹Ø§ Ø¯Ø§Ø®Ù„ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø©.', true);
             form.reset();
             return;
           }
@@ -1543,18 +1568,18 @@
           const result = await response.json();
 
           if (!response.ok) {
-            throw new Error(result.error || 'تعذر إرسال الرد');
+            throw new Error(result.error || 'ØªØ¹Ø°Ø± Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø¯');
           }
 
-          showFeedback(feedback, result.message || 'تم استلام ردكم بنجاح.', true);
+          showFeedback(feedback, result.message || 'ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø±Ø¯ÙƒÙ… Ø¨Ù†Ø¬Ø§Ø­.', true);
           form.reset();
         } catch (error) {
           console.error('RSVP submit failed:', error);
-          showFeedback(feedback, error.message || 'حدث خطأ أثناء إرسال الرد.', false);
+          showFeedback(feedback, error.message || 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø¯.', false);
         } finally {
           if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = originalText || 'إرسال';
+            submitButton.textContent = originalText || 'Ø¥Ø±Ø³Ø§Ù„';
           }
         }
       });
@@ -1656,9 +1681,9 @@
 
     const publicData = await loadPublicTemplateBarData();
     const whatsappNumber = publicData.whatsapp || '201001473345';
-    const priceLabel = publicData.minPriceLabel ? `تبدأ من ${publicData.minPriceLabel} - ` : '';
+    const priceLabel = publicData.minPriceLabel ? `ØªØ¨Ø¯Ø£ Ù…Ù† ${publicData.minPriceLabel} - ` : '';
     const whatsappText = encodeURIComponent(
-      `مرحباً، أعجبني قالب «${TEMPLATE_META[runtimeState.templateSlug].arabicName}» وأرغب في طلبه من FARHA.`,
+      `Ù…Ø±Ø­Ø¨Ø§Ù‹ØŒ Ø£Ø¹Ø¬Ø¨Ù†ÙŠ Ù‚Ø§Ù„Ø¨ Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Â» ÙˆØ£Ø±ØºØ¨ ÙÙŠ Ø·Ù„Ø¨Ù‡ Ù…Ù† FARHA.`,
     );
     const orderUrl = `/order?tpl=${runtimeState.templateSlug}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappText}`;
@@ -1785,18 +1810,18 @@
     bar.id = 'farha-template-bar';
     bar.innerHTML = `
       <div class="ftb-copy">
-        <p class="ftb-title">أعجبك قالب «${TEMPLATE_META[runtimeState.templateSlug].arabicName}»؟</p>
-        <p class="ftb-sub">${priceLabel}اطلبه الآن من FARHA ونجهزه ليتناسب مع مناسبتكم</p>
-        <p class="ftb-note">هذا الشريط للعرض فقط - دعوتكم النهائية تصلكم نظيفة بدونه</p>
+        <p class="ftb-title">Ø£Ø¹Ø¬Ø¨Ùƒ Ù‚Ø§Ù„Ø¨ Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Â»ØŸ</p>
+        <p class="ftb-sub">${priceLabel}Ø§Ø·Ù„Ø¨Ù‡ Ø§Ù„Ø¢Ù† Ù…Ù† FARHA ÙˆÙ†Ø¬Ù‡Ø²Ù‡ Ù„ÙŠØªÙ†Ø§Ø³Ø¨ Ù…Ø¹ Ù…Ù†Ø§Ø³Ø¨ØªÙƒÙ…</p>
+        <p class="ftb-note">Ù‡Ø°Ø§ Ø§Ù„Ø´Ø±ÙŠØ· Ù„Ù„Ø¹Ø±Ø¶ ÙÙ‚Ø· - Ø¯Ø¹ÙˆØªÙƒÙ… Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ© ØªØµÙ„ÙƒÙ… Ù†Ø¸ÙŠÙØ© Ø¨Ø¯ÙˆÙ†Ù‡</p>
       </div>
       <div class="ftb-actions">
-        <button class="ftb-close" type="button" aria-label="إغلاق">×</button>
-        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="واتساب">
+        <button class="ftb-close" type="button" aria-label="Ø¥ØºÙ„Ø§Ù‚">Ã—</button>
+        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="ÙˆØ§ØªØ³Ø§Ø¨">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
           </svg>
         </a>
-        <a class="ftb-order" href="${orderUrl}">اطلبه الآن</a>
+        <a class="ftb-order" href="${orderUrl}">Ø§Ø·Ù„Ø¨Ù‡ Ø§Ù„Ø¢Ù†</a>
       </div>
     `;
 
@@ -1842,7 +1867,7 @@
             .sort((a, b) => a.price - b.price)[0];
 
           if (cheapest) {
-            const currencyLabel = cheapest.currency === 'EGP' ? 'ج.م' : cheapest.currency || '';
+            const currencyLabel = cheapest.currency === 'EGP' ? 'Ø¬.Ù…' : cheapest.currency || '';
             defaults.minPriceLabel = `${cheapest.price} ${currencyLabel}`.trim();
           }
         }
@@ -1853,4 +1878,74 @@
 
     return defaults;
   }
+  function attachStudioInlineEditors(bindings) {
+    if (!runtimeState.preview) return;
+
+    if (!document.getElementById('farha-studio-inline-style')) {
+      const style = document.createElement('style');
+      style.id = 'farha-studio-inline-style';
+      style.textContent = \
+        .farha-studio-editable {
+          transition: all 0.2s ease-in-out;
+          cursor: pointer !important;
+          position: relative;
+        }
+        .farha-studio-editable:hover {
+          outline: 2px dashed #ff4d7d !important;
+          outline-offset: 4px !important;
+          opacity: 0.8 !important;
+          z-index: 99999;
+        }
+        .farha-studio-editable::after {
+          content: 'تعديل';
+          position: absolute;
+          top: -24px;
+          right: 0;
+          background: #ff4d7d;
+          color: #fff;
+          font-size: 11px;
+          font-family: Tajawal, sans-serif;
+          padding: 2px 6px;
+          border-radius: 4px;
+          opacity: 0;
+          transition: opacity 0.2s;
+          pointer-events: none;
+          white-space: nowrap;
+        }
+        .farha-studio-editable:hover::after {
+          opacity: 1;
+        }
+      \;
+      document.head.appendChild(style);
+    }
+
+    Object.keys(bindings).forEach((fieldKey) => {
+      const binding = bindings[fieldKey];
+      if (!binding || !binding.selector) return;
+      
+      const elements = queryAll(binding.selector);
+      elements.forEach(el => {
+        el.classList.add('farha-studio-editable');
+        el.dataset.farhaStudioField = fieldKey;
+        
+        // Remove old listener to avoid duplicates
+        el.removeEventListener('click', handleStudioElementClick);
+        el.addEventListener('click', handleStudioElementClick);
+      });
+    });
+  }
+
+  function handleStudioElementClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const fieldKey = e.currentTarget.dataset.farhaStudioField;
+    if (fieldKey) {
+      window.parent.postMessage({
+        type: 'FARHA_EDIT_FIELD',
+        fieldKey: fieldKey
+      }, '*');
+    }
+  }
+
 })();
+
