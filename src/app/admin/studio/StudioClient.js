@@ -14,18 +14,19 @@ const DEVICE_PRESETS = {
 };
 
 const SECTION_META = {
-  basic: { icon: 'ðŸ‘¤', label: 'Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ§Øª', description: 'Ø£Ø³Ù…Ø§Ø¡ Ø§Ù„Ø¹Ø±ÙˆØ³ÙŠÙ† ÙˆØ¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø©' },
-  wording: { icon: 'ðŸ“', label: 'Ø§Ù„Ù†ØµÙˆØµ', description: 'Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ø¯Ø¹ÙˆØ© ÙˆØ§Ù„Ø¹Ù†Ø§ÙˆÙŠÙ†' },
-  families: { icon: 'ðŸ‘ª', label: 'Ø§Ù„Ø¹Ø§Ø¦Ù„Ø§Øª', description: 'Ø£Ø³Ù…Ø§Ø¡ ÙˆØªÙˆØ§Ù‚ÙŠØ¹ Ø§Ù„Ø¹Ø§Ø¦Ù„ØªÙŠÙ†' },
-  details: { icon: 'ðŸ“', label: 'Ø§Ù„Ù…ÙƒØ§Ù† ÙˆØ§Ù„Ø²Ù…Ø§Ù†', description: 'Ø§Ù„ØªØ§Ø±ÙŠØ® ÙˆØ§Ù„Ù‚Ø§Ø¹Ø© ÙˆØ±Ø§Ø¨Ø· Ø§Ù„Ø®Ø±ÙŠØ·Ø©' },
-  schedule: { icon: 'ðŸ—“', label: 'Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬', description: 'ÙÙ‚Ø±Ø§Øª Ø§Ù„ÙŠÙˆÙ… ÙˆØ¬Ø¯ÙˆÙ„Ù‡' },
-  media: { icon: 'ðŸ–¼', label: 'Ø§Ù„ÙˆØ³Ø§Ø¦Ø·', description: 'ØµÙˆØ± ÙˆÙÙŠØ¯ÙŠÙˆÙ‡Ø§Øª ÙˆÙ…ÙˆØ³ÙŠÙ‚Ù‰ Ø§Ù„Ø¯Ø¹ÙˆØ©' },
-  contact: { icon: 'ðŸ“ž', label: 'Ø§Ù„ØªÙˆØ§ØµÙ„', description: 'Ø§Ø³Ù… ÙˆØ±Ù‚Ù… Ø¬Ù‡Ø© Ø§Ù„ØªÙ†Ø³ÙŠÙ‚ ÙˆØ§Ù„Ø§Ø³ØªÙØ³Ø§Ø±' },
-  closing: { icon: 'âœ’', label: 'Ø§Ù„Ø®Ø§ØªÙ…Ø©', description: 'Ø®Ø§ØªÙ…Ø© Ø§Ù„Ø¯Ø¹ÙˆØ© ÙˆØ§Ù„Ù‡Ø§Ø´ØªØ§Øº ÙˆØ§Ù„ØªÙˆÙ‚ÙŠØ¹' },
-  opening: { icon: 'âœ¨', label: 'Ø§Ù„Ø§ÙØªØªØ§Ø­ÙŠØ©', description: 'Ø§Ù„Ù…Ø´Ù‡Ø¯ Ø§Ù„Ø£ÙˆÙ„ ÙˆØ·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯Ø®ÙˆÙ„' },
-  design: { icon: 'ðŸŽ¨', label: 'Ø§Ù„ØªØµÙ…ÙŠÙ…', description: 'Ø§Ù„Ø£Ù„ÙˆØ§Ù† ÙˆØ§Ù„Ø®Ø·ÙˆØ· ÙˆØ§Ù„Ù…Ø¸Ù‡Ø± Ø§Ù„Ø¹Ø§Ù…' },
-  sections: { icon: 'â˜°', label: 'Ø§Ù„Ø£Ù‚Ø³Ø§Ù…', description: 'Ø¥Ø¸Ù‡Ø§Ø± ÙˆØ¥Ø®ÙØ§Ø¡ ÙˆØªØ±ØªÙŠØ¨ Ø£Ø¬Ø²Ø§Ø¡ Ø§Ù„Ø¯Ø¹ÙˆØ©' },
-  advanced: { icon: 'âš™', label: 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ù…ØªÙ‚Ø¯Ù…Ø©', description: 'Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙˆØ®ÙŠØ§Ø±Ø§Øª Ø§Ù„Ø¹Ù…Ù„' },
+  basic: { icon: '👤', label: 'الأساسيات', description: 'أسماء العروسين وبيانات المناسبة' },
+  wording: { icon: '✉️', label: 'النصوص', description: 'رسائل الدعوة والعناوين' },
+  families: { icon: '👪', label: 'العائلات', description: 'أسماء وتواقيع العائلتين' },
+  details: { icon: '📍', label: 'المكان والزمان', description: 'التاريخ والقاعة ورابط الخريطة' },
+  schedule: { icon: '🗓️', label: 'البرنامج', description: 'فقرات اليوم وجدوله' },
+  media: { icon: '🖼️', label: 'الوسائط', description: 'صور وفيديوهات وموسيقى الدعوة' },
+  contact: { icon: '📞', label: 'التواصل', description: 'اسم ورقم جهة التنسيق والاستفسار' },
+  closing: { icon: '✒️', label: 'الخاتمة', description: 'خاتمة الدعوة والهاشتاغ والتوقيع' },
+  'custom-elements': { icon: '✨', label: 'عناصر حرة', description: 'إضافة وتحريك نصوص وصور بحرية' },
+  opening: { icon: '✨', label: 'الافتتاحية', description: 'المشهد الأول وطريقة الدخول' },
+  design: { icon: '🎨', label: 'التصميم', description: 'الألوان والخطوط والمظهر العام' },
+  sections: { icon: '☰', label: 'الأقسام', description: 'إظهار وإخفاء وترتيب أجزاء الدعوة' },
+  advanced: { icon: '⚙️', label: 'إعدادات متقدمة', description: 'القالب الأساسي وخيارات العمل' },
 };
 
 function arrayValue(value) {
@@ -404,7 +405,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
   const activeSections = useMemo(() => {
     const fieldSections = Object.keys(groupedFields).filter((key) => SECTION_META[key]);
-    return [...fieldSections, 'opening', 'design', 'custom-elements', 'opening', 'design', 'sections', 'advanced'];
+    return [...fieldSections, 'custom-elements', 'opening', 'design', 'sections', 'advanced'];
   }, [groupedFields]);
 
   const persistDraft = useEffectEvent(async (nextDraft) => {
