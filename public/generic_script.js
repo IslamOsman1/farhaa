@@ -1989,6 +1989,10 @@
           transition: all 0.2s ease-in-out;
           cursor: text !important;
           position: relative;
+          user-select: text !important;
+          -webkit-user-select: text !important;
+          touch-action: manipulation !important;
+          -webkit-touch-callout: default !important;
         }
         .farha-studio-editable:hover {
           outline: 2px dashed #ff4d7d !important;
@@ -2036,6 +2040,11 @@
         el.dataset.farhaInlineEditable = 'true';
         el.contentEditable = 'true';
         el.spellcheck = false;
+        el.setAttribute('tabindex', '0');
+        el.style.userSelect = 'text';
+        el.style.webkitUserSelect = 'text';
+        el.style.touchAction = 'manipulation';
+        el.style.webkitTouchCallout = 'default';
 
         if (!el.dataset.farhaInlineBound) {
           el.addEventListener('mousedown', (event) => {
@@ -2044,6 +2053,16 @@
           el.addEventListener('touchstart', (event) => {
             event.stopPropagation();
           }, { passive: true });
+          el.addEventListener('click', (event) => {
+            event.stopPropagation();
+            el.focus();
+          });
+          el.addEventListener('keydown', (event) => {
+            event.stopPropagation();
+          });
+          el.addEventListener('keyup', (event) => {
+            event.stopPropagation();
+          });
           el.addEventListener('focus', handleStudioElementFocus);
           el.addEventListener('input', handleStudioElementInput);
           el.addEventListener('blur', handleStudioElementBlur);
@@ -2396,8 +2415,9 @@
       wrapper.style.left = `${el.x || 0}px`;
       wrapper.style.top = `${el.y || 0}px`;
       wrapper.style.pointerEvents = 'auto';
-      wrapper.style.touchAction = 'none';
-      wrapper.style.userSelect = 'none';
+      wrapper.style.touchAction = el.type === 'text' ? 'manipulation' : 'none';
+      wrapper.style.userSelect = el.type === 'text' ? 'text' : 'none';
+      wrapper.style.webkitUserSelect = el.type === 'text' ? 'text' : 'none';
       wrapper.style.cursor = runtimeState.preview ? 'default' : 'inherit';
       wrapper.style.maxWidth = 'calc(100% - 12px)';
 
@@ -2463,9 +2483,14 @@
         inner.style.borderRadius = '12px';
         inner.style.cursor = 'text';
         inner.style.outline = 'none';
+        inner.style.userSelect = 'text';
+        inner.style.webkitUserSelect = 'text';
+        inner.style.touchAction = 'manipulation';
+        inner.style.webkitTouchCallout = 'default';
 
         if (runtimeState.preview) {
           inner.contentEditable = 'true';
+          inner.setAttribute('tabindex', '0');
           inner.addEventListener('focus', () => {
             runtimeState.selectedCustomElementId = el.id;
             inner.style.boxShadow = 'inset 0 0 0 1px rgba(127, 42, 31, 0.35)';
@@ -2479,6 +2504,12 @@
           });
           inner.addEventListener('mousedown', (e) => e.stopPropagation());
           inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+          inner.addEventListener('click', (e) => {
+            e.stopPropagation();
+            inner.focus();
+          });
+          inner.addEventListener('keydown', (e) => e.stopPropagation());
+          inner.addEventListener('keyup', (e) => e.stopPropagation());
           inner.oninput = () => {
             window.parent.postMessage({
               type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
