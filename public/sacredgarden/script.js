@@ -191,38 +191,33 @@ function ensureSealMonogram(brideName, groomName) {
   sealLink.style.height = '100%';
   sealLink.style.overflow = 'hidden';
 
-  const sealImage = query('img', sealLink);
-  if (sealImage) {
-    sealImage.style.display = 'block';
-    sealImage.style.width = '100%';
-    sealImage.style.height = '100%';
-    sealImage.style.objectFit = 'contain';
+  const originalSealImage = query('img', sealLink);
+  if (originalSealImage) {
+    originalSealImage.style.opacity = '0';
+    originalSealImage.style.visibility = 'hidden';
+    originalSealImage.style.pointerEvents = 'none';
+    originalSealImage.style.position = 'absolute';
+    originalSealImage.style.inset = '0';
+    originalSealImage.style.width = '100%';
+    originalSealImage.style.height = '100%';
+    originalSealImage.removeAttribute('srcset');
+    originalSealImage.removeAttribute('data-original');
   }
 
-  let monogram = sealLink.querySelector('[data-farha-seal-monogram]');
-  if (!monogram) {
-    monogram = document.createElement('span');
-    monogram.setAttribute('data-farha-seal-monogram', 'true');
-    monogram.style.position = 'absolute';
-    monogram.style.top = '50%';
-    monogram.style.left = '50%';
-    monogram.style.width = '100%';
-    monogram.style.height = '100%';
-    monogram.style.display = 'flex';
-    monogram.style.alignItems = 'center';
-    monogram.style.justifyContent = 'center';
-    monogram.style.pointerEvents = 'none';
-    monogram.style.zIndex = '4';
-    monogram.style.fontFamily = '"Times New Roman", "Georgia", serif';
-    monogram.style.fontStyle = 'italic';
-    monogram.style.fontWeight = '600';
-    monogram.style.fontSize = '46px';
-    monogram.style.letterSpacing = '1.5px';
-    monogram.style.lineHeight = '1';
-    monogram.style.color = '#d9b56b';
-    monogram.style.textShadow = '0 1px 0 rgba(92, 25, 35, 0.55), 0 0 10px rgba(246, 223, 159, 0.22)';
-    monogram.style.transform = 'translate(-50%, -50%)';
-    sealLink.appendChild(monogram);
+  let generatedSealImage = sealLink.querySelector('[data-farha-generated-seal]');
+  if (!generatedSealImage) {
+    generatedSealImage = document.createElement('img');
+    generatedSealImage.setAttribute('data-farha-generated-seal', 'true');
+    generatedSealImage.alt = 'Seal monogram';
+    generatedSealImage.draggable = false;
+    generatedSealImage.style.position = 'absolute';
+    generatedSealImage.style.inset = '0';
+    generatedSealImage.style.width = '100%';
+    generatedSealImage.style.height = '100%';
+    generatedSealImage.style.objectFit = 'contain';
+    generatedSealImage.style.zIndex = '3';
+    generatedSealImage.style.pointerEvents = 'none';
+    sealLink.appendChild(generatedSealImage);
   }
 
   const brideInitial = getInitial(brideName);
@@ -230,14 +225,7 @@ function ensureSealMonogram(brideName, groomName) {
   const text = [brideInitial, groomInitial].filter(Boolean).join('&');
   if (text) {
     const sealSvg = buildSealSvg(text);
-    const sealImage = query('img', sealLink);
-    if (sealImage) {
-      sealImage.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
-      sealImage.removeAttribute('srcset');
-      sealImage.removeAttribute('data-original');
-      sealImage.style.objectFit = 'contain';
-    }
-    monogram.textContent = '';
+    generatedSealImage.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
   }
 }
 
@@ -361,8 +349,8 @@ function applySacredGardenConfig() {
 
   syncSacredGardenOpeningState();
 
-  const groom = config.groomName || config.groom || '';
-  const bride = config.brideName || config.bride || '';
+  const groom = config.groomName || config.groom || config.groomName_en || config.groom_en || '';
+  const bride = config.brideName || config.bride || config.brideName_en || config.bride_en || '';
   const combinedNames = [groom, bride].filter(Boolean).join(' <br /><br />');
   const inlineNames = [groom, bride].filter(Boolean).join(' and ');
 
