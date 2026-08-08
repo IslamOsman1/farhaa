@@ -4,12 +4,16 @@ import prisma from '@/lib/prisma';
 import { generateRsvpQrDataUrl, getRsvpQrDownloadName, getRsvpQrRoute } from '@/lib/rsvp-qr';
 
 const rsvpPayloadSchema = z.object({
-  invitationId: z.string().trim().min(1),
+  invitationId: z.string().trim().min(1).optional(),
+  invitationSlug: z.string().trim().min(1).optional(),
   guestName: z.string().trim().min(1),
   phone: z.string().trim().optional().nullable(),
   status: z.string().trim().optional().default('confirmed'),
   companions: z.coerce.number().int().min(0).max(20).optional().default(0),
   message: z.string().trim().max(1000).optional().nullable(),
+}).refine((payload) => payload.invitationId || payload.invitationSlug, {
+  message: 'Invitation reference is required.',
+  path: ['invitationId'],
 });
 
 const rsvpAttempts = new Map();
@@ -47,8 +51,10 @@ export async function POST(request) {
 
     const payload = rsvpPayloadSchema.parse(await request.json());
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { id: payload.invitationId },
+    const invitation = await prisma.invitation.findFirst({
+      where: payload.invitationId
+        ? { id: payload.invitationId }
+        : { slug: payload.invitationSlug },
       select: { id: true, slug: true, status: true },
     });
 
@@ -62,7 +68,7 @@ export async function POST(request) {
 
     const rsvp = await prisma.rSVP.create({
       data: {
-        invitationId: payload.invitationId,
+        invitationId: invitation.id,
         guestName: payload.guestName,
         phone: payload.phone || null,
         status: payload.status || 'confirmed',
@@ -87,6 +93,16 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error('RSVP Error:', error);
+    if (error instanceof z.ZodError) {
+      const firstIssue = error.issues[0];
+      return NextResponse.json(
+        {
+          error: firstIssue?.message || 'Invalid RSVP payload.',
+          issues: error.issues,
+        },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: error.message || 'Failed to submit RSVP.' }, { status: 500 });
   }
 }

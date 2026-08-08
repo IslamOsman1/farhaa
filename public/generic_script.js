@@ -155,6 +155,7 @@
     preview: false,
     showPromoBar: !initialPromoBarDisabled,
     invitationId: null,
+    invitationSlug: null,
     styleTag: null,
     promoBarMounted: false,
     scrollLocked: false,
@@ -317,6 +318,7 @@
       runtimeState.preview = Boolean(payload.renderConfig.preview);
       runtimeState.showPromoBar = payload.renderConfig.ui?.showPromoBar !== false;
       runtimeState.invitationId = payload.renderConfig.invitationId || null;
+      runtimeState.invitationSlug = payload.renderConfig.invitationSlug || null;
 
       applyRenderConfig(payload.manifest, payload.renderConfig);
       if (runtimeState.preview || !runtimeState.showPromoBar) {
@@ -397,6 +399,7 @@
     runtimeState.renderConfig = renderConfig;
     runtimeState.showPromoBar = renderConfig.ui?.showPromoBar !== false;
     runtimeState.invitationId = renderConfig.invitationId;
+    runtimeState.invitationSlug = renderConfig.invitationSlug || null;
     applyRenderConfig(null, renderConfig);
   }
 
@@ -1521,6 +1524,7 @@
 
       form.dataset.farhaBound = 'true';
       form.removeAttribute('action');
+      restorePersistedRsvpTicket(form);
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -1530,6 +1534,11 @@
         const submitButton = form.querySelector('button[type="submit"], #submitBtn, .send');
         const feedback = findRsvpFeedbackTarget(form);
         const originalText = submitButton ? submitButton.textContent : '';
+
+        if (!data.invitationId && !data.invitationSlug) {
+          showFeedback(feedback, 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.', false);
+          return;
+        }
 
         if (submitButton) {
           submitButton.disabled = true;
@@ -1579,6 +1588,12 @@
         document.getElementById('da3wa-rsvp')?.getAttribute('data-inv') ||
         window.__INVITE__?.config?.id ||
         '',
+      invitationSlug:
+        runtimeState.invitationSlug ||
+        runtimeState.renderConfig?.invitationSlug ||
+        window.__INVITE__?.renderConfig?.invitationSlug ||
+        window.location.pathname.split('/').filter(Boolean).pop() ||
+        '',
       guestName: '',
       status: 'confirmed',
       companions: 0,
@@ -1624,6 +1639,54 @@
     target.style.display = 'block';
     target.textContent = text;
     target.style.color = success ? '#1f9d61' : '#d9475c';
+  }
+
+  function getRsvpTicketStorageKey() {
+    const invitationKey =
+      runtimeState.invitationId ||
+      runtimeState.invitationSlug ||
+      runtimeState.renderConfig?.invitationId ||
+      runtimeState.renderConfig?.invitationSlug ||
+      window.__INVITE__?.config?.id ||
+      window.__INVITE__?.renderConfig?.invitationSlug ||
+      window.location.pathname;
+
+    return invitationKey ? `farha-rsvp-ticket:${invitationKey}` : null;
+  }
+
+  function persistRsvpTicket(result) {
+    const storageKey = getRsvpTicketStorageKey();
+    if (!storageKey || !result || !result.qrCodeDataUrl) return;
+
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          qrCodeDataUrl: result.qrCodeDataUrl,
+          qrCodeViewUrl: result.qrCodeViewUrl || '',
+          qrCodeDownloadUrl: result.qrCodeDownloadUrl || '',
+          qrCodeDownloadName: result.qrCodeDownloadName || 'farha-rsvp-qr.png',
+        }),
+      );
+    } catch (error) {
+      console.warn('Failed to persist RSVP ticket', error);
+    }
+  }
+
+  function restorePersistedRsvpTicket(form) {
+    if (!form) return;
+    const storageKey = getRsvpTicketStorageKey();
+    if (!storageKey) return;
+
+    try {
+      const rawValue = window.localStorage.getItem(storageKey);
+      if (!rawValue) return;
+      const parsed = JSON.parse(rawValue);
+      if (!parsed || !parsed.qrCodeDataUrl) return;
+      renderRsvpQrTicket(form, parsed);
+    } catch (error) {
+      console.warn('Failed to restore RSVP ticket', error);
+    }
   }
 
   function renderRsvpQrTicket(form, result) {
@@ -1673,6 +1736,8 @@
         </a>
       </div>
     `;
+
+    persistRsvpTicket(result);
 
     host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
