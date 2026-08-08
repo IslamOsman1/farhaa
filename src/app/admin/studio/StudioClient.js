@@ -504,8 +504,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
         const { x, y } = event.data.payload;
         
         setDraft(current => {
-          const mode = current.ui?.addCustomElementMode;
-          if (!mode) return current;
+          let mode = current.ui?.addCustomElementMode;
+          if (!mode) {
+            const choice = window.prompt('ماذا تريد أن تضيف هنا؟ (اكتب: نص أو صورة)', 'نص');
+            if (choice === 'صورة') mode = 'image';
+            else if (choice === 'نص') mode = 'text';
+            else return current;
+          }
 
           const newEl = {
             id: 'custom-' + Math.random().toString(36).substr(2, 9),
