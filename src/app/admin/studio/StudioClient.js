@@ -1012,7 +1012,86 @@ export default function StudioClient({ session, manifests, openings, inventory }
           <div className="studio-phone-stage studio-phone-stage--sticky">
             <div className={`studio-device studio-device--${draft.devicePreview.mode}`}>
               <div className="studio-phone-shell">
-                <RenderFrame
+                        {canvasClickMenu && (
+          <div style={{
+            position: 'absolute',
+            top: canvasClickMenu.y + 'px',
+            left: canvasClickMenu.x + 'px',
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            display: 'flex',
+            gap: '8px',
+            padding: '8px',
+            zIndex: 1000,
+            transform: 'translate(-50%, -50%)'
+          }}>
+            <button
+              type="button"
+              className="mini-btn"
+              onClick={() => {
+                setDraft(current => {
+                  const newEl = {
+                    id: 'custom-' + Math.random().toString(36).substr(2, 9),
+                    type: 'text',
+                    content: 'نص جديد',
+                    x: canvasClickMenu.x,
+                    y: canvasClickMenu.y,
+                    fontSize: '24px',
+                    color: '#000000',
+                  };
+                  return {
+                    ...current,
+                    customElements: [...(current.customElements || []), newEl],
+                  };
+                });
+                setCanvasClickMenu(null);
+                setOpenSection('custom-elements');
+              }}
+              style={{ padding: '8px', fontSize: '18px', width: '40px', height: '40px' }}
+              title="إضافة نص"
+            >
+              T
+            </button>
+            <MediaPicker
+              label="+"
+              value=""
+              onChange={(url) => {
+                if (url) {
+                  setDraft(current => {
+                    const newEl = {
+                      id: 'custom-' + Math.random().toString(36).substr(2, 9),
+                      type: 'image',
+                      content: url,
+                      x: canvasClickMenu.x,
+                      y: canvasClickMenu.y,
+                      width: '150px',
+                      height: 'auto',
+                    };
+                    return {
+                      ...current,
+                      customElements: [...(current.customElements || []), newEl],
+                    };
+                  });
+                  setCanvasClickMenu(null);
+                  setOpenSection('custom-elements');
+                }
+              }}
+              trigger={<button type="button" className="mini-btn" style={{ padding: '8px', fontSize: '20px', width: '40px', height: '40px', background: '#e0f2f1', color: '#00796b', border: 'none' }} title="إضافة صورة">+</button>}
+            />
+            <button
+              type="button"
+              className="mini-btn"
+              onClick={() => setCanvasClickMenu(null)}
+              style={{ padding: '8px', fontSize: '18px', width: '40px', height: '40px', color: '#d32f2f', background: '#ffebee', border: 'none' }}
+              title="إغلاق"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <RenderFrame
                   key={`${draft.devicePreview.mode}-${previewReloadToken}`}
                   templateSlug={currentManifest.slug}
                   renderConfig={renderConfig}
