@@ -42,7 +42,11 @@
       #doorGlow,
       #preloaderWhite,
       #preloaderNight,
-      #poster-container {
+      #poster-container,
+      #weiOverlay,
+      #weiVideoWrap,
+      #weiTapWrap,
+      #weiVideo {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
@@ -405,6 +409,8 @@
 
     window.__INVITE__ = {
       ...(window.__INVITE__ || {}),
+      renderConfig,
+      opening: renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} },
       config: {
         ...((window.__INVITE__ && window.__INVITE__.config) || {}),
         ...fields,
@@ -1297,7 +1303,7 @@
   }
 
   function hideNativeOpeningLayers() {
-    queryAll('#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #envelope, #env').forEach((node) => {
+    queryAll('#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #envelope, #env, #weiOverlay, #weiVideoWrap, #weiTapWrap, #weiVideo').forEach((node) => {
       node.style.display = 'none';
       node.classList?.add('hidden');
       node.classList?.add('fade-out');

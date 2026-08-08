@@ -28,6 +28,89 @@ function setTextMany(selectors, value) {
   selectors.forEach((selector) => setText(selector, value));
 }
 
+function getOpeningRuntimeState() {
+  const params = new URLSearchParams(window.location.search);
+  const opening = window.__INVITE__?.renderConfig?.opening || window.__INVITE__?.opening || null;
+  const openingSlug = String(opening?.slug || '');
+  const openingType = String(opening?.type || '');
+
+  return {
+    opening,
+    openingDisabled: params.get('farhaOpening') === '0' || openingSlug === 'no-opening',
+    openingOnly: params.get('farhaOpeningOnly') === '1',
+    hasTemplateReplacement: openingType === 'template-opening' || openingSlug.startsWith('template-opening:'),
+  };
+}
+
+function syncSacredGardenOpeningState() {
+  const { openingDisabled, openingOnly, hasTemplateReplacement } = getOpeningRuntimeState();
+  const overlay = query('#weiOverlay');
+  const videoWrap = query('#weiVideoWrap');
+  const tapWrap = query('#weiTapWrap');
+  const video = query('#weiVideo');
+  const audioBtn = query('#weiAudioBtn');
+  const audio = query('#weiAudio');
+  const allRecords = query('#allrecords');
+
+  if (openingOnly) {
+    if (overlay) {
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+      overlay.style.visibility = 'visible';
+      overlay.style.pointerEvents = 'auto';
+    }
+    if (videoWrap) {
+      videoWrap.style.display = '';
+      videoWrap.style.visibility = 'visible';
+    }
+    return;
+  }
+
+  if (!openingDisabled && !hasTemplateReplacement) {
+    return;
+  }
+
+  if (video && typeof video.pause === 'function') {
+    try {
+      video.pause();
+      video.currentTime = 0;
+    } catch (error) {
+      void error;
+    }
+  }
+
+  if (overlay) {
+    overlay.style.display = 'none';
+    overlay.style.opacity = '0';
+    overlay.style.visibility = 'hidden';
+    overlay.style.pointerEvents = 'none';
+  }
+
+  if (tapWrap) {
+    tapWrap.style.display = 'none';
+  }
+
+  if (videoWrap) {
+    videoWrap.classList.remove('wei-video-in', 'wei-video-out');
+    videoWrap.style.display = 'none';
+    videoWrap.style.opacity = '0';
+    videoWrap.style.visibility = 'hidden';
+    videoWrap.style.pointerEvents = 'none';
+  }
+
+  if (allRecords) {
+    allRecords.style.opacity = '1';
+    allRecords.style.visibility = 'visible';
+    allRecords.style.pointerEvents = 'auto';
+  }
+
+  if (audioBtn) {
+    audioBtn.style.visibility = 'visible';
+    audioBtn.style.opacity = audio ? '1' : '0';
+    audioBtn.style.pointerEvents = audio ? 'auto' : 'none';
+  }
+}
+
 function getInitial(name) {
   if (!name) return '';
   const trimmed = String(name).trim();
@@ -276,6 +359,8 @@ function applySacredGardenConfig() {
   const config = window.__INVITE__?.config;
   if (!config) return;
 
+  syncSacredGardenOpeningState();
+
   const groom = config.groomName || config.groom || '';
   const bride = config.brideName || config.bride || '';
   const combinedNames = [groom, bride].filter(Boolean).join(' <br /><br />');
@@ -401,12 +486,16 @@ function applySacredGardenConfig() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  syncSacredGardenOpeningState();
   applySacredGardenConfig();
 
   window.addEventListener('message', (event) => {
     if (event.origin !== window.location.origin) return;
     if (event.data?.type === 'FARHA_RENDER_CONFIG') {
-      window.setTimeout(applySacredGardenConfig, 60);
+      window.setTimeout(() => {
+        syncSacredGardenOpeningState();
+        applySacredGardenConfig();
+      }, 60);
     }
   });
 
@@ -431,6 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (signature !== lastSignature) {
       lastSignature = signature;
+      syncSacredGardenOpeningState();
       applySacredGardenConfig();
     }
   }, 600);
