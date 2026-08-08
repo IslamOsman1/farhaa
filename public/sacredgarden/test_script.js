@@ -120,125 +120,123 @@ function getInitial(name) {
 
 function buildSealSvg(monogramText) {
   const safeText = String(monogramText || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
   return "
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 142">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <defs>
-        <radialGradient id="waxGlow" cx="50%" cy="40%" r="62%">
-          <stop offset="0%" stop-color="#8f2031"/>
-          <stop offset="45%" stop-color="#7b1827"/>
-          <stop offset="72%" stop-color="#67111f"/>
-          <stop offset="100%" stop-color="#4b0a15"/>
-        </radialGradient>
-        <radialGradient id="waxHighlight" cx="38%" cy="24%" r="40%">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.45)"/>
-          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-        </radialGradient>
-        <filter id="waxShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#3b0710" flood-opacity="0.35"/>
-        </filter>
-        <linearGradient id="goldInk" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="goldInkText" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#f3dfa2"/>
           <stop offset="25%" stop-color="#e2c67b"/>
           <stop offset="52%" stop-color="#fff1bf"/>
           <stop offset="72%" stop-color="#c39a47"/>
           <stop offset="100%" stop-color="#f0d387"/>
         </linearGradient>
+        <filter id="textShadow">
+          <feDropShadow dx="1" dy="1" stdDeviation="1" flood-color="#2a0105" flood-opacity="0.6"/>
+        </filter>
       </defs>
-      <g transform="translate(95 71)" filter="url(#waxShadow)">
-        <path fill="url(#waxGlow)" d="M0,-50
-          C8,-58 21,-57 30,-50
-          C41,-52 52,-45 56,-34
-          C67,-31 74,-19 72,-7
-          C79,2 79,16 71,25
-          C72,37 64,48 53,52
-          C48,63 36,69 24,67
-          C15,75 1,77 -10,72
-          C-20,77 -34,75 -43,67
-          C-55,68 -66,61 -71,50
-          C-83,46 -90,35 -89,23
-          C-97,14 -97,0 -89,-10
-          C-91,-22 -83,-33 -71,-37
-          C-66,-49 -54,-55 -42,-54
-          C-33,-61 -19,-62 -8,-56
-          Z"/>
-        <ellipse cx="-15" cy="-22" rx="28" ry="18" fill="rgba(255,255,255,0.12)"/>
-        <path fill="url(#waxHighlight)" d="M-40,-30 C-22,-55 18,-56 34,-35 C12,-42 -12,-41 -40,-30 Z"/>
-        <text x="0" y="8"
-          text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-size="34"
-          font-style="italic"
-          font-weight="700"
-          fill="url(#goldInk)"
-          stroke="#f6e5af"
-          stroke-width="0.7"
-          paint-order="stroke fill">
-           + "" + "
-        </text>
-      </g>
+      <text x="50" y="66"
+        text-anchor="middle"
+        font-family="'Great Vibes', cursive, 'Times New Roman'"
+        font-size="44"
+        font-weight="400"
+        fill="url(#goldInkText)"
+        filter="url(#textShadow)">
+         + "" + "
+      </text>
     </svg>
   ".trim();
 }
 
 function ensureSealMonogram(brideName, groomName) {
-  const sealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
-  if (!sealLink) return;
-
-  sealLink.style.position = 'relative';
-  sealLink.style.display = 'block';
-  sealLink.style.width = '100%';
-  sealLink.style.height = '100%';
-  sealLink.style.overflow = 'hidden';
-
-  const originalSealImage = query('img', sealLink);
-  if (originalSealImage) {
-    originalSealImage.style.opacity = '0';
-    originalSealImage.style.visibility = 'hidden';
-    originalSealImage.style.pointerEvents = 'none';
-    originalSealImage.style.position = 'absolute';
-    originalSealImage.style.inset = '0';
-    originalSealImage.style.width = '100%';
-    originalSealImage.style.height = '100%';
-    originalSealImage.removeAttribute('srcset');
-    originalSealImage.removeAttribute('data-original');
-  }
-
-  let generatedSealImage = sealLink.querySelector('[data-farha-generated-seal]');
-  if (!generatedSealImage) {
-    generatedSealImage = document.createElement('img');
-    generatedSealImage.setAttribute('data-farha-generated-seal', 'true');
-    generatedSealImage.alt = 'Seal monogram';
-    generatedSealImage.draggable = false;
-    generatedSealImage.style.position = 'absolute';
-    generatedSealImage.style.inset = '0';
-    generatedSealImage.style.width = '100%';
-    generatedSealImage.style.height = '100%';
-    generatedSealImage.style.objectFit = 'contain';
-    generatedSealImage.style.zIndex = '3';
-    generatedSealImage.style.pointerEvents = 'none';
-    sealLink.appendChild(generatedSealImage);
-  }
-
   const brideInitial = getInitial(brideName);
   const groomInitial = getInitial(groomName);
   const text = [brideInitial, groomInitial].filter(Boolean).join('&');
-  if (text) {
-    const sealSvg = buildSealSvg(text);
-    generatedSealImage.src = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(sealSvg);
-  }
-}
-function formatDisplayDate(dateValue) {
-  const parsedDate = new Date(dateValue);
-  if (Number.isNaN(parsedDate.getTime())) return '';
+  if (!text) return;
 
-  return parsedDate
-    .toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-    })
-    .replace(/\//g, '.');
+  if (!document.getElementById('farha-seal-font')) {
+    const link = document.createElement('link');
+    link.id = 'farha-seal-font';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap';
+    document.head.appendChild(link);
+  }
+
+  const sealSvg = buildSealSvg(text);
+  const sealSrc = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(sealSvg);
+
+  // 1. RSVP Popup Seal
+  const rsvpSealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
+  if (rsvpSealLink) {
+    rsvpSealLink.style.position = 'relative';
+
+    const originalSealImage = query('img', rsvpSealLink);
+    if (originalSealImage) {
+      originalSealImage.style.opacity = '1';
+      originalSealImage.style.visibility = 'visible';
+      if (!originalSealImage.src.includes('blank_wax_seal.png')) {
+        originalSealImage.src = './assets/blank_wax_seal.png';
+        originalSealImage.removeAttribute('srcset');
+        originalSealImage.removeAttribute('data-original');
+      }
+    }
+
+    let generatedSealImage = rsvpSealLink.querySelector('[data-farha-generated-seal]');
+    if (!generatedSealImage) {
+      generatedSealImage = document.createElement('img');
+      generatedSealImage.setAttribute('data-farha-generated-seal', 'true');
+      generatedSealImage.alt = 'Seal monogram';
+      generatedSealImage.draggable = false;
+      generatedSealImage.style.position = 'absolute';
+      generatedSealImage.style.width = '60%';
+      generatedSealImage.style.height = '60%';
+      generatedSealImage.style.top = '50%';
+      generatedSealImage.style.left = '50%';
+      generatedSealImage.style.transform = 'translate(-50%, -50%)';
+      generatedSealImage.style.zIndex = '3';
+      generatedSealImage.style.pointerEvents = 'none';
+      rsvpSealLink.appendChild(generatedSealImage);
+    }
+    generatedSealImage.src = sealSrc;
+  }
+
+  // 2. Opening Screen Seal
+  const weiImg = document.getElementById('weiImg');
+  if (weiImg) {
+    if (!weiImg.src.includes('blank_envelope.png')) {
+      weiImg.src = './assets/blank_envelope.png';
+    }
+
+    let openingSealWrap = document.getElementById('weiOpeningSealWrap');
+    if (!openingSealWrap) {
+      openingSealWrap = document.createElement('div');
+      openingSealWrap.id = 'weiOpeningSealWrap';
+      openingSealWrap.style.position = 'relative';
+      openingSealWrap.style.width = '100%';
+      openingSealWrap.style.maxWidth = '440px';
+      openingSealWrap.style.display = 'flex';
+      openingSealWrap.style.justifyContent = 'center';
+      openingSealWrap.style.alignItems = 'center';
+      
+      weiImg.parentNode.insertBefore(openingSealWrap, weiImg);
+      openingSealWrap.appendChild(weiImg);
+    }
+
+    let openingSeal = document.getElementById('weiOpeningSealSVG');
+    if (!openingSeal) {
+      openingSeal = document.createElement('img');
+      openingSeal.id = 'weiOpeningSealSVG';
+      openingSeal.style.position = 'absolute';
+      openingSeal.style.width = '14.5%'; 
+      openingSeal.style.top = '50.3%'; 
+      openingSeal.style.left = '50.3%';
+      openingSeal.style.transform = 'translate(-50%, -50%)';
+      openingSeal.style.zIndex = '10';
+      openingSeal.style.pointerEvents = 'none';
+      // Give the opening seal an ID for CSS targeting during animation
+      openingSealWrap.appendChild(openingSeal);
+    }
+    openingSeal.src = sealSrc;
+  }
 }
 
 function getCountdownParts(targetDate) {
@@ -624,3 +622,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
