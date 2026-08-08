@@ -2000,8 +2000,15 @@
       target.appendChild(container);
     }
     
-    container.innerHTML = '';
+    const existingWrappers = Array.from(container.children);
+    const newIds = elements.map(el => String(el.id));
     
+    existingWrappers.forEach(wrapper => {
+      if (!newIds.includes(String(wrapper.dataset.id))) {
+        wrapper.remove();
+      }
+    });
+
     if (runtimeState.canvasClickHandler) {
       document.body.removeEventListener('click', runtimeState.canvasClickHandler);
     }
@@ -2023,10 +2030,15 @@
     }
 
     elements.forEach(el => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'farha-custom-element';
-      wrapper.dataset.id = el.id;
-      wrapper.style.position = 'absolute';
+      let wrapper = container.querySelector(`[data-id="${el.id}"]`);
+      if (!wrapper) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'farha-custom-element';
+        wrapper.dataset.id = el.id;
+        wrapper.style.position = 'absolute';
+        container.appendChild(wrapper);
+      }
+      
       wrapper.style.left = el.x + 'px';
       wrapper.style.top = el.y + 'px';
       wrapper.style.pointerEvents = 'auto';
@@ -2035,25 +2047,69 @@
       if (el.width) wrapper.style.width = el.width;
       if (el.height) wrapper.style.height = el.height;
       
-      let inner;
+      let isEditing = false;
       if (el.type === 'text') {
-        inner = document.createElement('div');
-        inner.innerHTML = String(el.content || '').replace(/\n/g, '<br>');
-        if (el.fontSize) inner.style.fontSize = el.fontSize;
-        if (el.color) inner.style.color = el.color;
-        if (el.fontFamily) inner.style.fontFamily = el.fontFamily;
-      } else if (el.type === 'image') {
-        inner = document.createElement('img');
-        inner.draggable = false;
-        inner.src = el.content;
-        inner.style.display = 'block';
-        inner.style.width = '100%';
-        inner.style.height = 'auto';
-        inner.style.objectFit = 'contain';
+         const innerDiv = wrapper.querySelector('div');
+         if (innerDiv && innerDiv === document.activeElement) {
+           isEditing = true;
+         }
       }
       
-      if (inner) wrapper.appendChild(inner);
-      container.appendChild(wrapper);
+      if (!isEditing) {
+        wrapper.innerHTML = '';
+        let inner;
+        if (el.type === 'text') {
+          inner = document.createElement('div');
+          inner.innerHTML = String(el.content || '').replace(/\n/g, '<br>');
+          if (el.fontSize) inner.style.fontSize = el.fontSize;
+          if (el.color) inner.style.color = el.color;
+          if (el.fontFamily) inner.style.fontFamily = el.fontFamily;
+          
+          if (runtimeState.preview) {
+            inner.contentEditable = "true";
+            inner.style.outline = "none";
+            inner.style.minWidth = "50px";
+            inner.style.minHeight = "20px";
+            inner.style.cursor = "text";
+            inner.style.padding = "4px";
+            inner.style.border = "1px dashed transparent";
+            
+            inner.addEventListener('focus', () => {
+              inner.style.border = "1px dashed #00796b";
+            });
+            inner.addEventListener('blur', () => {
+              inner.style.border = "1px dashed transparent";
+              window.parent.postMessage({
+                type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+                payload: { id: el.id, updates: { content: inner.innerText } }
+              }, '*');
+            });
+            
+            inner.addEventListener('mousedown', (e) => {
+              e.stopPropagation();
+            });
+            
+            inner.addEventListener('input', (e) => {
+              window.parent.postMessage({
+                type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+                payload: { id: el.id, updates: { content: inner.innerText } }
+              }, '*');
+            });
+          }
+        } else if (el.type === 'image') {
+          inner = document.createElement('img');
+          inner.draggable = false;
+          inner.src = el.content;
+          inner.style.display = 'block';
+          inner.style.width = '100%';
+          inner.style.height = 'auto';
+          inner.style.objectFit = 'contain';
+        }
+        
+        if (inner) {
+          wrapper.appendChild(inner);
+        }
+      }
     });
   }
 })();
