@@ -2150,20 +2150,48 @@
       initDragHandlers();
     }
 
+    const getOverlayTarget = () => {
+      const candidates = [
+        document.getElementById('allrecords'),
+        document.getElementById('invitation-container'),
+        document.getElementById('main-content'),
+        document.getElementById('invite'),
+        document.getElementById('site'),
+        document.querySelector('.site'),
+        document.querySelector('.invite'),
+      ].filter(Boolean);
+
+      if (!candidates.length) {
+        return document.body;
+      }
+
+      return candidates.sort((a, b) => {
+        const aArea = Math.max(a.scrollHeight || 0, a.offsetHeight || 0);
+        const bArea = Math.max(b.scrollHeight || 0, b.offsetHeight || 0);
+        return bArea - aArea;
+      })[0];
+    };
+
     let container = document.getElementById('farha-custom-elements');
+    const target = getOverlayTarget();
     if (!container) {
       container = document.createElement('div');
       container.id = 'farha-custom-elements';
       container.style.position = 'absolute';
-      container.style.inset = '0';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.right = '0';
       container.style.pointerEvents = 'none';
       container.style.zIndex = '99998';
-      const target = document.getElementById('allrecords') || document.body;
-      if (window.getComputedStyle(target).position === 'static') {
-        target.style.position = 'relative';
-      }
+    }
+    if (window.getComputedStyle(target).position === 'static') {
+      target.style.position = 'relative';
+    }
+    if (container.parentElement !== target) {
       target.appendChild(container);
     }
+    container.style.width = `${Math.max(target.scrollWidth || 0, target.clientWidth || 0, target.offsetWidth || 0)}px`;
+    container.style.height = `${Math.max(target.scrollHeight || 0, target.clientHeight || 0, target.offsetHeight || 0)}px`;
 
     const existingWrappers = Array.from(container.children);
     const newIds = elements.map(el => String(el.id));
@@ -2183,13 +2211,15 @@
         if (e.target.closest('.farha-studio-editable') || e.target.closest('.farha-custom-element') || e.target.closest('button') || e.target.closest('a')) return;
 
         runtimeState.selectedCustomElementId = null;
-        const rect = container.getBoundingClientRect();
-        const scrollHost =
-          container.parentElement?.scrollHeight > container.parentElement?.clientHeight
-            ? container.parentElement
-            : document.scrollingElement || document.documentElement;
-        const x = (e.clientX - rect.left) + (scrollHost?.scrollLeft || 0);
-        const y = (e.clientY - rect.top) + (scrollHost?.scrollTop || 0);
+        const rect = target.getBoundingClientRect();
+        const pageX = e.clientX + window.scrollX;
+        const pageY = e.clientY + window.scrollY;
+        const targetPageLeft = rect.left + window.scrollX;
+        const targetPageTop = rect.top + window.scrollY;
+        const ownScrollX = target !== document.body && target !== document.documentElement ? (target.scrollLeft || 0) : 0;
+        const ownScrollY = target !== document.body && target !== document.documentElement ? (target.scrollTop || 0) : 0;
+        const x = pageX - targetPageLeft + ownScrollX;
+        const y = pageY - targetPageTop + ownScrollY;
 
         window.parent.postMessage({
           type: 'FARHA_CANVAS_CLICK',
