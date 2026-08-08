@@ -115,7 +115,7 @@ function getInitial(name) {
   if (!name) return '';
   const trimmed = String(name).trim();
   if (!trimmed) return '';
-  return Array.from(trimmed)[0] || '';
+  return (Array.from(trimmed)[0] || '').toUpperCase();
 }
 
 function buildSealSvg(monogramText) {
@@ -188,9 +188,9 @@ function buildSealLetterOverlaySvg(monogramText) {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 142">
       <defs>
         <radialGradient id="coverFade" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#7a1827" stop-opacity="0.98"/>
-          <stop offset="55%" stop-color="#741522" stop-opacity="0.95"/>
-          <stop offset="78%" stop-color="#67111f" stop-opacity="0.72"/>
+          <stop offset="0%" stop-color="#7f1a29" stop-opacity="1"/>
+          <stop offset="52%" stop-color="#751523" stop-opacity="0.98"/>
+          <stop offset="78%" stop-color="#63101d" stop-opacity="0.82"/>
           <stop offset="100%" stop-color="#4b0a15" stop-opacity="0"/>
         </radialGradient>
         <linearGradient id="goldInkOverlay" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -201,11 +201,11 @@ function buildSealLetterOverlaySvg(monogramText) {
           <stop offset="100%" stop-color="#f0d58b"/>
         </linearGradient>
       </defs>
-      <ellipse cx="95" cy="72" rx="34" ry="25" fill="url(#coverFade)"/>
+      <ellipse cx="95" cy="78" rx="43" ry="34" fill="url(#coverFade)"/>
       <text x="95" y="82"
         text-anchor="middle"
         font-family="Georgia, 'Times New Roman', serif"
-        font-size="32"
+        font-size="35"
         font-style="italic"
         font-weight="700"
         letter-spacing="0.5"
