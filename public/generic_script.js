@@ -1555,6 +1555,7 @@
           }
 
           showFeedback(feedback, result.message || 'Ã˜ÂªÃ™â€¦ Ã˜Â§Ã˜Â³Ã˜ÂªÃ™â€žÃ˜Â§Ã™â€¦ Ã˜Â±Ã˜Â¯Ã™Æ’Ã™â€¦ Ã˜Â¨Ã™â€ Ã˜Â¬Ã˜Â§Ã˜Â­.', true);
+          renderRsvpQrTicket(form, result);
           form.reset();
         } catch (error) {
           console.error('RSVP submit failed:', error);
@@ -1623,6 +1624,57 @@
     target.style.display = 'block';
     target.textContent = text;
     target.style.color = success ? '#1f9d61' : '#d9475c';
+  }
+
+  function renderRsvpQrTicket(form, result) {
+    if (!result || !result.qrCodeDataUrl) return;
+
+    let host = form.parentElement?.querySelector('.farha-rsvp-ticket');
+    if (!host) {
+      host = document.createElement('div');
+      host.className = 'farha-rsvp-ticket';
+      form.insertAdjacentElement('afterend', host);
+    }
+
+    host.style.display = 'block';
+    host.style.marginTop = '16px';
+    host.style.padding = '18px';
+    host.style.borderRadius = '18px';
+    host.style.background = '#fff';
+    host.style.border = '1px solid rgba(127,42,31,.18)';
+    host.style.boxShadow = '0 18px 40px rgba(15,23,42,.08)';
+    host.style.textAlign = 'center';
+
+    host.innerHTML = `
+      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">QR Code الخاص بحضورك</div>
+      <img
+        src="${result.qrCodeDataUrl}"
+        alt="RSVP QR Code"
+        style="width:min(72vw,220px);height:auto;display:block;margin:0 auto 12px;background:#fff;padding:10px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.08)"
+      />
+      <div style="font-size:13px;color:#6b7280;line-height:1.8;margin-bottom:12px;">
+        هذا الكود فريد لهذا المستخدم فقط ويمكن تنزيله والاحتفاظ به.
+      </div>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <a
+          href="${result.qrCodeDataUrl}"
+          download="${result.qrCodeDownloadName || 'farha-rsvp-qr.png'}"
+          style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700;"
+        >
+          تحميل QR
+        </a>
+        <a
+          href="${result.qrCodeViewUrl || '#'}"
+          target="_blank"
+          rel="noreferrer"
+          style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18);"
+        >
+          فتح الكود
+        </a>
+      </div>
+    `;
+
+    host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function hideLegacyTemplateBars() {
@@ -1870,7 +1922,7 @@
       style.textContent = `
         .farha-studio-editable {
           transition: all 0.2s ease-in-out;
-          cursor: pointer !important;
+          cursor: text !important;
           position: relative;
         }
         .farha-studio-editable:hover {
@@ -1898,36 +1950,69 @@
         .farha-studio-editable:hover::after {
           opacity: 1;
         }
+        .farha-studio-editable[contenteditable="true"]:focus {
+          outline: 2px solid #7f2a1f !important;
+          outline-offset: 4px !important;
+          background: rgba(255,255,255,0.18) !important;
+          border-radius: 8px;
+        }
       `;
       document.head.appendChild(style);
     }
 
     Object.keys(bindings).forEach((fieldKey) => {
       const binding = bindings[fieldKey];
-      if (!binding || !binding.selector) return;
+      if (!binding || !binding.selector || binding.method !== 'text') return;
       
       const elements = queryAll(binding.selector);
       elements.forEach(el => {
         el.classList.add('farha-studio-editable');
         el.dataset.farhaStudioField = fieldKey;
-        
-        // Remove old listener to avoid duplicates
-        el.removeEventListener('click', handleStudioElementClick);
-        el.addEventListener('click', handleStudioElementClick);
+        el.dataset.farhaInlineEditable = 'true';
+        el.contentEditable = 'true';
+        el.spellcheck = false;
+
+        if (!el.dataset.farhaInlineBound) {
+          el.addEventListener('mousedown', (event) => {
+            event.stopPropagation();
+          });
+          el.addEventListener('touchstart', (event) => {
+            event.stopPropagation();
+          }, { passive: true });
+          el.addEventListener('focus', handleStudioElementFocus);
+          el.addEventListener('input', handleStudioElementInput);
+          el.addEventListener('blur', handleStudioElementBlur);
+          el.dataset.farhaInlineBound = 'true';
+        }
       });
     });
   }
 
-  function handleStudioElementClick(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    const fieldKey = e.currentTarget.dataset.farhaStudioField;
+  function emitStudioInlineUpdate(node) {
+    const fieldKey = node?.dataset?.farhaStudioField;
     if (fieldKey) {
       window.parent.postMessage({
-        type: 'FARHA_EDIT_FIELD',
-        fieldKey: fieldKey
+        type: 'FARHA_TEXT_OVERRIDE',
+        payload: {
+          path: fieldKey,
+          text: (node.innerText || '').trim(),
+        }
       }, '*');
     }
+  }
+
+  function handleStudioElementFocus(e) {
+    e.stopPropagation();
+  }
+
+  function handleStudioElementInput(e) {
+    e.stopPropagation();
+    emitStudioInlineUpdate(e.currentTarget);
+  }
+
+  function handleStudioElementBlur(e) {
+    e.stopPropagation();
+    emitStudioInlineUpdate(e.currentTarget);
   }
 
 

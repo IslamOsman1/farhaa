@@ -153,6 +153,9 @@ export default function AdminInvitations() {
                           <a href={`/api/admin/invitations/${invitation.id}/rsvps`} className="btn btn-sm" style={{ background: '#fbbc04', color: '#000', textDecoration: 'none' }}>
                             تنزيل الردود
                           </a>
+                          <Link href={`/admin/invitations/${invitation.id}/rsvp`} className="btn btn-sm" style={{ background: '#7f2a1f', color: '#fff' }}>
+                            إدارة الحضور
+                          </Link>
                         </>
                       ) : null}
 

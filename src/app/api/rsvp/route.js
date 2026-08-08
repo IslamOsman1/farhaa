@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
+import { generateRsvpQrDataUrl, getRsvpQrDownloadName, getRsvpQrRoute } from '@/lib/rsvp-qr';
 
 const rsvpPayloadSchema = z.object({
   invitationId: z.string().trim().min(1),
@@ -48,7 +49,7 @@ export async function POST(request) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: payload.invitationId },
-      select: { id: true, status: true },
+      select: { id: true, slug: true, status: true },
     });
 
     if (!invitation) {
@@ -70,11 +71,17 @@ export async function POST(request) {
       },
     });
 
+    const qrCodeDataUrl = await generateRsvpQrDataUrl({ invitation, rsvp });
+
     return NextResponse.json(
       {
         success: true,
         message: 'تم استلام ردكم بنجاح. نشكركم على التأكيد.',
         rsvp,
+        qrCodeDataUrl,
+        qrCodeViewUrl: getRsvpQrRoute(rsvp.id),
+        qrCodeDownloadUrl: getRsvpQrRoute(rsvp.id, true),
+        qrCodeDownloadName: getRsvpQrDownloadName({ invitation, rsvp }),
       },
       { status: 201 },
     );
