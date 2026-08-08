@@ -56,6 +56,10 @@ export async function POST(request, { params }) {
     const contentConfigWithUi = {
       ...contentConfig,
       __uiConfig: uiConfig,
+      __customElements: Array.isArray(session.config?.customElements) ? session.config.customElements : [],
+      __textOverrides: session.config?.textOverrides && typeof session.config.textOverrides === 'object'
+        ? session.config.textOverrides
+        : {},
     };
     const legacyStory = buildLegacyStoryFromContentConfig(contentConfigWithUi);
 

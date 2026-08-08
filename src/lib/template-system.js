@@ -1391,6 +1391,26 @@ export function buildInvitationRenderConfig({ invitation, manifest, opening, pre
       ...manifest.defaultValues.theme,
       ...normalized.themeConfig,
     },
+    customElements: Array.isArray(invitation?.customElements)
+      ? invitation.customElements
+      : Array.isArray(invitation?.contentConfig?.__customElements)
+        ? invitation.contentConfig.__customElements
+        : [],
+    textOverrides: invitation?.textOverrides && typeof invitation.textOverrides === 'object' && !Array.isArray(invitation.textOverrides)
+      ? Object.entries(invitation.textOverrides).map(([path, text]) => ({
+          id: path,
+          path,
+          text: String(text ?? ''),
+        }))
+      : Array.isArray(invitation?.textOverrides)
+        ? invitation.textOverrides
+        : invitation?.contentConfig?.__textOverrides && typeof invitation.contentConfig.__textOverrides === 'object'
+          ? Object.entries(invitation.contentConfig.__textOverrides).map(([path, text]) => ({
+              id: path,
+              path,
+              text: String(text ?? ''),
+            }))
+          : [],
     preview,
     locale: invitation?.locale || 'ar',
     ui: {

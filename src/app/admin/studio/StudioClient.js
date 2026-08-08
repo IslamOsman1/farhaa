@@ -14,6 +14,7 @@ const DEVICE_PRESETS = {
 };
 
 const SECTION_META = {
+  'custom-elements': { icon: '*', label: 'Free Elements', description: 'Add movable text and images over the template' },
   basic: { icon: '👤', label: 'الأساسيات', description: 'أسماء العروسين وبيانات المناسبة' },
   wording: { icon: '📝', label: 'النصوص', description: 'رسائل الدعوة والعناوين' },
   families: { icon: '👪', label: 'العائلات', description: 'أسماء وتواقيع العائلتين' },
@@ -49,6 +50,8 @@ function buildPreviewInvitation(session, draft) {
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
     uiConfig: draft.uiConfig,
+    customElements: draft.customElements || [],
+    textOverrides: draft.textOverrides || {},
     opening: { slug: draft.openingSlug },
     template: { slug: draft.templateSlug },
   };
@@ -405,8 +408,39 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
   const activeSections = useMemo(() => {
     const fieldSections = Object.keys(groupedFields).filter((key) => SECTION_META[key]);
-    return [...fieldSections, 'opening', 'design', 'sections', 'advanced'];
+    return [...fieldSections, 'custom-elements', 'opening', 'design', 'sections', 'advanced'];
   }, [groupedFields]);
+
+  function addCustomElement(type, position, content = '') {
+    setDraft((current) => {
+      const nextElement = {
+        id: `custom-${Math.random().toString(36).slice(2, 11)}`,
+        type,
+        content,
+        x: Math.max(12, Math.round(position?.x ?? 40)),
+        y: Math.max(12, Math.round(position?.y ?? 40)),
+        ...(type === 'text'
+          ? {
+              fontSize: '24px',
+              color: '#1f2937',
+            }
+          : {
+              width: '150px',
+              height: 'auto',
+            }),
+      };
+
+      return {
+        ...current,
+        customElements: [...(current.customElements || []), nextElement],
+        ui: {
+          ...current.ui,
+          addCustomElementMode: '',
+        },
+      };
+    });
+    setOpenSection('custom-elements');
+  }
 
   const persistDraft = useEffectEvent(async (nextDraft) => {
     setSaveState('saving');
@@ -456,12 +490,21 @@ export default function StudioClient({ session, manifests, openings, inventory }
         }));
       } else if (event.data?.type === 'FARHA_CANVAS_CLICK') {
         const { x, y } = event.data.payload;
+        if (draft.ui?.addCustomElementMode === 'text') {
+          addCustomElement('text', { x, y }, 'نص جديد');
+          setCanvasClickMenu(null);
+          return;
+        }
+        if (draft.ui?.addCustomElementMode === 'image') {
+          setCanvasClickMenu({ x, y, forceImage: true });
+          return;
+        }
         setCanvasClickMenu({ x, y });
       }
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [draft.ui?.addCustomElementMode]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -775,6 +818,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
                             }}
                             className="studio-input"
                             rows={3}
+                            placeholder="اكتب النص هنا"
                           />
                           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                             <input
@@ -820,6 +864,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
                               }));
                             }
                           }}
+                          trigger={
+                            <button type="button" className="mini-btn">
+                              تغيير الصورة
+                            </button>
+                          }
                         />
                       )}
                     </div>

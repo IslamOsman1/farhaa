@@ -14,6 +14,19 @@ export const studioDraftSchema = z.object({
   themeConfig: studioRecordSchema.default({}),
   sectionConfig: z.record(z.boolean()).default({}),
   openingConfig: studioRecordSchema.default({}),
+  customElements: z.array(z.object({
+    id: z.string(),
+    type: z.enum(['text', 'image', 'icon']),
+    content: z.string(),
+    x: z.number(),
+    y: z.number(),
+    fontSize: z.string().optional(),
+    color: z.string().optional(),
+    width: z.string().optional(),
+    height: z.string().optional(),
+    fontFamily: z.string().optional(),
+  })).default([]),
+  textOverrides: z.record(z.string()).default({}),
   uiConfig: studioRecordSchema.default({ bilingualEnabled: false, defaultLocale: 'ar' }),
   devicePreview: studioRecordSchema.default({ mode: 'mobile', width: 390, height: 844 }),
 });
@@ -93,6 +106,8 @@ export function createStudioDraftFromManifest(manifest, seed = {}) {
       allowSkip: true,
       ...seed.openingConfig,
     },
+    customElements: Array.isArray(seed.customElements) ? seed.customElements : [],
+    textOverrides: seed.textOverrides && typeof seed.textOverrides === 'object' ? seed.textOverrides : {},
     uiConfig: {
       bilingualEnabled: false,
       defaultLocale: 'ar',
@@ -119,6 +134,10 @@ export function createStudioDraftFromInvitation({ invitation, manifest }) {
     themeConfig: normalized.themeConfig,
     sectionConfig: normalized.sectionConfig,
     openingConfig: normalized.openingConfig,
+    customElements: Array.isArray(invitation?.contentConfig?.__customElements) ? invitation.contentConfig.__customElements : [],
+    textOverrides: invitation?.contentConfig?.__textOverrides && typeof invitation.contentConfig.__textOverrides === 'object'
+      ? invitation.contentConfig.__textOverrides
+      : {},
     uiConfig: invitation?.uiConfig || parseUiConfig(invitation),
   });
 }
@@ -148,6 +167,8 @@ export function buildStudioDraftFromSession({ session, manifest }) {
     themeConfig: session.config?.themeConfig || {},
     sectionConfig: session.config?.sectionConfig || {},
     openingConfig: session.selectedOpeningConfig || session.config?.openingConfig || {},
+    customElements: Array.isArray(session.config?.customElements) ? session.config.customElements : [],
+    textOverrides: session.config?.textOverrides && typeof session.config.textOverrides === 'object' ? session.config.textOverrides : {},
     uiConfig: session.config?.uiConfig || {},
     devicePreview: session.devicePreview || {},
   });
@@ -170,6 +191,8 @@ export function buildStudioSessionUpdateData({ manifest, draft, openingId = null
       themeConfig: parsed.themeConfig,
       sectionConfig: parsed.sectionConfig,
       openingConfig: parsed.openingConfig,
+      customElements: parsed.customElements,
+      textOverrides: parsed.textOverrides,
       uiConfig: parsed.uiConfig,
     },
     content,
@@ -202,6 +225,8 @@ export function buildStudioRenderPayload({ session, manifest, opening }) {
     themeConfig: draft.themeConfig,
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
+    customElements: draft.customElements,
+    textOverrides: draft.textOverrides,
     uiConfig: draft.uiConfig,
   };
 

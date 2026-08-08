@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { cloneElement, isValidElement, useEffect, useState } from 'react';
 
 function AssetThumb({ asset }) {
   if (asset.fileType === 'image') {
@@ -104,20 +104,44 @@ export default function MediaPicker({
     }
   }
 
+  function renderTrigger() {
+    if (!trigger) {
+      return (
+        <div className="media-picker-field">
+          <input
+            type="url"
+            dir="ltr"
+            value={value || ''}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder="https://..."
+          />
+          <button type="button" className="mini-btn" onClick={() => setOpen(true)}>
+            {label}
+          </button>
+        </div>
+      );
+    }
+
+    if (isValidElement(trigger)) {
+      const originalOnClick = trigger.props?.onClick;
+      return cloneElement(trigger, {
+        onClick: (event) => {
+          originalOnClick?.(event);
+          setOpen(true);
+        },
+      });
+    }
+
+    return (
+      <button type="button" className="mini-btn" onClick={() => setOpen(true)}>
+        {label}
+      </button>
+    );
+  }
+
   return (
     <>
-      <div className="media-picker-field">
-        <input
-          type="url"
-          dir="ltr"
-          value={value || ''}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="https://..."
-        />
-        <button type="button" className="mini-btn" onClick={() => setOpen(true)}>
-          {label}
-        </button>
-      </div>
+      {renderTrigger()}
 
       {open ? (
         <div className="picker-backdrop" onClick={() => setOpen(false)}>

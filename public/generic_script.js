@@ -1940,6 +1940,10 @@
     document.addEventListener('mousedown', (e) => {
       const wrapper = e.target.closest('.farha-custom-element');
       if (wrapper && runtimeState.preview) {
+        const isEditableTarget =
+          e.target?.isContentEditable ||
+          e.target?.closest?.('[contenteditable="true"], input, textarea, select, button');
+        if (isEditableTarget) return;
         e.preventDefault();
         e.stopPropagation();
         draggingEl = wrapper;
