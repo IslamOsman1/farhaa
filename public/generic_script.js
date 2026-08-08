@@ -1976,7 +1976,7 @@
       
       window.parent.postMessage({
         type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-        payload: { id: elId, x: newX, y: newY }
+        payload: { id: elId, updates: { x: newX, y: newY } }
       }, '*');
       
       draggingEl = null;
@@ -2048,7 +2048,7 @@
         inner.src = el.content;
         inner.style.display = 'block';
         inner.style.width = '100%';
-        inner.style.height = '100%';
+        inner.style.height = 'auto';
         inner.style.objectFit = 'contain';
       }
       
