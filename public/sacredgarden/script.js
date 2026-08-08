@@ -182,50 +182,87 @@ function buildSealSvg(monogramText) {
 }
 
 function ensureSealMonogram(brideName, groomName) {
-  const sealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
-  if (!sealLink) return;
-
-  sealLink.style.position = 'relative';
-  sealLink.style.display = 'block';
-  sealLink.style.width = '100%';
-  sealLink.style.height = '100%';
-  sealLink.style.overflow = 'hidden';
-
-  const originalSealImage = query('img', sealLink);
-  if (originalSealImage) {
-    originalSealImage.style.opacity = '0';
-    originalSealImage.style.visibility = 'hidden';
-    originalSealImage.style.pointerEvents = 'none';
-    originalSealImage.style.position = 'absolute';
-    originalSealImage.style.inset = '0';
-    originalSealImage.style.width = '100%';
-    originalSealImage.style.height = '100%';
-    originalSealImage.removeAttribute('srcset');
-    originalSealImage.removeAttribute('data-original');
-  }
-
-  let generatedSealImage = sealLink.querySelector('[data-farha-generated-seal]');
-  if (!generatedSealImage) {
-    generatedSealImage = document.createElement('img');
-    generatedSealImage.setAttribute('data-farha-generated-seal', 'true');
-    generatedSealImage.alt = 'Seal monogram';
-    generatedSealImage.draggable = false;
-    generatedSealImage.style.position = 'absolute';
-    generatedSealImage.style.inset = '0';
-    generatedSealImage.style.width = '100%';
-    generatedSealImage.style.height = '100%';
-    generatedSealImage.style.objectFit = 'contain';
-    generatedSealImage.style.zIndex = '3';
-    generatedSealImage.style.pointerEvents = 'none';
-    sealLink.appendChild(generatedSealImage);
-  }
-
   const brideInitial = getInitial(brideName);
   const groomInitial = getInitial(groomName);
   const text = [brideInitial, groomInitial].filter(Boolean).join('&');
-  if (text) {
-    const sealSvg = buildSealSvg(text);
-    generatedSealImage.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
+  if (!text) return;
+
+  const sealSvg = buildSealSvg(text);
+  const sealSrc = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
+
+  // 1. RSVP Popup Seal
+  const rsvpSealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
+  if (rsvpSealLink) {
+    rsvpSealLink.style.position = 'relative';
+    rsvpSealLink.style.display = 'block';
+    rsvpSealLink.style.width = '100%';
+    rsvpSealLink.style.height = '100%';
+    rsvpSealLink.style.overflow = 'hidden';
+
+    const originalSealImage = query('img', rsvpSealLink);
+    if (originalSealImage) {
+      originalSealImage.style.opacity = '0';
+      originalSealImage.style.visibility = 'hidden';
+      originalSealImage.style.pointerEvents = 'none';
+      originalSealImage.style.position = 'absolute';
+      originalSealImage.style.inset = '0';
+      originalSealImage.style.width = '100%';
+      originalSealImage.style.height = '100%';
+      originalSealImage.removeAttribute('srcset');
+      originalSealImage.removeAttribute('data-original');
+    }
+
+    let generatedSealImage = rsvpSealLink.querySelector('[data-farha-generated-seal]');
+    if (!generatedSealImage) {
+      generatedSealImage = document.createElement('img');
+      generatedSealImage.setAttribute('data-farha-generated-seal', 'true');
+      generatedSealImage.alt = 'Seal monogram';
+      generatedSealImage.draggable = false;
+      generatedSealImage.style.position = 'absolute';
+      generatedSealImage.style.inset = '0';
+      generatedSealImage.style.width = '100%';
+      generatedSealImage.style.height = '100%';
+      generatedSealImage.style.objectFit = 'contain';
+      generatedSealImage.style.zIndex = '3';
+      generatedSealImage.style.pointerEvents = 'none';
+      rsvpSealLink.appendChild(generatedSealImage);
+    }
+    generatedSealImage.src = sealSrc;
+  }
+
+  // 2. Opening Screen Seal
+  const weiImg = document.getElementById('weiImg');
+  if (weiImg) {
+    let openingSealWrap = document.getElementById('weiOpeningSealWrap');
+    if (!openingSealWrap) {
+      openingSealWrap = document.createElement('div');
+      openingSealWrap.id = 'weiOpeningSealWrap';
+      openingSealWrap.style.position = 'relative';
+      openingSealWrap.style.width = '100%';
+      openingSealWrap.style.maxWidth = '440px';
+      openingSealWrap.style.display = 'flex';
+      openingSealWrap.style.justifyContent = 'center';
+      openingSealWrap.style.alignItems = 'center';
+      
+      weiImg.parentNode.insertBefore(openingSealWrap, weiImg);
+      openingSealWrap.appendChild(weiImg);
+    }
+
+    let openingSeal = document.getElementById('weiOpeningSealSVG');
+    if (!openingSeal) {
+      openingSeal = document.createElement('img');
+      openingSeal.id = 'weiOpeningSealSVG';
+      openingSeal.style.position = 'absolute';
+      // Adjust width and position to perfectly cover the baked-in seal
+      openingSeal.style.width = '24.2%'; 
+      openingSeal.style.top = '51.8%'; 
+      openingSeal.style.left = '50%';
+      openingSeal.style.transform = 'translate(-50%, -50%)';
+      openingSeal.style.zIndex = '10';
+      openingSeal.style.pointerEvents = 'none';
+      openingSealWrap.appendChild(openingSeal);
+    }
+    openingSeal.src = sealSrc;
   }
 }
 
