@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { startTransition, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -725,13 +725,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
                         {sectionKey === 'custom-elements' ? (
               <div className="studio-stack">
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                  <button type="button" className={\mini-btn \\} style={{ background: draft.ui?.addCustomElementMode === 'text' ? '#ff4d7d' : '', color: draft.ui?.addCustomElementMode === 'text' ? '#fff' : '' }} onClick={() => setDraft(curr => ({...curr, ui: {...curr.ui, addCustomElementMode: curr.ui?.addCustomElementMode === 'text' ? null : 'text'}}))}>إضافة نص</button>
-                  <button type="button" className={\mini-btn \\} style={{ background: draft.ui?.addCustomElementMode === 'image' ? '#ff4d7d' : '', color: draft.ui?.addCustomElementMode === 'image' ? '#fff' : '' }} onClick={() => setDraft(curr => ({...curr, ui: {...curr.ui, addCustomElementMode: curr.ui?.addCustomElementMode === 'image' ? null : 'image'}}))}>إضافة صورة</button>
+                  <button type="button" className={`mini-btn ${draft.ui?.addCustomElementMode === 'text' ? 'active' : ''}`} style={{ background: draft.ui?.addCustomElementMode === 'text' ? '#ff4d7d' : '', color: draft.ui?.addCustomElementMode === 'text' ? '#fff' : '' }} onClick={() => setDraft(curr => ({...curr, ui: {...curr.ui, addCustomElementMode: curr.ui?.addCustomElementMode === 'text' ? null : 'text'}}))}>إضافة نص</button>
+                  <button type="button" className={`mini-btn ${draft.ui?.addCustomElementMode === 'image' ? 'active' : ''}`} style={{ background: draft.ui?.addCustomElementMode === 'image' ? '#ff4d7d' : '', color: draft.ui?.addCustomElementMode === 'image' ? '#fff' : '' }} onClick={() => setDraft(curr => ({...curr, ui: {...curr.ui, addCustomElementMode: curr.ui?.addCustomElementMode === 'image' ? null : 'image'}}))}>إضافة صورة</button>
                 </div>
                 {draft.ui?.addCustomElementMode ? <div className="studio-opening-hint" style={{ color: '#ff4d7d' }}>اضغط على أي مكان فارغ في المحاكي لإضافة العنصر.</div> : null}
                 
                 {(draft.customElements || []).map((el, i) => (
-                  <div key={el.id} id={\custom-el-\\} style={{ padding: '12px', border: '1px solid #eaeaea', borderRadius: '8px', marginBottom: '8px' }}>
+                  <div key={el.id} id={`custom-el-${el.id}`} style={{ padding: '12px', border: '1px solid #eaeaea', borderRadius: '8px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <strong>{el.type === 'text' ? 'نص حر' : 'صورة حرة'}</strong>
                       <button type="button" style={{ background: 'none', border: 'none', color: '#ff4d7d', cursor: 'pointer' }} onClick={() => setDraft(curr => ({...curr, customElements: curr.customElements.filter(e => e.id !== el.id)}))}>حذف</button>
