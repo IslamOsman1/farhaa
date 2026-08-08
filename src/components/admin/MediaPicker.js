@@ -20,6 +20,7 @@ export default function MediaPicker({
   accept = 'image',
   folder = 'picker',
   onChange,
+  trigger,
 }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);

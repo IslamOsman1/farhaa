@@ -15,18 +15,17 @@ const DEVICE_PRESETS = {
 
 const SECTION_META = {
   basic: { icon: '👤', label: 'الأساسيات', description: 'أسماء العروسين وبيانات المناسبة' },
-  wording: { icon: '✉️', label: 'النصوص', description: 'رسائل الدعوة والعناوين' },
+  wording: { icon: '📝', label: 'النصوص', description: 'رسائل الدعوة والعناوين' },
   families: { icon: '👪', label: 'العائلات', description: 'أسماء وتواقيع العائلتين' },
   details: { icon: '📍', label: 'المكان والزمان', description: 'التاريخ والقاعة ورابط الخريطة' },
-  schedule: { icon: '🗓️', label: 'البرنامج', description: 'فقرات اليوم وجدوله' },
-  media: { icon: '🖼️', label: 'الوسائط', description: 'صور وفيديوهات وموسيقى الدعوة' },
+  schedule: { icon: '🗓', label: 'البرنامج', description: 'فقرات اليوم وجدوله' },
+  media: { icon: '🖼', label: 'الوسائط', description: 'صور وفيديوهات وموسيقى الدعوة' },
   contact: { icon: '📞', label: 'التواصل', description: 'اسم ورقم جهة التنسيق والاستفسار' },
-  closing: { icon: '✒️', label: 'الخاتمة', description: 'خاتمة الدعوة والهاشتاغ والتوقيع' },
-  'custom-elements': { icon: '✨', label: 'عناصر حرة', description: 'إضافة وتحريك نصوص وصور بحرية' },
+  closing: { icon: '✒', label: 'الخاتمة', description: 'خاتمة الدعوة والهاشتاغ والتوقيع' },
   opening: { icon: '✨', label: 'الافتتاحية', description: 'المشهد الأول وطريقة الدخول' },
   design: { icon: '🎨', label: 'التصميم', description: 'الألوان والخطوط والمظهر العام' },
   sections: { icon: '☰', label: 'الأقسام', description: 'إظهار وإخفاء وترتيب أجزاء الدعوة' },
-  advanced: { icon: '⚙️', label: 'إعدادات متقدمة', description: 'القالب الأساسي وخيارات العمل' },
+  advanced: { icon: '⚙', label: 'إعدادات متقدمة', description: 'القالب الأساسي وخيارات العمل' },
 };
 
 function arrayValue(value) {
@@ -50,8 +49,6 @@ function buildPreviewInvitation(session, draft) {
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
     uiConfig: draft.uiConfig,
-    customElements: draft.customElements,
-    textOverrides: draft.textOverrides,
     opening: { slug: draft.openingSlug },
     template: { slug: draft.templateSlug },
   };
@@ -76,7 +73,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
       return (
         <div className="studio-bilingual-stack">
           <label className="studio-subfield">
-            <span>Ø§Ù„Ø¹Ø±Ø¨ÙŠ</span>
+            <span>العربي</span>
             <textarea
               rows={4}
               value={value || ''}
@@ -112,7 +109,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
         {items.map((item, index) => (
           <div key={`${field.key}-${index}`} className="array-row">
             <MediaPicker
-              label="Ø§Ø®ØªÙŠØ§Ø± ØµÙˆØ±Ø©"
+              label="اختيار صورة"
               value={item || ''}
               accept="image"
               folder="studio-gallery"
@@ -132,7 +129,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
                 }
               }}
             >
-              Ø­Ø°Ù
+              حذف
             </button>
           </div>
         ))}
@@ -146,7 +143,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             }
           }}
         >
-          Ø¥Ø¶Ø§ÙØ© ØµÙˆØ±Ø©
+          إضافة صورة
         </button>
       </div>
     );
@@ -162,13 +159,13 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             <input
               type="text"
               value={item.time || ''}
-              placeholder="Ø§Ù„ÙˆÙ‚Øª"
+              placeholder="الوقت"
               onChange={(event) => onScheduleChange(field.key, index, 'time', event.target.value)}
             />
             <input
               type="text"
               value={item.title || ''}
-              placeholder="Ø§Ù„ÙÙ‚Ø±Ø©"
+              placeholder="الفقرة"
               onChange={(event) => onScheduleChange(field.key, index, 'title', event.target.value)}
             />
             {bilingualEnabled ? (
@@ -190,7 +187,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
                 }
               }}
             >
-              Ø­Ø°Ù
+              حذف
             </button>
           </div>
         ))}
@@ -204,7 +201,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             }
           }}
         >
-          Ø¥Ø¶Ø§ÙØ© ÙÙ‚Ø±Ø©
+          إضافة فقرة
         </button>
       </div>
     );
@@ -220,7 +217,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             <input
               type="text"
               value={item || ''}
-              placeholder="Ø¹Ù†ØµØ±"
+              placeholder="عنصر"
               onChange={(event) => onListChange(field.key, index, event.target.value)}
             />
             {bilingualEnabled ? (
@@ -242,7 +239,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
                 }
               }}
             >
-              Ø­Ø°Ù
+              حذف
             </button>
           </div>
         ))}
@@ -256,7 +253,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             }
           }}
         >
-          Ø¥Ø¶Ø§ÙØ© Ø¹Ù†ØµØ±
+          إضافة عنصر
         </button>
       </div>
     );
@@ -265,7 +262,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
   if (field.type === 'image' || field.type === 'audio' || field.type === 'video') {
     return (
       <MediaPicker
-        label={`Ø§Ø®ØªÙŠØ§Ø± ${field.type === 'image' ? 'ØµÙˆØ±Ø©' : field.type === 'audio' ? 'ØµÙˆØª' : 'ÙÙŠØ¯ÙŠÙˆ'}`}
+        label={`اختيار ${field.type === 'image' ? 'صورة' : field.type === 'audio' ? 'صوت' : 'فيديو'}`}
         value={value || ''}
         accept={field.type}
         folder={`studio-${field.type}`}
@@ -282,7 +279,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
           checked={Boolean(value)}
           onChange={(event) => onContentChange(field.key, event.target.checked)}
         />
-        <span>{value ? 'Ù…ÙØ¹Ù„' : 'ØºÙŠØ± Ù…ÙØ¹Ù„'}</span>
+        <span>{value ? 'مفعل' : 'غير مفعل'}</span>
       </label>
     );
   }
@@ -296,7 +293,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
     return (
       <div className="studio-bilingual-stack">
         <label className="studio-subfield">
-          <span>Ø§Ù„Ø¹Ø±Ø¨ÙŠ</span>
+          <span>العربي</span>
           <input
             type="text"
             value={value || ''}
@@ -331,17 +328,17 @@ function MediaSummaryCard({ label, value, type, onClear, onChange }) {
     <div className="studio-media-card">
       <div className="studio-media-card__head">
         <strong>{label}</strong>
-        {value ? <span className="studio-media-status">Ù…Ø±Ø¨ÙˆØ·</span> : <span className="studio-media-status empty">ÙØ§Ø±Øº</span>}
+        {value ? <span className="studio-media-status">مربوط</span> : <span className="studio-media-status empty">فارغ</span>}
       </div>
       <MediaPicker
-        label="Ø§Ø®ØªÙŠØ§Ø±"
+        label="اختيار"
         value={value || ''}
         accept={type}
         folder={`studio-${type}`}
         onChange={onChange}
       />
       <div className="studio-media-card__actions">
-        <button type="button" className="mini-btn" onClick={onClear}>Ø­Ø°Ù</button>
+        <button type="button" className="mini-btn" onClick={onClear}>حذف</button>
       </div>
     </div>
   );
@@ -364,6 +361,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [busy, setBusy] = useState(false);
   const [previewReloadToken, setPreviewReloadToken] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [canvasClickMenu, setCanvasClickMenu] = useState(null);
   const autosaveRef = useRef(null);
   const lastSavedRef = useRef(JSON.stringify(session.draft));
 
@@ -407,7 +405,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
   const activeSections = useMemo(() => {
     const fieldSections = Object.keys(groupedFields).filter((key) => SECTION_META[key]);
-    return [...fieldSections, 'custom-elements', 'opening', 'design', 'sections', 'advanced'];
+    return [...fieldSections, 'opening', 'design', 'sections', 'advanced'];
   }, [groupedFields]);
 
   const persistDraft = useEffectEvent(async (nextDraft) => {
@@ -423,16 +421,47 @@ export default function StudioClient({ session, manifests, openings, inventory }
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
-        throw new Error(payload.message || 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ø¬Ù„Ø³Ø©.');
+        throw new Error(payload.message || 'تعذر حفظ الجلسة.');
       }
 
       lastSavedRef.current = JSON.stringify(nextDraft);
       setSaveState('saved');
     } catch (error) {
       setSaveState('error');
-      setNotice(error.message || 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ø¬Ù„Ø³Ø©.');
+      setNotice(error.message || 'تعذر حفظ الجلسة.');
     }
   });
+
+  useEffect(() => {
+    function handleMessage(event) {
+      if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
+        setDraft(current => {
+          const els = current.customElements || [];
+          const idx = els.findIndex(e => e.id === event.data.payload.id);
+          if (idx === -1) return current;
+          const newEls = [...els];
+          newEls[idx] = { ...newEls[idx], ...event.data.payload.updates };
+          return { ...current, customElements: newEls };
+        });
+      } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
+        setOpenSection('custom-elements');
+      } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
+        const { path, text } = event.data.payload;
+        setDraft(current => ({
+          ...current,
+          textOverrides: {
+            ...(current.textOverrides || {}),
+            [path]: text
+          }
+        }));
+      } else if (event.data?.type === 'FARHA_CANVAS_CLICK') {
+        const { x, y } = event.data.payload;
+        setCanvasClickMenu({ x, y });
+      }
+    }
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -448,118 +477,6 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
     return () => clearTimeout(autosaveRef.current);
   }, [draft]);
-
-  useEffect(() => {
-    function handleMessage(event) {
-      if (event.data?.type === 'FARHA_EDIT_FIELD') {
-        const fieldKey = event.data.fieldKey;
-        
-        let targetSection = null;
-        Object.entries(groupedFields).forEach(([section, fields]) => {
-          if (fields.some(f => f.key === fieldKey)) {
-            targetSection = section;
-          }
-        });
-
-        if (QUICK_MEDIA_KEYS.has(fieldKey)) {
-          targetSection = 'media';
-        }
-
-        if (targetSection) {
-          setOpenSection(targetSection);
-          
-          setTimeout(() => {
-            const elId = QUICK_MEDIA_KEYS.has(fieldKey) 
-              ? `studio-media-${fieldKey.replace('.', '-')}` 
-              : `studio-field-${fieldKey}`;
-              
-            const el = document.getElementById(elId);
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              
-              // Add a highlight effect
-              el.style.transition = 'box-shadow 0.3s';
-              el.style.boxShadow = '0 0 0 3px rgba(255, 77, 125, 0.5)';
-              setTimeout(() => {
-                el.style.boxShadow = 'none';
-              }, 1500);
-
-              const input = el.querySelector('input, textarea, button');
-              if (input) {
-                if (targetSection === 'media') {
-                  const mediaBtn = Array.from(el.querySelectorAll('button')).find(b => b.textContent.includes('Ø§Ø®ØªÙŠØ§Ø±'));
-                  if (mediaBtn) {
-                    mediaBtn.click();
-                  } else {
-                    input.focus();
-                  }
-                } else {
-                  input.focus();
-                }
-              }
-            }
-          }, 300);
-        }
-      } else if (event.data?.type === 'FARHA_CANVAS_CLICK') {
-        const { x, y } = event.data.payload;
-        
-        setDraft(current => {
-          let mode = current.ui?.addCustomElementMode;
-          if (!mode) {
-            const choice = window.prompt('ماذا تريد أن تضيف هنا؟ (اكتب: نص أو صورة)', 'نص');
-            if (choice === 'صورة') mode = 'image';
-            else if (choice === 'نص') mode = 'text';
-            else return current;
-          }
-
-          const newEl = {
-            id: 'custom-' + Math.random().toString(36).substr(2, 9),
-            type: mode,
-            content: mode === 'text' ? 'نص جديد' : '/images/placeholder.jpg',
-            x: x,
-            y: y,
-            fontSize: mode === 'text' ? '24px' : undefined,
-            color: mode === 'text' ? '#000000' : undefined,
-            width: mode === 'image' ? '150px' : undefined,
-            height: mode === 'image' ? 'auto' : undefined,
-          };
-
-          return {
-            ...current,
-            customElements: [...(current.customElements || []), newEl],
-            ui: { ...current.ui, addCustomElementMode: null }
-          };
-        });
-
-        setOpenSection('custom-elements');
-
-      } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
-        const { id, x, y } = event.data.payload;
-        setDraft(current => {
-          const elements = current.customElements || [];
-          return {
-            ...current,
-            customElements: elements.map(el => el.id === id ? { ...el, x, y } : el)
-          };
-        });
-      } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
-        setOpenSection('custom-elements');
-        setTimeout(() => {
-          const el = document.getElementById(`custom-el-${event.data.payload.id}`);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.style.transition = 'box-shadow 0.3s';
-            el.style.boxShadow = '0 0 0 3px rgba(255, 77, 125, 0.5)';
-            setTimeout(() => {
-              el.style.boxShadow = 'none';
-            }, 1500);
-          }
-        }, 300);
-      }
-    }
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [groupedFields]);
 
   useEffect(() => () => clearTimeout(autosaveRef.current), []);
 
@@ -633,7 +550,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   }
 
   async function saveVariant() {
-    const name = window.prompt('Ø§Ø³Ù… Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø¯Ø§Ø®Ù„ÙŠ Ø§Ù„Ø¬Ø¯ÙŠØ¯', `${currentManifest.nameAr} - Ù†Ø³Ø®Ø© Ø¯Ø§Ø®Ù„ÙŠØ©`);
+    const name = window.prompt('اسم القالب الداخلي الجديد', `${currentManifest.nameAr} - نسخة داخلية`);
     if (!name) return;
 
     setBusy(true);
@@ -646,24 +563,24 @@ export default function StudioClient({ session, manifests, openings, inventory }
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
-        throw new Error(payload.message || 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø¯Ø§Ø®Ù„ÙŠ.');
+        throw new Error(payload.message || 'تعذر حفظ القالب الداخلي.');
       }
 
-      setNotice(`ØªÙ… Ø­ÙØ¸ Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø¯Ø§Ø®Ù„ÙŠ: ${payload.data.variant.name}`);
+      setNotice(`تم حفظ القالب الداخلي: ${payload.data.variant.name}`);
       router.refresh();
     } catch (error) {
-      setNotice(error.message || 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø¯Ø§Ø®Ù„ÙŠ.');
+      setNotice(error.message || 'تعذر حفظ القالب الداخلي.');
     } finally {
       setBusy(false);
     }
   }
 
   async function createInvitation() {
-    const slug = window.prompt('Slug Ø§Ù„Ø¯Ø¹ÙˆØ© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©', `${draft.templateSlug}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
+    const slug = window.prompt('Slug الدعوة الجديدة', `${draft.templateSlug}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
     if (!slug) return;
-    const clientName = window.prompt('Ø§Ø³Ù… Ø§Ù„Ø¹Ù…ÙŠÙ„');
+    const clientName = window.prompt('اسم العميل');
     if (!clientName) return;
-    const title = window.prompt('Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø¯Ø¹ÙˆØ©', `${draft.contentConfig.groomName || ''} & ${draft.contentConfig.brideName || ''}`.trim());
+    const title = window.prompt('عنوان الدعوة', `${draft.contentConfig.groomName || ''} & ${draft.contentConfig.brideName || ''}`.trim());
 
     setBusy(true);
     setNotice('');
@@ -680,15 +597,15 @@ export default function StudioClient({ session, manifests, openings, inventory }
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
-        throw new Error(payload.message || 'ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¯Ø¹ÙˆØ©.');
+        throw new Error(payload.message || 'تعذر إنشاء الدعوة.');
       }
 
-      setNotice(`ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¯Ø¹ÙˆØ©: ${payload.data.invitation.slug}`);
+      setNotice(`تم إنشاء الدعوة: ${payload.data.invitation.slug}`);
       startTransition(() => {
         router.push(payload.data.editUrl);
       });
     } catch (error) {
-      setNotice(error.message || 'ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¯Ø¹ÙˆØ©.');
+      setNotice(error.message || 'تعذر إنشاء الدعوة.');
     } finally {
       setBusy(false);
     }
@@ -710,7 +627,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
             <strong>{sectionMeta.label}</strong>
             <small>{sectionMeta.description}</small>
           </span>
-          <span className="studio-accordion__arrow">{isOpen ? 'âˆ’' : '+'}</span>
+          <span className="studio-accordion__arrow">{isOpen ? '−' : '+'}</span>
         </button>
 
         {isOpen ? (
@@ -730,49 +647,6 @@ export default function StudioClient({ session, manifests, openings, inventory }
               </div>
             ) : null}
 
-                        {sectionKey === 'custom-elements' ? (
-              <div className="studio-stack">
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                  <button type="button" className={`mini-btn ${draft.ui?.addCustomElementMode === 'text' ? 'active' : ''}`} style={{ background: draft.ui?.addCustomElementMode === 'text' ? '#ff4d7d' : '', color: draft.ui?.addCustomElementMode === 'text' ? '#fff' : '' }} onClick={() => setDraft(curr => ({...curr, ui: {...curr.ui, addCustomElementMode: curr.ui?.addCustomElementMode === 'text' ? null : 'text'}}))}>إضافة نص</button>
-                  <button type="button" className={`mini-btn ${draft.ui?.addCustomElementMode === 'image' ? 'active' : ''}`} style={{ background: draft.ui?.addCustomElementMode === 'image' ? '#ff4d7d' : '', color: draft.ui?.addCustomElementMode === 'image' ? '#fff' : '' }} onClick={() => setDraft(curr => ({...curr, ui: {...curr.ui, addCustomElementMode: curr.ui?.addCustomElementMode === 'image' ? null : 'image'}}))}>إضافة صورة</button>
-                </div>
-                {draft.ui?.addCustomElementMode ? <div className="studio-opening-hint" style={{ color: '#ff4d7d' }}>اضغط على أي مكان فارغ في المحاكي لإضافة العنصر.</div> : null}
-                
-                {(draft.customElements || []).map((el, i) => (
-                  <div key={el.id} id={`custom-el-${el.id}`} style={{ padding: '12px', border: '1px solid #eaeaea', borderRadius: '8px', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <strong>{el.type === 'text' ? 'نص حر' : 'صورة حرة'}</strong>
-                      <button type="button" style={{ background: 'none', border: 'none', color: '#ff4d7d', cursor: 'pointer' }} onClick={() => setDraft(curr => ({...curr, customElements: curr.customElements.filter(e => e.id !== el.id)}))}>حذف</button>
-                    </div>
-                    {el.type === 'text' ? (
-                      <textarea className="studio-input" value={el.content} onChange={e => {
-                        const val = e.target.value;
-                        setDraft(curr => ({...curr, customElements: curr.customElements.map(e => e.id === el.id ? {...e, content: val} : e)}));
-                      }} style={{ width: '100%', minHeight: '60px', marginBottom: '8px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-                    ) : (
-                      <input type="text" className="studio-input" placeholder="رابط الصورة" value={el.content} onChange={e => {
-                        const val = e.target.value;
-                        setDraft(curr => ({...curr, customElements: curr.customElements.map(e => e.id === el.id ? {...e, content: val} : e)}));
-                      }} style={{ width: '100%', marginBottom: '8px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }} />
-                    )}
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {el.type === 'text' ? (
-                        <>
-                          <label className="studio-field" style={{ flex: 1 }}><span>حجم الخط</span><input type="text" className="studio-input" value={el.fontSize || ''} placeholder="24px" onChange={e => { const val = e.target.value; setDraft(curr => ({...curr, customElements: curr.customElements.map(e => e.id === el.id ? {...e, fontSize: val} : e)})); }} /></label>
-                          <label className="studio-field" style={{ flex: 1 }}><span>لون الخط</span><input type="color" className="studio-input" value={el.color || '#000000'} onChange={e => { const val = e.target.value; setDraft(curr => ({...curr, customElements: curr.customElements.map(e => e.id === el.id ? {...e, color: val} : e)})); }} /></label>
-                        </>
-                      ) : (
-                        <>
-                          <label className="studio-field" style={{ flex: 1 }}><span>العرض</span><input type="text" className="studio-input" value={el.width || ''} placeholder="150px" onChange={e => { const val = e.target.value; setDraft(curr => ({...curr, customElements: curr.customElements.map(e => e.id === el.id ? {...e, width: val} : e)})); }} /></label>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {!(draft.customElements?.length) && <p style={{ fontSize: '12px', color: '#888' }}>لا توجد عناصر حرة مضافة حتى الآن.</p>}
-              </div>
-            ) : null}
-
             {sectionKey === 'opening' ? (
               <div className="studio-stack">
                 <div className="studio-opening-card">
@@ -781,12 +655,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
                     <small>{currentOpening.type}</small>
                   </div>
                   <div className="studio-opening-card__actions">
-                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>Ù…Ø¹Ø§ÙŠÙ†Ø©</button>
-                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>Ø¥Ø¹Ø§Ø¯Ø© ØªØ´ØºÙŠÙ„</button>
+                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>معاينة</button>
+                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>إعادة تشغيل</button>
                   </div>
                 </div>
                 <label className="studio-field">
-                  <span>Ù†ÙˆØ¹ Ø§Ù„Ø§ÙØªØªØ§Ø­ÙŠØ©</span>
+                  <span>نوع الافتتاحية</span>
                   <select
                     value={draft.openingSlug}
                     onChange={(event) => {
@@ -815,7 +689,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   </div>
                 ) : null}
                 <label className="studio-field">
-                  <span>Ø§Ù„Ø³Ù…Ø§Ø­ Ø¨Ø§Ù„ØªØ®Ø·ÙŠ</span>
+                  <span>السماح بالتخطي</span>
                   <select
                     value={draft.openingConfig.allowSkip ? 'yes' : 'no'}
                     onChange={(event) =>
@@ -828,10 +702,132 @@ export default function StudioClient({ session, manifests, openings, inventory }
                       }))
                     }
                   >
-                    <option value="yes">Ù†Ø¹Ù…</option>
-                    <option value="no">Ù„Ø§</option>
+                    <option value="yes">نعم</option>
+                    <option value="no">لا</option>
                   </select>
                 </label>
+              </div>
+            ) : null}
+
+            {sectionKey === 'custom-elements' ? (
+              <div className="studio-stack">
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setDraft(current => ({ ...current, ui: { ...current.ui, addCustomElementMode: 'text' } }));
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    إضافة نص حر
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setDraft(current => ({ ...current, ui: { ...current.ui, addCustomElementMode: 'image' } }));
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    إضافة صورة حرة
+                  </button>
+                </div>
+                {draft.ui?.addCustomElementMode ? (
+                  <p className="studio-help-text" style={{ color: '#00796b', background: '#e0f2f1', padding: '8px', borderRadius: '4px' }}>
+                    ✅ وضع الإضافة مفعل. اضغط في أي مكان على المحاكي لتثبيت العنصر!
+                  </p>
+                ) : (
+                  <p className="studio-help-text">
+                    💡 اضغط على مكان فارغ في المحاكي لإضافة نص أو صورة مباشرةً، أو اختر من الأزرار بالأعلى.
+                  </p>
+                )}
+
+                <div className="studio-custom-elements-list">
+                  {(draft.customElements || []).map(el => (
+                    <div key={el.id} className="studio-custom-element-item" style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <strong>{el.type === 'text' ? 'نص' : 'صورة'}</strong>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={() => {
+                            setDraft(current => ({
+                              ...current,
+                              customElements: current.customElements.filter(e => e.id !== el.id)
+                            }));
+                          }}
+                          style={{ color: '#d32f2f' }}
+                        >
+                          حذف
+                        </button>
+                      </div>
+                      
+                      {el.type === 'text' && (
+                        <>
+                          <textarea
+                            value={el.content}
+                            onChange={(e) => {
+                              setDraft(current => ({
+                                ...current,
+                                customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, content: e.target.value } : e2)
+                              }));
+                            }}
+                            className="studio-input"
+                            rows={3}
+                          />
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <input
+                              type="color"
+                              value={el.color || '#000000'}
+                              onChange={(e) => {
+                                setDraft(current => ({
+                                  ...current,
+                                  customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, color: e.target.value } : e2)
+                                }));
+                              }}
+                              title="لون النص"
+                            />
+                            <select
+                              value={el.fontSize || '24px'}
+                              onChange={(e) => {
+                                setDraft(current => ({
+                                  ...current,
+                                  customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, fontSize: e.target.value } : e2)
+                                }));
+                              }}
+                              className="studio-input"
+                            >
+                              <option value="12px">صغير جداً</option>
+                              <option value="16px">صغير</option>
+                              <option value="24px">متوسط</option>
+                              <option value="32px">كبير</option>
+                              <option value="48px">كبير جداً</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+                      
+                      {el.type === 'image' && (
+                        <MediaPicker
+                          label="تغيير الصورة"
+                          value={el.content}
+                          onChange={(url) => {
+                            if (url) {
+                              setDraft(current => ({
+                                ...current,
+                                customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, content: url } : e2)
+                              }));
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                  {(draft.customElements || []).length === 0 && (
+                    <p style={{ textAlign: 'center', opacity: 0.5, margin: '20px 0' }}>لا يوجد عناصر حرة</p>
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -839,12 +835,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
               <div className="studio-stack">
                 {(currentManifest.sections || []).map((section) => (
                   <div key={section.key} className="studio-section-row">
-                    <span className="studio-section-row__drag">â‹®â‹®</span>
+                    <span className="studio-section-row__drag">⋮⋮</span>
                     <div className="studio-section-row__copy">
                       <strong>{section.labelAr}</strong>
                       <small>{section.labelEn}</small>
                     </div>
-                    <button type="button" className="mini-btn" onClick={() => handleOpenSection('sections')}>Ø§Ù†ØªÙ‚Ø§Ù„</button>
+                    <button type="button" className="mini-btn" onClick={() => handleOpenSection('sections')}>انتقال</button>
                     <label className="studio-switch">
                       <input
                         type="checkbox"
@@ -869,7 +865,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
             {sectionKey === 'advanced' ? (
               <div className="studio-stack">
                 <label className="studio-field">
-                  <span>Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ</span>
+                  <span>القالب الأساسي</span>
                   <select
                     value={draft.templateSlug}
                     onChange={(event) =>
@@ -887,61 +883,51 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   </select>
                 </label>
                 <div className="studio-metrics">
-                  <div><strong>{inventory.summary.templates}</strong><span>Ù‚Ø§Ù„Ø¨</span></div>
-                  <div><strong>{inventory.summary.images}</strong><span>ØµÙˆØ±Ø©</span></div>
-                  <div><strong>{inventory.summary.videos}</strong><span>ÙÙŠØ¯ÙŠÙˆ</span></div>
-                  <div><strong>{inventory.summary.audio}</strong><span>ØµÙˆØª</span></div>
+                  <div><strong>{inventory.summary.templates}</strong><span>قالب</span></div>
+                  <div><strong>{inventory.summary.images}</strong><span>صورة</span></div>
+                  <div><strong>{inventory.summary.videos}</strong><span>فيديو</span></div>
+                  <div><strong>{inventory.summary.audio}</strong><span>صوت</span></div>
                 </div>
               </div>
             ) : null}
 
             {sectionKey === 'media' ? (
               <div className="studio-media-grid">
-                <div id="studio-media-images-hero">
-                  <MediaSummaryCard
-                    label="ØµÙˆØ±Ø© Ø§Ù„Ø¹Ø±ÙˆØ³ÙŠÙ† Ø¯Ø§Ø®Ù„ Ø§Ù„Ù‚Ø§Ù„Ø¨"
-                    type="image"
-                    value={draft.contentConfig['images.hero']}
-                    onChange={(value) => setContentValue('images.hero', value)}
-                    onClear={() => setContentValue('images.hero', '')}
-                  />
-                </div>
-                <div id="studio-media-images-background">
-                  <MediaSummaryCard
-                    label="Ø®Ù„ÙÙŠØ© Ø§Ù„Ù…Ø´Ù‡Ø¯"
-                    type="image"
-                    value={draft.contentConfig['images.background']}
-                    onChange={(value) => setContentValue('images.background', value)}
-                    onClear={() => setContentValue('images.background', '')}
-                  />
-                </div>
-                <div id="studio-media-venueImage">
-                  <MediaSummaryCard
-                    label="ØµÙˆØ±Ø© Ø§Ù„ØºÙ„Ø§Ù"
-                    type="image"
-                    value={draft.contentConfig.venueImage}
-                    onChange={(value) => setContentValue('venueImage', value)}
-                    onClear={() => setContentValue('venueImage', '')}
-                  />
-                </div>
-                <div id="studio-media-musicUrl">
-                  <MediaSummaryCard
-                    label="Ø§Ù„Ù…ÙˆØ³ÙŠÙ‚Ù‰"
-                    type="audio"
-                    value={draft.contentConfig.musicUrl}
-                    onChange={(value) => setContentValue('musicUrl', value)}
-                    onClear={() => setContentValue('musicUrl', '')}
-                  />
-                </div>
-                <div id="studio-media-images-venue">
-                  <MediaSummaryCard
-                    label="ØµÙˆØ±Ø© Ø§Ù„Ù‚Ø§Ø¹Ø©"
-                    type="image"
-                    value={draft.contentConfig['images.venue']}
-                    onChange={(value) => setContentValue('images.venue', value)}
-                    onClear={() => setContentValue('images.venue', '')}
-                  />
-                </div>
+                <MediaSummaryCard
+                  label="صورة العروسين داخل القالب"
+                  type="image"
+                  value={draft.contentConfig['images.hero']}
+                  onChange={(value) => setContentValue('images.hero', value)}
+                  onClear={() => setContentValue('images.hero', '')}
+                />
+                <MediaSummaryCard
+                  label="خلفية المشهد"
+                  type="image"
+                  value={draft.contentConfig['images.background']}
+                  onChange={(value) => setContentValue('images.background', value)}
+                  onClear={() => setContentValue('images.background', '')}
+                />
+                <MediaSummaryCard
+                  label="صورة الغلاف"
+                  type="image"
+                  value={draft.contentConfig.venueImage}
+                  onChange={(value) => setContentValue('venueImage', value)}
+                  onClear={() => setContentValue('venueImage', '')}
+                />
+                <MediaSummaryCard
+                  label="الموسيقى"
+                  type="audio"
+                  value={draft.contentConfig.musicUrl}
+                  onChange={(value) => setContentValue('musicUrl', value)}
+                  onClear={() => setContentValue('musicUrl', '')}
+                />
+                <MediaSummaryCard
+                  label="صورة القاعة"
+                  type="image"
+                  value={draft.contentConfig['images.venue']}
+                  onChange={(value) => setContentValue('images.venue', value)}
+                  onClear={() => setContentValue('images.venue', '')}
+                />
               </div>
             ) : null}
 
@@ -950,7 +936,6 @@ export default function StudioClient({ session, manifests, openings, inventory }
                 {visibleFields.map((field) => (
                   <label
                     key={field.key}
-                    id={`studio-field-${field.key}`}
                     className={`studio-field ${field.type === 'textarea' || field.type === 'gallery' || field.type === 'schedule' || field.type === 'list' ? 'studio-field--full' : ''}`}
                   >
                     <span>{field.labelAr}</span>
@@ -995,7 +980,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
                 checked={Boolean(draft.uiConfig?.bilingualEnabled)}
                 onChange={(event) => setUiValue('bilingualEnabled', event.target.checked)}
               />
-              <span>Ø¯Ø¹ÙˆØ© Ø¨Ù„ØºØªÙŠÙ†</span>
+              <span>دعوة بلغتين</span>
             </label>
             <div className="studio-toolbar-group">
               {Object.entries(DEVICE_PRESETS).map(([key, preset]) => (
@@ -1015,10 +1000,10 @@ export default function StudioClient({ session, manifests, openings, inventory }
               ))}
             </div>
             <div className="studio-toolbar-group studio-toolbar-group--ghost">
-              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>ØªØ­Ø¯ÙŠØ«</button>
-              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ø§ÙØªØªØ§Ø­ÙŠØ©</button>
-              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>ØµÙˆØª</button>
-              <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">Ù…Ù„Ø¡ Ø§Ù„Ø´Ø§Ø´Ø©</Link>
+              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>تحديث</button>
+              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>إعادة الافتتاحية</button>
+              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>صوت</button>
+              <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">ملء الشاشة</Link>
             </div>
           </div>
         </div>
@@ -1041,7 +1026,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         </div>
 
         <button type="button" className="studio-mobile-editor-toggle" onClick={() => setEditorOpen(true)}>
-          ÙØªØ­ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„Ø§Øª
+          فتح التعديلات
         </button>
       </section>
 
@@ -1050,26 +1035,26 @@ export default function StudioClient({ session, manifests, openings, inventory }
         <div className="studio-editor__panel">
           <div className="studio-editor__header">
             <div>
-              <h1>ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¯Ø¹ÙˆØ©</h1>
+              <h1>تعديل الدعوة</h1>
               <p>{currentManifest.nameAr}</p>
             </div>
             <div className="studio-editor__header-actions">
-              <span className={`studio-save-indicator ${saveState}`}>{saveState === 'saved' ? 'ØªÙ… Ø§Ù„Ø­ÙØ¸' : saveState === 'saving' ? 'Ø¬Ø§Ø±Ù Ø§Ù„Ø­ÙØ¸' : saveState === 'error' ? 'ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸' : 'ØªÙˆØ¬Ø¯ ØªØ¹Ø¯ÙŠÙ„Ø§Øª ØºÙŠØ± Ù…Ø­ÙÙˆØ¸Ø©'}</span>
-              <button type="button" className="studio-editor__close" onClick={() => setEditorOpen(false)}>Ã—</button>
+              <span className={`studio-save-indicator ${saveState}`}>{saveState === 'saved' ? 'تم الحفظ' : saveState === 'saving' ? 'جارٍ الحفظ' : saveState === 'error' ? 'فشل الحفظ' : 'توجد تعديلات غير محفوظة'}</span>
+              <button type="button" className="studio-editor__close" onClick={() => setEditorOpen(false)}>×</button>
             </div>
           </div>
 
           <div className="studio-editor__summary">
             <div>
-              <span>Ø§Ù„Ø¬Ù„Ø³Ø©</span>
+              <span>الجلسة</span>
               <strong>{session.name}</strong>
             </div>
             <div>
-              <span>Ø§Ù„Ù‚Ø§Ù„Ø¨</span>
+              <span>القالب</span>
               <strong>{currentManifest.nameAr}</strong>
             </div>
             <div>
-              <span>Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø©</span>
+              <span>المعاينة</span>
               <strong>{currentDeviceLabel}</strong>
             </div>
           </div>
@@ -1081,11 +1066,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
           </div>
 
           <div className="studio-editor__footer">
-            <button type="button" className="mini-btn" onClick={() => setEditorOpen(false)}>Ø¥Ù„ØºØ§Ø¡</button>
-            <button type="button" className="mini-btn" onClick={() => void saveVariant()} disabled={busy}>Ø­ÙØ¸ ÙƒÙ…Ø³ÙˆØ¯Ø©</button>
-            <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">Ù…Ø¹Ø§ÙŠÙ†Ø© ÙƒØ§Ù…Ù„Ø©</Link>
+            <button type="button" className="mini-btn" onClick={() => setEditorOpen(false)}>إلغاء</button>
+            <button type="button" className="mini-btn" onClick={() => void saveVariant()} disabled={busy}>حفظ كمسودة</button>
+            <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة كاملة</Link>
             <button type="button" className="btn-primary studio-primary-action" onClick={() => void createInvitation()} disabled={busy}>
-              Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¯Ø¹ÙˆØ©
+              إنشاء الدعوة
             </button>
           </div>
         </div>
@@ -1093,4 +1078,3 @@ export default function StudioClient({ session, manifests, openings, inventory }
     </div>
   );
 }
-
