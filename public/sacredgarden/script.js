@@ -229,6 +229,40 @@ function ensureSealMonogram(brideName, groomName) {
   }
 }
 
+function ensureOpeningSealMonogram(brideName, groomName) {
+  const overlay = query('#weiOverlay');
+  const openingImage = query('#weiImg');
+  if (!overlay || !openingImage) return;
+
+  overlay.style.position = 'fixed';
+
+  let openingSeal = overlay.querySelector('[data-farha-opening-seal]');
+  if (!openingSeal) {
+    openingSeal = document.createElement('img');
+    openingSeal.setAttribute('data-farha-opening-seal', 'true');
+    openingSeal.alt = 'Opening seal monogram';
+    openingSeal.draggable = false;
+    openingSeal.style.position = 'absolute';
+    openingSeal.style.left = '50%';
+    openingSeal.style.top = '63.2%';
+    openingSeal.style.transform = 'translate(-50%, -50%)';
+    openingSeal.style.width = 'clamp(64px, 21vw, 96px)';
+    openingSeal.style.height = 'auto';
+    openingSeal.style.zIndex = '3';
+    openingSeal.style.pointerEvents = 'none';
+    openingSeal.style.filter = 'drop-shadow(0 8px 16px rgba(60, 11, 20, 0.18))';
+    overlay.appendChild(openingSeal);
+  }
+
+  const brideInitial = getInitial(brideName);
+  const groomInitial = getInitial(groomName);
+  const text = [brideInitial, groomInitial].filter(Boolean).join('&');
+  if (!text) return;
+
+  const sealSvg = buildSealSvg(text);
+  openingSeal.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
+}
+
 function formatDisplayDate(dateValue) {
   const parsedDate = new Date(dateValue);
   if (Number.isNaN(parsedDate.getTime())) return '';
@@ -374,6 +408,7 @@ function applySacredGardenConfig() {
   }
 
   ensureSealMonogram(bride, groom);
+  ensureOpeningSealMonogram(bride, groom);
 
   if (inlineNames) {
     setText('#rec2487446253 [data-elem-id="1772813849329000001"] .tn-atom', inlineNames);
