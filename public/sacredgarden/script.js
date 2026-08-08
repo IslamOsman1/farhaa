@@ -123,11 +123,6 @@ function buildSealSvg(monogramText) {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <defs>
-        <radialGradient id="patchGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#550712" stop-opacity="1"/>
-          <stop offset="55%" stop-color="#4a040d" stop-opacity="0.95"/>
-          <stop offset="100%" stop-color="#3a0209" stop-opacity="0"/>
-        </radialGradient>
         <linearGradient id="goldInkText" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#f3dfa2"/>
           <stop offset="25%" stop-color="#e2c67b"/>
@@ -139,7 +134,6 @@ function buildSealSvg(monogramText) {
           <feDropShadow dx="1" dy="1" stdDeviation="1" flood-color="#2a0105" flood-opacity="0.6"/>
         </filter>
       </defs>
-      <circle cx="50" cy="50" r="48" fill="url(#patchGrad)" />
       <text x="50" y="66"
         text-anchor="middle"
         font-family="'Great Vibes', cursive, 'Times New Roman'"
@@ -179,6 +173,12 @@ function ensureSealMonogram(brideName, groomName) {
     if (originalSealImage) {
       originalSealImage.style.opacity = '1';
       originalSealImage.style.visibility = 'visible';
+      // Switch original image to the blank version
+      if (!originalSealImage.src.includes('blank_wax_seal.png')) {
+        originalSealImage.src = './assets/blank_wax_seal.png';
+        originalSealImage.removeAttribute('srcset');
+        originalSealImage.removeAttribute('data-original');
+      }
     }
 
     let generatedSealImage = rsvpSealLink.querySelector('[data-farha-generated-seal]');
@@ -188,7 +188,6 @@ function ensureSealMonogram(brideName, groomName) {
       generatedSealImage.alt = 'Seal monogram';
       generatedSealImage.draggable = false;
       generatedSealImage.style.position = 'absolute';
-      // The patch is just the inner part of the seal (approx 60% width)
       generatedSealImage.style.width = '60%';
       generatedSealImage.style.height = '60%';
       generatedSealImage.style.top = '50%';
@@ -204,6 +203,11 @@ function ensureSealMonogram(brideName, groomName) {
   // 2. Opening Screen Seal
   const weiImg = document.getElementById('weiImg');
   if (weiImg) {
+    // Switch envelope image to the blank version
+    if (!weiImg.src.includes('blank_envelope.png')) {
+      weiImg.src = './assets/blank_envelope.png';
+    }
+
     let openingSealWrap = document.getElementById('weiOpeningSealWrap');
     if (!openingSealWrap) {
       openingSealWrap = document.createElement('div');
@@ -224,7 +228,6 @@ function ensureSealMonogram(brideName, groomName) {
       openingSeal = document.createElement('img');
       openingSeal.id = 'weiOpeningSealSVG';
       openingSeal.style.position = 'absolute';
-      // Adjust width and position to perfectly cover the text inside the baked-in seal
       openingSeal.style.width = '14.5%'; 
       openingSeal.style.top = '50.3%'; 
       openingSeal.style.left = '50.3%';
