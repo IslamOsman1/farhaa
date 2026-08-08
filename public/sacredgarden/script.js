@@ -244,13 +244,13 @@ function ensureOpeningSealMonogram(brideName, groomName) {
     openingSeal.draggable = false;
     openingSeal.style.position = 'absolute';
     openingSeal.style.left = '50%';
-    openingSeal.style.top = '63.2%';
+    openingSeal.style.top = '49.4%';
     openingSeal.style.transform = 'translate(-50%, -50%)';
-    openingSeal.style.width = 'clamp(64px, 21vw, 96px)';
+    openingSeal.style.width = 'clamp(78px, 24vw, 108px)';
     openingSeal.style.height = 'auto';
     openingSeal.style.zIndex = '3';
     openingSeal.style.pointerEvents = 'none';
-    openingSeal.style.filter = 'drop-shadow(0 8px 16px rgba(60, 11, 20, 0.18))';
+    openingSeal.style.filter = 'drop-shadow(0 4px 10px rgba(60, 11, 20, 0.14))';
     overlay.appendChild(openingSeal);
   }
 
