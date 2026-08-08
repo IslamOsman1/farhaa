@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   const initialSearchParams = new URLSearchParams(window.location.search);
   const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
   const initialOpeningDisabled = initialSearchParams.get('farhaOpening') === '0';
@@ -109,27 +109,27 @@
   }
 
   const TEMPLATE_META = {
-    jathuandthanu: { arabicName: 'Ø¬Ø§Ø«Ùˆ ÙˆØ«Ø§Ù†Ùˆ' },
-    royal: { arabicName: 'Ø§Ù„Ù…Ù„ÙƒÙŠ' },
-    majestic: { arabicName: 'Ù…Ø§Ø¬Ø³ØªÙŠÙƒ' },
-    twilight: { arabicName: 'ØªÙˆÙŠÙ„Ø§ÙŠØª' },
-    imperial: { arabicName: 'Ø¥Ù…Ø¨Ø±ÙŠØ§Ù„' },
-    toscana: { arabicName: 'ØªÙˆØ³ÙƒØ§Ù†Ø§' },
-    sacredgarden: { arabicName: 'Ø§Ù„Ø­Ø¯ÙŠÙ‚Ø© Ø§Ù„Ù…Ù‚Ø¯Ø³Ø©' },
-    blossomoud: { arabicName: 'Ø¨Ù„ÙˆØ³ÙˆÙ… Ø¹ÙˆØ¯' },
-    dolcevita: { arabicName: 'Ø¯ÙˆÙ„ØªØ´ÙŠ ÙÙŠØªØ§' },
-    destinationlove: { arabicName: 'Ø­Ø¨ Ø§Ù„Ø³ÙØ±' },
-    classic: { arabicName: 'ÙƒÙ„Ø§Ø³ÙŠÙƒ' },
-    bab: { arabicName: 'Ø¨Ø§Ø¨ Ø§Ù„ÙØ±Ø­' },
-    reverie: { arabicName: 'Ø­ÙÙ„Ù… ÙˆØ±Ø¯ÙŠ' },
-    ring: { arabicName: 'Ø§Ù„Ø®Ø§ØªÙ…' },
-    letter: { arabicName: 'Ø±Ø³Ø§Ù„Ø©' },
-    disney: { arabicName: 'Ø¯ÙŠØ²Ù†ÙŠ' },
-    rozana: { arabicName: 'Ø±ÙˆØ²Ù†Ø©' },
-    hadeel: { arabicName: 'Ù‡Ø¯ÙŠÙ„' },
-    wisal: { arabicName: 'ÙˆÙØµØ§Ù„' },
-    vangogh: { arabicName: 'Ù„ÙŠÙ„Ø© Ø§Ù„Ù†Ø¬ÙˆÙ…' },
-    blush: { arabicName: 'ÙˆØ±Ø¯Ø©' },
+    jathuandthanu: { arabicName: 'Ã˜Â¬Ã˜Â§Ã˜Â«Ã™Ë† Ã™Ë†Ã˜Â«Ã˜Â§Ã™â€ Ã™Ë†' },
+    royal: { arabicName: 'Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Æ’Ã™Å ' },
+    majestic: { arabicName: 'Ã™â€¦Ã˜Â§Ã˜Â¬Ã˜Â³Ã˜ÂªÃ™Å Ã™Æ’' },
+    twilight: { arabicName: 'Ã˜ÂªÃ™Ë†Ã™Å Ã™â€žÃ˜Â§Ã™Å Ã˜Âª' },
+    imperial: { arabicName: 'Ã˜Â¥Ã™â€¦Ã˜Â¨Ã˜Â±Ã™Å Ã˜Â§Ã™â€ž' },
+    toscana: { arabicName: 'Ã˜ÂªÃ™Ë†Ã˜Â³Ã™Æ’Ã˜Â§Ã™â€ Ã˜Â§' },
+    sacredgarden: { arabicName: 'Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¯Ã™Å Ã™â€šÃ˜Â© Ã˜Â§Ã™â€žÃ™â€¦Ã™â€šÃ˜Â¯Ã˜Â³Ã˜Â©' },
+    blossomoud: { arabicName: 'Ã˜Â¨Ã™â€žÃ™Ë†Ã˜Â³Ã™Ë†Ã™â€¦ Ã˜Â¹Ã™Ë†Ã˜Â¯' },
+    dolcevita: { arabicName: 'Ã˜Â¯Ã™Ë†Ã™â€žÃ˜ÂªÃ˜Â´Ã™Å  Ã™ÂÃ™Å Ã˜ÂªÃ˜Â§' },
+    destinationlove: { arabicName: 'Ã˜Â­Ã˜Â¨ Ã˜Â§Ã™â€žÃ˜Â³Ã™ÂÃ˜Â±' },
+    classic: { arabicName: 'Ã™Æ’Ã™â€žÃ˜Â§Ã˜Â³Ã™Å Ã™Æ’' },
+    bab: { arabicName: 'Ã˜Â¨Ã˜Â§Ã˜Â¨ Ã˜Â§Ã™â€žÃ™ÂÃ˜Â±Ã˜Â­' },
+    reverie: { arabicName: 'Ã˜Â­Ã™ÂÃ™â€žÃ™â€¦ Ã™Ë†Ã˜Â±Ã˜Â¯Ã™Å ' },
+    ring: { arabicName: 'Ã˜Â§Ã™â€žÃ˜Â®Ã˜Â§Ã˜ÂªÃ™â€¦' },
+    letter: { arabicName: 'Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€žÃ˜Â©' },
+    disney: { arabicName: 'Ã˜Â¯Ã™Å Ã˜Â²Ã™â€ Ã™Å ' },
+    rozana: { arabicName: 'Ã˜Â±Ã™Ë†Ã˜Â²Ã™â€ Ã˜Â©' },
+    hadeel: { arabicName: 'Ã™â€¡Ã˜Â¯Ã™Å Ã™â€ž' },
+    wisal: { arabicName: 'Ã™Ë†Ã™ÂÃ˜ÂµÃ˜Â§Ã™â€ž' },
+    vangogh: { arabicName: 'Ã™â€žÃ™Å Ã™â€žÃ˜Â© Ã˜Â§Ã™â€žÃ™â€ Ã˜Â¬Ã™Ë†Ã™â€¦' },
+    blush: { arabicName: 'Ã™Ë†Ã˜Â±Ã˜Â¯Ã˜Â©' },
   };
 
   const MUSIC_SELECTORS = [
@@ -261,24 +261,24 @@
 
   const STATIC_TEXT_TRANSLATIONS = {
     en: {
-      'Ø¨Ø·Ø§Ù‚Ø© Ø¯Ø¹ÙˆØ©': 'Invitation Card',
-      'Ø¨Ø§Ø¨ Ø¹Ù„Ù‰ ÙØ±Ø­Ù†Ø§': 'A Door to Our Joy',
-      'Ù…ÙƒØ§Ù† Ø§Ù„Ø­ÙÙ„': 'Venue',
-      'Ø§Ù„Ù…ÙƒØ§Ù†': 'Venue',
-      'Ø§Ù„Ù…ÙƒØ§Ù† ÙˆØ§Ù„Ø²Ù…Ø§Ù†': 'Venue & Time',
-      'Ø§Ù„Ø¹Ø¯ Ø§Ù„ØªÙ†Ø§Ø²Ù„ÙŠ': 'Countdown',
-      'Ø§Ù„Ø¹Ø§Ø¦Ù„Ø§Øª': 'Families',
-      'Ø¹Ø§Ø¦Ù„Ø§ØªÙ†Ø§': 'Our Families',
-      'Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬': 'Event Schedule',
-      'ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¯Ø¹ÙˆØ©': 'Invitation Details',
-      'ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¶ÙˆØ±': 'RSVP',
-      'Ù„Ù„ØªÙˆØ§ØµÙ„ ÙˆØ§Ù„ØªØ£ÙƒÙŠØ¯': 'Contact & RSVP',
-      'Ø§Ø¶ØºØ· Ù„ÙØªØ­ Ø§Ù„Ø¯Ø¹ÙˆØ©': 'Tap to open the invitation',
-      'Ø§Ø¶ØºØ· Ù„ÙØªØ­ Ø§Ù„Ø¯Ø¹ÙˆØ©...': 'Tap to open the invitation',
-      'Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø´Ø§Ø´Ø©': 'Tap the screen',
-      'Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø¸Ø±Ù': 'Tap the envelope',
-      'Ø¯Ù‚ Ù„ÙØªØ­ Ø§Ù„Ø¯Ø¹ÙˆØ©': 'Knock to open the invitation',
-      'Ø§ÙƒØªØ´Ù Ø§Ù„ØªÙØ§ØµÙŠÙ„': 'Discover the details',
+      'Ã˜Â¨Ã˜Â·Ã˜Â§Ã™â€šÃ˜Â© Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Invitation Card',
+      'Ã˜Â¨Ã˜Â§Ã˜Â¨ Ã˜Â¹Ã™â€žÃ™â€° Ã™ÂÃ˜Â±Ã˜Â­Ã™â€ Ã˜Â§': 'A Door to Our Joy',
+      'Ã™â€¦Ã™Æ’Ã˜Â§Ã™â€  Ã˜Â§Ã™â€žÃ˜Â­Ã™ÂÃ™â€ž': 'Venue',
+      'Ã˜Â§Ã™â€žÃ™â€¦Ã™Æ’Ã˜Â§Ã™â€ ': 'Venue',
+      'Ã˜Â§Ã™â€žÃ™â€¦Ã™Æ’Ã˜Â§Ã™â€  Ã™Ë†Ã˜Â§Ã™â€žÃ˜Â²Ã™â€¦Ã˜Â§Ã™â€ ': 'Venue & Time',
+      'Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â¯ Ã˜Â§Ã™â€žÃ˜ÂªÃ™â€ Ã˜Â§Ã˜Â²Ã™â€žÃ™Å ': 'Countdown',
+      'Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â§Ã˜Â¦Ã™â€žÃ˜Â§Ã˜Âª': 'Families',
+      'Ã˜Â¹Ã˜Â§Ã˜Â¦Ã™â€žÃ˜Â§Ã˜ÂªÃ™â€ Ã˜Â§': 'Our Families',
+      'Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬': 'Event Schedule',
+      'Ã˜ÂªÃ™ÂÃ˜Â§Ã˜ÂµÃ™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Invitation Details',
+      'Ã˜ÂªÃ˜Â£Ã™Æ’Ã™Å Ã˜Â¯ Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¶Ã™Ë†Ã˜Â±': 'RSVP',
+      'Ã™â€žÃ™â€žÃ˜ÂªÃ™Ë†Ã˜Â§Ã˜ÂµÃ™â€ž Ã™Ë†Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â£Ã™Æ’Ã™Å Ã˜Â¯': 'Contact & RSVP',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Tap to open the invitation',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©...': 'Tap to open the invitation',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã˜Â¹Ã™â€žÃ™â€° Ã˜Â§Ã™â€žÃ˜Â´Ã˜Â§Ã˜Â´Ã˜Â©': 'Tap the screen',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã˜Â¹Ã™â€žÃ™â€° Ã˜Â§Ã™â€žÃ˜Â¸Ã˜Â±Ã™Â': 'Tap the envelope',
+      'Ã˜Â¯Ã™â€š Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Knock to open the invitation',
+      'Ã˜Â§Ã™Æ’Ã˜ÂªÃ˜Â´Ã™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ™ÂÃ˜Â§Ã˜ÂµÃ™Å Ã™â€ž': 'Discover the details',
     },
   };
 
@@ -425,6 +425,7 @@
     applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
     
     attachStudioInlineEditors(bindings);
+    applyCustomElements(renderConfig.customElements || []);
   }
 
   function assignNestedValue(target, dottedKey, value) {
@@ -947,7 +948,7 @@
         img.src = imageUrl;
         img.loading = 'lazy';
         img.decoding = 'async';
-        img.alt = `Ø°ÙƒØ±Ù‰ ${index + 1}`;
+        img.alt = `Ã˜Â°Ã™Æ’Ã˜Â±Ã™â€° ${index + 1}`;
         figure.appendChild(img);
         host.appendChild(figure);
       });
@@ -1177,7 +1178,7 @@
 
   function syncAudioToggleState(audio) {
     if (!audio || !runtimeState.audioToggle) return;
-    runtimeState.audioToggle.textContent = audio.paused ? 'ØªØ´ØºÙŠÙ„ Ø§Ù„ØµÙˆØª' : 'ÙƒØªÙ… Ø§Ù„ØµÙˆØª';
+    runtimeState.audioToggle.textContent = audio.paused ? 'Ã˜ÂªÃ˜Â´Ã˜ÂºÃ™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂµÃ™Ë†Ã˜Âª' : 'Ã™Æ’Ã˜ÂªÃ™â€¦ Ã˜Â§Ã™â€žÃ˜ÂµÃ™Ë†Ã˜Âª';
     runtimeState.audioToggle.setAttribute('aria-pressed', audio.paused ? 'false' : 'true');
   }
 
@@ -1439,8 +1440,8 @@
     overlay.innerHTML = `
       <div class="fmo-card">
         <div class="fmo-mark">FARHA</div>
-        <p class="fmo-text">Ù„Ø­Ø¸Ø© ÙˆØ§Ø­Ø¯Ø©... Ø¯Ø¹ÙˆØªÙƒÙ… ØªÙÙØªØ­ Ø§Ù„Ø¢Ù†</p>
-        <button type="button" class="fmo-skip">ØªØ®Ø·ÙŠ</button>
+        <p class="fmo-text">Ã™â€žÃ˜Â­Ã˜Â¸Ã˜Â© Ã™Ë†Ã˜Â§Ã˜Â­Ã˜Â¯Ã˜Â©... Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜ÂªÃ™Æ’Ã™â€¦ Ã˜ÂªÃ™ÂÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€ </p>
+        <button type="button" class="fmo-skip">Ã˜ÂªÃ˜Â®Ã˜Â·Ã™Å </button>
       </div>
     `;
 
@@ -1527,12 +1528,12 @@
 
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = runtimeState.preview ? 'Ù…Ø¹Ø§ÙŠÙ†Ø©...' : 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„...';
+          submitButton.textContent = runtimeState.preview ? 'Ã™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â©...' : 'Ã˜Â¬Ã˜Â§Ã˜Â±Ã™Å  Ã˜Â§Ã™â€žÃ˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž...';
         }
 
         try {
           if (runtimeState.preview) {
-            showFeedback(feedback, 'Ù‡Ø°Ù‡ Ù…Ø¹Ø§ÙŠÙ†Ø© ÙÙ‚Ø·. ØªÙ… Ø­ÙØ¸ Ø§Ù„Ø±Ø¯ ØªØ¬Ø±ÙŠØ¨ÙŠÙ‹Ø§ Ø¯Ø§Ø®Ù„ Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø©.', true);
+            showFeedback(feedback, 'Ã™â€¡Ã˜Â°Ã™â€¡ Ã™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â© Ã™ÂÃ™â€šÃ˜Â·. Ã˜ÂªÃ™â€¦ Ã˜Â­Ã™ÂÃ˜Â¸ Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯ Ã˜ÂªÃ˜Â¬Ã˜Â±Ã™Å Ã˜Â¨Ã™Å Ã™â€¹Ã˜Â§ Ã˜Â¯Ã˜Â§Ã˜Â®Ã™â€ž Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â©.', true);
             form.reset();
             return;
           }
@@ -1545,18 +1546,18 @@
           const result = await response.json();
 
           if (!response.ok) {
-            throw new Error(result.error || 'ØªØ¹Ø°Ø± Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø¯');
+            throw new Error(result.error || 'Ã˜ÂªÃ˜Â¹Ã˜Â°Ã˜Â± Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯');
           }
 
-          showFeedback(feedback, result.message || 'ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø±Ø¯ÙƒÙ… Ø¨Ù†Ø¬Ø§Ø­.', true);
+          showFeedback(feedback, result.message || 'Ã˜ÂªÃ™â€¦ Ã˜Â§Ã˜Â³Ã˜ÂªÃ™â€žÃ˜Â§Ã™â€¦ Ã˜Â±Ã˜Â¯Ã™Æ’Ã™â€¦ Ã˜Â¨Ã™â€ Ã˜Â¬Ã˜Â§Ã˜Â­.', true);
           form.reset();
         } catch (error) {
           console.error('RSVP submit failed:', error);
-          showFeedback(feedback, error.message || 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø¯.', false);
+          showFeedback(feedback, error.message || 'Ã˜Â­Ã˜Â¯Ã˜Â« Ã˜Â®Ã˜Â·Ã˜Â£ Ã˜Â£Ã˜Â«Ã™â€ Ã˜Â§Ã˜Â¡ Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯.', false);
         } finally {
           if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = originalText || 'Ø¥Ø±Ø³Ø§Ù„';
+            submitButton.textContent = originalText || 'Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž';
           }
         }
       });
@@ -1658,9 +1659,9 @@
 
     const publicData = await loadPublicTemplateBarData();
     const whatsappNumber = publicData.whatsapp || '201001473345';
-    const priceLabel = publicData.minPriceLabel ? `ØªØ¨Ø¯Ø£ Ù…Ù† ${publicData.minPriceLabel} - ` : '';
+    const priceLabel = publicData.minPriceLabel ? `Ã˜ÂªÃ˜Â¨Ã˜Â¯Ã˜Â£ Ã™â€¦Ã™â€  ${publicData.minPriceLabel} - ` : '';
     const whatsappText = encodeURIComponent(
-      `Ù…Ø±Ø­Ø¨Ø§Ù‹ØŒ Ø£Ø¹Ø¬Ø¨Ù†ÙŠ Ù‚Ø§Ù„Ø¨ Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Â» ÙˆØ£Ø±ØºØ¨ ÙÙŠ Ø·Ù„Ø¨Ù‡ Ù…Ù† FARHA.`,
+      `Ã™â€¦Ã˜Â±Ã˜Â­Ã˜Â¨Ã˜Â§Ã™â€¹Ã˜Å’ Ã˜Â£Ã˜Â¹Ã˜Â¬Ã˜Â¨Ã™â€ Ã™Å  Ã™â€šÃ˜Â§Ã™â€žÃ˜Â¨ Ã‚Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Ã‚Â» Ã™Ë†Ã˜Â£Ã˜Â±Ã˜ÂºÃ˜Â¨ Ã™ÂÃ™Å  Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã™â€¦Ã™â€  FARHA.`,
     );
     const orderUrl = `/order?tpl=${runtimeState.templateSlug}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappText}`;
@@ -1787,18 +1788,18 @@
     bar.id = 'farha-template-bar';
     bar.innerHTML = `
       <div class="ftb-copy">
-        <p class="ftb-title">Ø£Ø¹Ø¬Ø¨Ùƒ Ù‚Ø§Ù„Ø¨ Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Â»ØŸ</p>
-        <p class="ftb-sub">${priceLabel}Ø§Ø·Ù„Ø¨Ù‡ Ø§Ù„Ø¢Ù† Ù…Ù† FARHA ÙˆÙ†Ø¬Ù‡Ø²Ù‡ Ù„ÙŠØªÙ†Ø§Ø³Ø¨ Ù…Ø¹ Ù…Ù†Ø§Ø³Ø¨ØªÙƒÙ…</p>
-        <p class="ftb-note">Ù‡Ø°Ø§ Ø§Ù„Ø´Ø±ÙŠØ· Ù„Ù„Ø¹Ø±Ø¶ ÙÙ‚Ø· - Ø¯Ø¹ÙˆØªÙƒÙ… Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ© ØªØµÙ„ÙƒÙ… Ù†Ø¸ÙŠÙØ© Ø¨Ø¯ÙˆÙ†Ù‡</p>
+        <p class="ftb-title">Ã˜Â£Ã˜Â¹Ã˜Â¬Ã˜Â¨Ã™Æ’ Ã™â€šÃ˜Â§Ã™â€žÃ˜Â¨ Ã‚Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Ã‚Â»Ã˜Å¸</p>
+        <p class="ftb-sub">${priceLabel}Ã˜Â§Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€  Ã™â€¦Ã™â€  FARHA Ã™Ë†Ã™â€ Ã˜Â¬Ã™â€¡Ã˜Â²Ã™â€¡ Ã™â€žÃ™Å Ã˜ÂªÃ™â€ Ã˜Â§Ã˜Â³Ã˜Â¨ Ã™â€¦Ã˜Â¹ Ã™â€¦Ã™â€ Ã˜Â§Ã˜Â³Ã˜Â¨Ã˜ÂªÃ™Æ’Ã™â€¦</p>
+        <p class="ftb-note">Ã™â€¡Ã˜Â°Ã˜Â§ Ã˜Â§Ã™â€žÃ˜Â´Ã˜Â±Ã™Å Ã˜Â· Ã™â€žÃ™â€žÃ˜Â¹Ã˜Â±Ã˜Â¶ Ã™ÂÃ™â€šÃ˜Â· - Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜ÂªÃ™Æ’Ã™â€¦ Ã˜Â§Ã™â€žÃ™â€ Ã™â€¡Ã˜Â§Ã˜Â¦Ã™Å Ã˜Â© Ã˜ÂªÃ˜ÂµÃ™â€žÃ™Æ’Ã™â€¦ Ã™â€ Ã˜Â¸Ã™Å Ã™ÂÃ˜Â© Ã˜Â¨Ã˜Â¯Ã™Ë†Ã™â€ Ã™â€¡</p>
       </div>
       <div class="ftb-actions">
-        <button class="ftb-close" type="button" aria-label="Ø¥ØºÙ„Ø§Ù‚">Ã—</button>
-        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="ÙˆØ§ØªØ³Ø§Ø¨">
+        <button class="ftb-close" type="button" aria-label="Ã˜Â¥Ã˜ÂºÃ™â€žÃ˜Â§Ã™â€š">Ãƒâ€”</button>
+        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="Ã™Ë†Ã˜Â§Ã˜ÂªÃ˜Â³Ã˜Â§Ã˜Â¨">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
           </svg>
         </a>
-        <a class="ftb-order" href="${orderUrl}">Ø§Ø·Ù„Ø¨Ù‡ Ø§Ù„Ø¢Ù†</a>
+        <a class="ftb-order" href="${orderUrl}">Ã˜Â§Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€ </a>
       </div>
     `;
 
@@ -1844,7 +1845,7 @@
             .sort((a, b) => a.price - b.price)[0];
 
           if (cheapest) {
-            const currencyLabel = cheapest.currency === 'EGP' ? 'Ø¬.Ù…' : cheapest.currency || '';
+            const currencyLabel = cheapest.currency === 'EGP' ? 'Ã˜Â¬.Ã™â€¦' : cheapest.currency || '';
             defaults.minPriceLabel = `${cheapest.price} ${currencyLabel}`.trim();
           }
         }
@@ -1874,7 +1875,7 @@
           z-index: 99999;
         }
         .farha-studio-editable::after {
-          content: 'تعديل';
+          content: 'ØªØ¹Ø¯ÙŠÙ„';
           position: absolute;
           top: -24px;
           right: 0;
@@ -1924,5 +1925,132 @@
     }
   }
 
+
+  function initDragHandlers() {
+    if (runtimeState.dragHandlersInitialized) return;
+    runtimeState.dragHandlersInitialized = true;
+    
+    let draggingEl = null;
+    let startX, startY, initialX, initialY, elId;
+    
+    document.addEventListener('mousedown', (e) => {
+      const wrapper = e.target.closest('.farha-custom-element');
+      if (wrapper && runtimeState.preview) {
+        e.preventDefault();
+        e.stopPropagation();
+        draggingEl = wrapper;
+        elId = wrapper.dataset.id;
+        startX = e.clientX;
+        startY = e.clientY;
+        initialX = parseFloat(wrapper.style.left) || 0;
+        initialY = parseFloat(wrapper.style.top) || 0;
+        wrapper.style.opacity = '0.7';
+        wrapper.style.zIndex = '99999';
+        
+        window.parent.postMessage({
+          type: 'FARHA_CUSTOM_ELEMENT_SELECT',
+          payload: { id: elId }
+        }, '*');
+      }
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!draggingEl) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      draggingEl.style.left = (initialX + dx) + 'px';
+      draggingEl.style.top = (initialY + dy) + 'px';
+    });
+    
+    document.addEventListener('mouseup', (e) => {
+      if (!draggingEl) return;
+      const newX = parseFloat(draggingEl.style.left) || 0;
+      const newY = parseFloat(draggingEl.style.top) || 0;
+      
+      draggingEl.style.opacity = '1';
+      draggingEl.style.zIndex = '';
+      
+      window.parent.postMessage({
+        type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+        payload: { id: elId, x: newX, y: newY }
+      }, '*');
+      
+      draggingEl = null;
+    });
+  }
+
+  function applyCustomElements(elements) {
+    if (runtimeState.preview) {
+      initDragHandlers();
+    }
+
+    let container = document.getElementById('farha-custom-elements');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'farha-custom-elements';
+      container.style.position = 'absolute';
+      container.style.inset = '0';
+      container.style.pointerEvents = 'none';
+      container.style.zIndex = '99998';
+      const target = document.getElementById('allrecords') || document.body;
+      target.appendChild(container);
+    }
+    
+    container.innerHTML = '';
+    
+    if (runtimeState.canvasClickHandler) {
+      document.body.removeEventListener('click', runtimeState.canvasClickHandler);
+    }
+
+    if (runtimeState.preview) {
+      runtimeState.canvasClickHandler = (e) => {
+        if (e.target.closest('.farha-studio-editable') || e.target.closest('.farha-custom-element') || e.target.closest('button') || e.target.closest('a')) return;
+        
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        window.parent.postMessage({
+          type: 'FARHA_CANVAS_CLICK',
+          payload: { x, y }
+        }, '*');
+      };
+      document.body.addEventListener('click', runtimeState.canvasClickHandler);
+    }
+
+    elements.forEach(el => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'farha-custom-element';
+      wrapper.dataset.id = el.id;
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = el.x + 'px';
+      wrapper.style.top = el.y + 'px';
+      wrapper.style.pointerEvents = 'auto';
+      wrapper.style.cursor = runtimeState.preview ? 'move' : 'default';
+      
+      if (el.width) wrapper.style.width = el.width;
+      if (el.height) wrapper.style.height = el.height;
+      
+      let inner;
+      if (el.type === 'text') {
+        inner = document.createElement('div');
+        inner.innerHTML = String(el.content || '').replace(/\n/g, '<br>');
+        if (el.fontSize) inner.style.fontSize = el.fontSize;
+        if (el.color) inner.style.color = el.color;
+        if (el.fontFamily) inner.style.fontFamily = el.fontFamily;
+      } else if (el.type === 'image') {
+        inner = document.createElement('img');
+        inner.src = el.content;
+        inner.style.display = 'block';
+        inner.style.width = '100%';
+        inner.style.height = '100%';
+        inner.style.objectFit = 'contain';
+      }
+      
+      if (inner) wrapper.appendChild(inner);
+      container.appendChild(wrapper);
+    });
+  }
 })();
+
 
