@@ -115,7 +115,7 @@ function getInitial(name) {
   if (!name) return '';
   const trimmed = String(name).trim();
   if (!trimmed) return '';
-  return (Array.from(trimmed)[0] || '').toUpperCase();
+  return Array.from(trimmed)[0] || '';
 }
 
 function buildSealSvg(monogramText) {
@@ -181,44 +181,6 @@ function buildSealSvg(monogramText) {
   `.trim();
 }
 
-function buildSealLetterOverlaySvg(monogramText) {
-  const safeText = String(monogramText || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  return `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 142">
-      <defs>
-        <radialGradient id="coverFade" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#7f1a29" stop-opacity="1"/>
-          <stop offset="52%" stop-color="#751523" stop-opacity="0.98"/>
-          <stop offset="78%" stop-color="#63101d" stop-opacity="0.82"/>
-          <stop offset="100%" stop-color="#4b0a15" stop-opacity="0"/>
-        </radialGradient>
-        <linearGradient id="goldInkOverlay" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#f7e7b1"/>
-          <stop offset="26%" stop-color="#e5ca84"/>
-          <stop offset="50%" stop-color="#fff2c8"/>
-          <stop offset="74%" stop-color="#c89f4a"/>
-          <stop offset="100%" stop-color="#f0d58b"/>
-        </linearGradient>
-      </defs>
-      <ellipse cx="95" cy="78" rx="43" ry="34" fill="url(#coverFade)"/>
-      <text x="95" y="82"
-        text-anchor="middle"
-        font-family="Georgia, 'Times New Roman', serif"
-        font-size="35"
-        font-style="italic"
-        font-weight="700"
-        letter-spacing="0.5"
-        fill="url(#goldInkOverlay)"
-        stroke="#f7e9b6"
-        stroke-width="0.65"
-        paint-order="stroke fill">
-        ${safeText}
-      </text>
-    </svg>
-  `.trim();
-}
-
 function ensureSealMonogram(brideName, groomName) {
   const sealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
   if (!sealLink) return;
@@ -231,69 +193,40 @@ function ensureSealMonogram(brideName, groomName) {
 
   const originalSealImage = query('img', sealLink);
   if (originalSealImage) {
-    originalSealImage.style.display = 'block';
+    originalSealImage.style.opacity = '0';
+    originalSealImage.style.visibility = 'hidden';
+    originalSealImage.style.pointerEvents = 'none';
+    originalSealImage.style.position = 'absolute';
+    originalSealImage.style.inset = '0';
     originalSealImage.style.width = '100%';
     originalSealImage.style.height = '100%';
-    originalSealImage.style.objectFit = 'contain';
+    originalSealImage.removeAttribute('srcset');
+    originalSealImage.removeAttribute('data-original');
   }
 
-  let lettersOverlay = sealLink.querySelector('[data-farha-seal-letters]');
-  if (!lettersOverlay) {
-    lettersOverlay = document.createElement('img');
-    lettersOverlay.setAttribute('data-farha-seal-letters', 'true');
-    lettersOverlay.alt = 'Seal letters';
-    lettersOverlay.draggable = false;
-    lettersOverlay.style.position = 'absolute';
-    lettersOverlay.style.inset = '0';
-    lettersOverlay.style.width = '100%';
-    lettersOverlay.style.height = '100%';
-    lettersOverlay.style.objectFit = 'contain';
-    lettersOverlay.style.zIndex = '3';
-    lettersOverlay.style.pointerEvents = 'none';
-    sealLink.appendChild(lettersOverlay);
+  let generatedSealImage = sealLink.querySelector('[data-farha-generated-seal]');
+  if (!generatedSealImage) {
+    generatedSealImage = document.createElement('img');
+    generatedSealImage.setAttribute('data-farha-generated-seal', 'true');
+    generatedSealImage.alt = 'Seal monogram';
+    generatedSealImage.draggable = false;
+    generatedSealImage.style.position = 'absolute';
+    generatedSealImage.style.inset = '0';
+    generatedSealImage.style.width = '100%';
+    generatedSealImage.style.height = '100%';
+    generatedSealImage.style.objectFit = 'contain';
+    generatedSealImage.style.zIndex = '3';
+    generatedSealImage.style.pointerEvents = 'none';
+    sealLink.appendChild(generatedSealImage);
   }
 
   const brideInitial = getInitial(brideName);
   const groomInitial = getInitial(groomName);
   const text = [brideInitial, groomInitial].filter(Boolean).join('&');
   if (text) {
-    const overlaySvg = buildSealLetterOverlaySvg(text);
-    lettersOverlay.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(overlaySvg)}`;
+    const sealSvg = buildSealSvg(text);
+    generatedSealImage.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
   }
-}
-
-function ensureOpeningSealMonogram(brideName, groomName) {
-  const overlay = query('#weiOverlay');
-  const openingImage = query('#weiImg');
-  if (!overlay || !openingImage) return;
-
-  overlay.style.position = 'fixed';
-
-  let openingSeal = overlay.querySelector('[data-farha-opening-seal]');
-  if (!openingSeal) {
-    openingSeal = document.createElement('img');
-    openingSeal.setAttribute('data-farha-opening-seal', 'true');
-    openingSeal.alt = 'Opening seal monogram';
-    openingSeal.draggable = false;
-    openingSeal.style.position = 'absolute';
-    openingSeal.style.left = '50%';
-    openingSeal.style.top = '49.4%';
-    openingSeal.style.transform = 'translate(-50%, -50%)';
-    openingSeal.style.width = 'clamp(78px, 24vw, 108px)';
-    openingSeal.style.height = 'auto';
-    openingSeal.style.zIndex = '3';
-    openingSeal.style.pointerEvents = 'none';
-    openingSeal.style.filter = 'drop-shadow(0 4px 10px rgba(60, 11, 20, 0.14))';
-    overlay.appendChild(openingSeal);
-  }
-
-  const brideInitial = getInitial(brideName);
-  const groomInitial = getInitial(groomName);
-  const text = [brideInitial, groomInitial].filter(Boolean).join('&');
-  if (!text) return;
-
-  const overlaySvg = buildSealLetterOverlaySvg(text);
-  openingSeal.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(overlaySvg)}`;
 }
 
 function formatDisplayDate(dateValue) {
@@ -441,7 +374,6 @@ function applySacredGardenConfig() {
   }
 
   ensureSealMonogram(bride, groom);
-  ensureOpeningSealMonogram(bride, groom);
 
   if (inlineNames) {
     setText('#rec2487446253 [data-elem-id="1772813849329000001"] .tn-atom', inlineNames);
