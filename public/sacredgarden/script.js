@@ -181,6 +181,44 @@ function buildSealSvg(monogramText) {
   `.trim();
 }
 
+function buildSealLetterOverlaySvg(monogramText) {
+  const safeText = String(monogramText || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 142">
+      <defs>
+        <radialGradient id="coverFade" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#7a1827" stop-opacity="0.98"/>
+          <stop offset="55%" stop-color="#741522" stop-opacity="0.95"/>
+          <stop offset="78%" stop-color="#67111f" stop-opacity="0.72"/>
+          <stop offset="100%" stop-color="#4b0a15" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="goldInkOverlay" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f7e7b1"/>
+          <stop offset="26%" stop-color="#e5ca84"/>
+          <stop offset="50%" stop-color="#fff2c8"/>
+          <stop offset="74%" stop-color="#c89f4a"/>
+          <stop offset="100%" stop-color="#f0d58b"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="95" cy="72" rx="34" ry="25" fill="url(#coverFade)"/>
+      <text x="95" y="82"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="32"
+        font-style="italic"
+        font-weight="700"
+        letter-spacing="0.5"
+        fill="url(#goldInkOverlay)"
+        stroke="#f7e9b6"
+        stroke-width="0.65"
+        paint-order="stroke fill">
+        ${safeText}
+      </text>
+    </svg>
+  `.trim();
+}
+
 function ensureSealMonogram(brideName, groomName) {
   const sealLink = query('#rec2487446223 [data-elem-id="1782293057692"] a.tn-atom');
   if (!sealLink) return;
@@ -193,39 +231,34 @@ function ensureSealMonogram(brideName, groomName) {
 
   const originalSealImage = query('img', sealLink);
   if (originalSealImage) {
-    originalSealImage.style.opacity = '0';
-    originalSealImage.style.visibility = 'hidden';
-    originalSealImage.style.pointerEvents = 'none';
-    originalSealImage.style.position = 'absolute';
-    originalSealImage.style.inset = '0';
+    originalSealImage.style.display = 'block';
     originalSealImage.style.width = '100%';
     originalSealImage.style.height = '100%';
-    originalSealImage.removeAttribute('srcset');
-    originalSealImage.removeAttribute('data-original');
+    originalSealImage.style.objectFit = 'contain';
   }
 
-  let generatedSealImage = sealLink.querySelector('[data-farha-generated-seal]');
-  if (!generatedSealImage) {
-    generatedSealImage = document.createElement('img');
-    generatedSealImage.setAttribute('data-farha-generated-seal', 'true');
-    generatedSealImage.alt = 'Seal monogram';
-    generatedSealImage.draggable = false;
-    generatedSealImage.style.position = 'absolute';
-    generatedSealImage.style.inset = '0';
-    generatedSealImage.style.width = '100%';
-    generatedSealImage.style.height = '100%';
-    generatedSealImage.style.objectFit = 'contain';
-    generatedSealImage.style.zIndex = '3';
-    generatedSealImage.style.pointerEvents = 'none';
-    sealLink.appendChild(generatedSealImage);
+  let lettersOverlay = sealLink.querySelector('[data-farha-seal-letters]');
+  if (!lettersOverlay) {
+    lettersOverlay = document.createElement('img');
+    lettersOverlay.setAttribute('data-farha-seal-letters', 'true');
+    lettersOverlay.alt = 'Seal letters';
+    lettersOverlay.draggable = false;
+    lettersOverlay.style.position = 'absolute';
+    lettersOverlay.style.inset = '0';
+    lettersOverlay.style.width = '100%';
+    lettersOverlay.style.height = '100%';
+    lettersOverlay.style.objectFit = 'contain';
+    lettersOverlay.style.zIndex = '3';
+    lettersOverlay.style.pointerEvents = 'none';
+    sealLink.appendChild(lettersOverlay);
   }
 
   const brideInitial = getInitial(brideName);
   const groomInitial = getInitial(groomName);
   const text = [brideInitial, groomInitial].filter(Boolean).join('&');
   if (text) {
-    const sealSvg = buildSealSvg(text);
-    generatedSealImage.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
+    const overlaySvg = buildSealLetterOverlaySvg(text);
+    lettersOverlay.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(overlaySvg)}`;
   }
 }
 
@@ -259,8 +292,8 @@ function ensureOpeningSealMonogram(brideName, groomName) {
   const text = [brideInitial, groomInitial].filter(Boolean).join('&');
   if (!text) return;
 
-  const sealSvg = buildSealSvg(text);
-  openingSeal.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(sealSvg)}`;
+  const overlaySvg = buildSealLetterOverlaySvg(text);
+  openingSeal.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(overlaySvg)}`;
 }
 
 function formatDisplayDate(dateValue) {
