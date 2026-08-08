@@ -2159,6 +2159,9 @@
       container.style.pointerEvents = 'none';
       container.style.zIndex = '99998';
       const target = document.getElementById('allrecords') || document.body;
+      if (window.getComputedStyle(target).position === 'static') {
+        target.style.position = 'relative';
+      }
       target.appendChild(container);
     }
 
@@ -2181,8 +2184,12 @@
 
         runtimeState.selectedCustomElementId = null;
         const rect = container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const scrollHost =
+          container.parentElement?.scrollHeight > container.parentElement?.clientHeight
+            ? container.parentElement
+            : document.scrollingElement || document.documentElement;
+        const x = (e.clientX - rect.left) + (scrollHost?.scrollLeft || 0);
+        const y = (e.clientY - rect.top) + (scrollHost?.scrollTop || 0);
 
         window.parent.postMessage({
           type: 'FARHA_CANVAS_CLICK',
@@ -2335,8 +2342,9 @@
         const isSelected = String(runtimeState.selectedCustomElementId || '') === String(el.id);
         controlsRoot.innerHTML = '';
         controlsRoot.style.position = 'absolute';
-        controlsRoot.style.top = '-42px';
-        controlsRoot.style.left = '0';
+        controlsRoot.style.top = '-16px';
+        controlsRoot.style.right = '-16px';
+        controlsRoot.style.left = 'auto';
         controlsRoot.style.display = isSelected ? 'flex' : 'none';
         controlsRoot.style.gap = '6px';
         controlsRoot.style.pointerEvents = 'auto';
@@ -2359,6 +2367,8 @@
           return button;
         };
 
+        controlsRoot.style.alignItems = 'center';
+        controlsRoot.style.justifyContent = 'flex-end';
         controlsRoot.appendChild(makeActionButton('✥', 'move'));
         if (el.type === 'image') {
           const cropButton = makeActionButton('✂', 'crop-toggle');
@@ -2370,6 +2380,8 @@
         }
         const deleteButton = makeActionButton('×', 'delete');
         deleteButton.style.color = '#b42318';
+        deleteButton.style.fontSize = '22px';
+        deleteButton.style.fontWeight = '700';
         controlsRoot.appendChild(deleteButton);
 
         resizeHandle.style.position = 'absolute';
