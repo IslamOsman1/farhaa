@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   const initialSearchParams = new URLSearchParams(window.location.search);
   const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
   const initialOpeningDisabled = initialSearchParams.get('farhaOpening') === '0';
@@ -399,7 +399,7 @@
     applyRenderConfig(null, renderConfig);
   }
 
-    function applyRenderConfig(manifest, renderConfig) {
+  function applyRenderConfig(manifest, renderConfig) {
     const fields = buildLegacyFields(renderConfig.fields || {});
     const bindings =
       (manifest && manifest.runtimeBindings && manifest.runtimeBindings.fieldBindings) || fallbackBindings;
@@ -425,29 +425,6 @@
     applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
     
     attachStudioInlineEditors(bindings);
-  });
-    const bindings =
-      (manifest && manifest.runtimeBindings && manifest.runtimeBindings.fieldBindings) || fallbackBindings;
-
-    runtimeState.baseFields = fields;
-    runtimeState.activeLocale = renderConfig.ui?.defaultLocale || renderConfig.locale || 'ar';
-
-    window.__INVITE__ = {
-      ...(window.__INVITE__ || {}),
-      renderConfig,
-      opening: renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} },
-      config: {
-        ...((window.__INVITE__ && window.__INVITE__.config) || {}),
-        ...fields,
-      },
-    };
-
-    applyLocalizedContent(bindings, fields, runtimeState.activeLocale);
-    applyTheme(renderConfig.theme || {});
-    applySections(manifest, renderConfig.sections || {});
-    ensureLanguageToggle(renderConfig, bindings);
-    ensureMusicControls(fields.musicUrl || '');
-    applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
   }
 
   function assignNestedValue(target, dottedKey, value) {
@@ -1884,7 +1861,7 @@
     if (!document.getElementById('farha-studio-inline-style')) {
       const style = document.createElement('style');
       style.id = 'farha-studio-inline-style';
-      style.textContent = \
+      style.textContent = `
         .farha-studio-editable {
           transition: all 0.2s ease-in-out;
           cursor: pointer !important;
@@ -1915,7 +1892,7 @@
         .farha-studio-editable:hover::after {
           opacity: 1;
         }
-      \;
+      `;
       document.head.appendChild(style);
     }
 
