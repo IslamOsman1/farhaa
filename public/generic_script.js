@@ -1703,11 +1703,13 @@
       syncRsvpFormReferences(form);
       form.dataset.farhaBound = 'true';
       form.removeAttribute('action');
+      form.onsubmit = null;
       restorePersistedRsvpTicket(form);
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         event.stopPropagation();
+        event.stopImmediatePropagation();
 
         const data = collectRsvpPayload(form);
         const submitButton = form.querySelector('button[type="submit"], #submitBtn, .send');
@@ -1754,7 +1756,7 @@
             submitButton.textContent = originalText || 'Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž';
           }
         }
-      });
+      }, true);
     });
   }
 

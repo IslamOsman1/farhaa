@@ -6,12 +6,22 @@ import { generateRsvpQrDataUrl, getRsvpQrDownloadName, getRsvpQrRoute } from '@/
 const rsvpPayloadSchema = z.object({
   invitationId: z.string().trim().min(1).optional(),
   invitationSlug: z.string().trim().min(1).optional(),
+  invitation_id: z.string().trim().min(1).optional(),
+  invitation_slug: z.string().trim().min(1).optional(),
   guestName: z.string().trim().min(1),
+  guest_name: z.string().trim().min(1).optional(),
   phone: z.string().trim().optional().nullable(),
   status: z.string().trim().optional().default('confirmed'),
+  attending: z.string().trim().optional(),
   companions: z.coerce.number().int().min(0).max(20).optional().default(0),
+  guests: z.coerce.number().int().min(0).max(20).optional(),
   message: z.string().trim().max(1000).optional().nullable(),
-}).refine((payload) => payload.invitationId || payload.invitationSlug, {
+}).refine((payload) => (
+  payload.invitationId
+  || payload.invitationSlug
+  || payload.invitation_id
+  || payload.invitation_slug
+), {
   message: 'Invitation reference is required.',
   path: ['invitationId'],
 });
@@ -50,11 +60,19 @@ export async function POST(request) {
     }
 
     const payload = rsvpPayloadSchema.parse(await request.json());
+    const invitationId = payload.invitationId || payload.invitation_id || '';
+    const invitationSlug = payload.invitationSlug || payload.invitation_slug || '';
+    const guestName = payload.guestName || payload.guest_name || '';
+    const companions = payload.guests != null ? Math.max(0, (payload.guests || 1) - 1) : (payload.companions || 0);
+    const normalizedStatus =
+      payload.status
+      || (payload.attending === 'yes' ? 'confirmed' : payload.attending === 'no' ? 'declined' : payload.attending)
+      || 'confirmed';
 
     const invitation = await prisma.invitation.findFirst({
-      where: payload.invitationId
-        ? { id: payload.invitationId }
-        : { slug: payload.invitationSlug },
+      where: invitationId
+        ? { id: invitationId }
+        : { slug: invitationSlug },
       select: { id: true, slug: true, status: true },
     });
 
@@ -69,10 +87,10 @@ export async function POST(request) {
     const rsvp = await prisma.rSVP.create({
       data: {
         invitationId: invitation.id,
-        guestName: payload.guestName,
+        guestName,
         phone: payload.phone || null,
-        status: payload.status || 'confirmed',
-        companions: payload.companions || 0,
+        status: normalizedStatus,
+        companions,
         message: payload.message || null,
       },
     });
