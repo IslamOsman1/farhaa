@@ -286,6 +286,9 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     runtimeState.templateSlug = window.location.pathname.split('/').filter(Boolean)[0] || '';
+    runtimeState.invitationSlug = window.location.pathname.includes('/invite/')
+      ? window.location.pathname.split('/').filter(Boolean).pop() || null
+      : runtimeState.invitationSlug;
 
     hideLegacyTemplateBars();
     setupNativeOpeningGuard();
@@ -300,6 +303,70 @@
     mountPromoBarIfNeeded();
     hijackRsvpForms();
   });
+
+  function normalizeTextOverrides(rawOverrides) {
+    if (!rawOverrides) return [];
+
+    if (Array.isArray(rawOverrides)) {
+      return rawOverrides
+        .map((item, index) => ({
+          id: item?.id || `override-${index}`,
+          path: item?.path || item?.id || '',
+          text: item?.text == null ? '' : String(item.text),
+        }))
+        .filter((item) => item.path);
+    }
+
+    if (typeof rawOverrides === 'object') {
+      return Object.entries(rawOverrides)
+        .map(([path, text], index) => ({
+          id: `override-${index}`,
+          path,
+          text: text == null ? '' : String(text),
+        }))
+        .filter((item) => item.path);
+    }
+
+    return [];
+  }
+
+  function applyTextOverrides(rawOverrides) {
+    const overrides = normalizeTextOverrides(rawOverrides);
+    if (!overrides.length) return;
+
+    const bindings =
+      (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+      || fallbackBindings
+      || {};
+
+    overrides.forEach((override) => {
+      const path = override.path;
+      const text = override.text;
+      const binding = bindings[path];
+
+      if (binding && binding.method === 'text' && binding.selector) {
+        queryAll(binding.selector).forEach((node) => {
+          if (document.activeElement === node || node.contains?.(document.activeElement)) return;
+          node.textContent = text;
+        });
+      }
+
+      queryAll(`[data-farha-studio-field="${path}"], [data-farha-text-path="${path}"]`).forEach((node) => {
+        if (document.activeElement === node || node.contains?.(document.activeElement)) return;
+        node.textContent = text;
+      });
+    });
+  }
+
+  function initUniversalTextEditor() {
+    if (!runtimeState.preview) return;
+
+    queryAll('.farha-studio-editable, .farha-custom-element__text').forEach((node) => {
+      node.style.userSelect = 'text';
+      node.style.webkitUserSelect = 'text';
+      node.style.pointerEvents = 'auto';
+    });
+  }
 
   function installMessageBridge() {
     window.addEventListener('message', (event) => {
@@ -1580,19 +1647,26 @@
   }
 
   function collectRsvpPayload(form) {
+    const routeSegments = window.location.pathname.split('/').filter(Boolean);
+    const routeInviteSlug = routeSegments[0] === 'invite' ? (routeSegments[1] || '') : '';
     const rawData = new FormData(form);
     const payload = {
       invitationId:
         runtimeState.invitationId ||
         form.getAttribute('data-invitation-id') ||
+        form.dataset.invitationId ||
         document.getElementById('da3wa-rsvp')?.getAttribute('data-inv') ||
+        document.querySelector('[data-invitation-id]')?.getAttribute('data-invitation-id') ||
         window.__INVITE__?.config?.id ||
         '',
       invitationSlug:
         runtimeState.invitationSlug ||
         runtimeState.renderConfig?.invitationSlug ||
+        form.getAttribute('data-invitation-slug') ||
+        form.dataset.invitationSlug ||
+        document.querySelector('[data-invitation-slug]')?.getAttribute('data-invitation-slug') ||
         window.__INVITE__?.renderConfig?.invitationSlug ||
-        window.location.pathname.split('/').filter(Boolean).pop() ||
+        routeInviteSlug ||
         '',
       guestName: '',
       status: 'confirmed',
