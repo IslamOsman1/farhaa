@@ -1052,6 +1052,11 @@ export const invitationRenderConfigSchema = z.object({
     width: z.string().optional(),
     height: z.string().optional(),
   })).default([]),
+  textOverrides: z.array(z.object({
+    id: z.string(),
+    path: z.string().optional(),
+    text: z.string()
+  })).default([]),
   preview: z.boolean().default(false),
   locale: z.string().default('ar'),
   ui: z.record(z.any()).default({}),

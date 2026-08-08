@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   const initialSearchParams = new URLSearchParams(window.location.search);
   const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
   const initialOpeningDisabled = initialSearchParams.get('farhaOpening') === '0';
@@ -426,6 +426,10 @@
     
     attachStudioInlineEditors(bindings);
     applyCustomElements(renderConfig.customElements || []);
+    
+    // NEW: apply universal text overrides
+    applyTextOverrides(renderConfig.textOverrides || []);
+    initUniversalTextEditor();
   }
 
   function assignNestedValue(target, dottedKey, value) {
@@ -2040,6 +2044,7 @@
         if (el.fontFamily) inner.style.fontFamily = el.fontFamily;
       } else if (el.type === 'image') {
         inner = document.createElement('img');
+        inner.draggable = false;
         inner.src = el.content;
         inner.style.display = 'block';
         inner.style.width = '100%';

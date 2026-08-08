@@ -8,9 +8,9 @@ import MediaPicker from '@/components/admin/MediaPicker';
 import { buildInvitationRenderConfig, getOpeningBySlug } from '@/lib/template-system';
 
 const DEVICE_PRESETS = {
-  mobile: { label: 'Ù‡Ø§ØªÙ', width: 390, height: 844 },
-  tablet: { label: 'ØªØ§Ø¨Ù„Øª', width: 768, height: 1024 },
-  desktop: { label: 'Ø³Ø·Ø­ Ù…ÙƒØªØ¨', width: 1280, height: 860 },
+  mobile: { label: 'هاتف', width: 390, height: 844 },
+  tablet: { label: 'تابلت', width: 768, height: 1024 },
+  desktop: { label: 'سطح مكتب', width: 1280, height: 860 },
 };
 
 const SECTION_META = {
@@ -50,6 +50,8 @@ function buildPreviewInvitation(session, draft) {
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
     uiConfig: draft.uiConfig,
+    customElements: draft.customElements,
+    textOverrides: draft.textOverrides,
     opening: { slug: draft.openingSlug },
     template: { slug: draft.templateSlug },
   };
@@ -508,7 +510,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
           const newEl = {
             id: 'custom-' + Math.random().toString(36).substr(2, 9),
             type: mode,
-            content: mode === 'text' ? 'Ù†Øµ Ø¬Ø¯ÙŠØ¯' : '/images/placeholder.jpg',
+            content: mode === 'text' ? 'نص جديد' : '/images/placeholder.jpg',
             x: x,
             y: y,
             fontSize: mode === 'text' ? '24px' : undefined,
