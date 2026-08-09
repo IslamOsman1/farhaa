@@ -141,6 +141,7 @@ export default function CheckInClient({ initialInvitation }) {
   const [sharePageBusy, setSharePageBusy] = useState(false);
   const [cameraSupported, setCameraSupported] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraRequesting, setCameraRequesting] = useState(false);
   const [cameraError, setCameraError] = useState('');
 
   const videoRef = useRef(null);
@@ -289,6 +290,48 @@ export default function CheckInClient({ initialInvitation }) {
       });
     } finally {
       setSharePageBusy(false);
+    }
+  }
+
+  async function handleCameraButtonClick() {
+    if (cameraEnabled) {
+      setCameraEnabled(false);
+      setCameraError('');
+      return;
+    }
+
+    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError('الكاميرا غير مدعومة على هذا الجهاز أو المتصفح.');
+      return;
+    }
+
+    setCameraRequesting(true);
+    setCameraError('');
+
+    try {
+      const permissionStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+        },
+        audio: false,
+      });
+
+      permissionStream.getTracks().forEach((track) => track.stop());
+      setCameraEnabled(true);
+    } catch (error) {
+      const denied =
+        error?.name === 'NotAllowedError' ||
+        error?.name === 'PermissionDeniedError' ||
+        error?.name === 'SecurityError';
+
+      setCameraEnabled(false);
+      setCameraError(
+        denied
+          ? 'تم رفض إذن الكاميرا. اسمح للمتصفح باستخدام الكاميرا ثم حاول مرة أخرى.'
+          : 'تعذر الوصول إلى الكاميرا على هذا الجهاز أو المتصفح.',
+      );
+    } finally {
+      setCameraRequesting(false);
     }
   }
 
@@ -658,9 +701,12 @@ export default function CheckInClient({ initialInvitation }) {
                       {cameraSupported ? (
                         <button
                           type="button"
-                          onClick={() => setCameraEnabled((current) => !current)}
+                          onClick={() => {
+                            void handleCameraButtonClick();
+                          }}
                           title={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
                           aria-label={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                          disabled={cameraRequesting}
                           style={{
                             ...inlineActionButtonStyle,
                             width: '40px',
@@ -668,6 +714,7 @@ export default function CheckInClient({ initialInvitation }) {
                             padding: '0',
                             background: cameraEnabled ? '#7f2a1f' : '#fff',
                             color: cameraEnabled ? '#fff' : '#7f2a1f',
+                            opacity: cameraRequesting ? 0.7 : 1,
                           }}
                         >
                           <CameraIcon size={20} />
