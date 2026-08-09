@@ -162,6 +162,7 @@ export default function CheckInClient({ initialInvitation }) {
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [cameraRequesting, setCameraRequesting] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [scanToast, setScanToast] = useState(null);
   const [viewportWidth, setViewportWidth] = useState(0);
 
   const videoRef = useRef(null);
@@ -266,6 +267,45 @@ export default function CheckInClient({ initialInvitation }) {
   async function handleSearch(event) {
     event.preventDefault();
     await fetchOverview(searchQuery);
+  }
+
+  function showScanToast(type, title, message) {
+    setScanToast({
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      type,
+      title,
+      message,
+    });
+  }
+
+  async function previewScannedCode(rawValue) {
+    const normalized = String(rawValue || '').trim();
+    if (!normalized) {
+      return;
+    }
+
+    try {
+      const data = await fetchOverview(normalized);
+      const match = Array.isArray(data?.matches) ? data.matches[0] : null;
+
+      if (!match) {
+        setScanInput('');
+        showScanToast('error', 'تعذر العثور على الكود', 'تمت قراءة رمز QR، لكن لا توجد بطاقة دخول مطابقة لهذه الدعوة.');
+        return;
+      }
+
+      const companionCount = Math.max(0, Number(match.allowedEntries || 0) - 1);
+      setScanInput(match.passCode || normalized);
+      setSearchQuery(match.passCode || normalized);
+
+      showScanToast(
+        'success',
+        'تمت قراءة الكود بنجاح',
+        `${match.guestName || match.passCode} • المرافقون: ${companionCount} • المتبقي: ${match.remainingEntries}`,
+      );
+    } catch (error) {
+      showScanToast('error', 'فشل قراءة الكود', error?.message || 'تعذر التحقق من هذا الكود الآن.');
+    }
   }
 
   async function handleQuickCheckIn(rawValue) {
@@ -435,10 +475,13 @@ export default function CheckInClient({ initialInvitation }) {
           lastScanRef.current = rawValue;
 
           try {
-            await handleQuickCheckIn(rawValue);
+            await previewScannedCode(rawValue);
           } finally {
             window.setTimeout(() => {
               scanLockRef.current = false;
+              if (lastScanRef.current === rawValue) {
+                lastScanRef.current = '';
+              }
             }, 1400);
           }
         });
@@ -473,6 +516,18 @@ export default function CheckInClient({ initialInvitation }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authorized]);
+
+  useEffect(() => {
+    if (!scanToast?.id) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setScanToast((current) => (current?.id === scanToast.id ? null : current));
+    }, 3400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [scanToast]);
 
   const summaryCards = summary || {
     totalPasses: 0,
@@ -536,6 +591,31 @@ export default function CheckInClient({ initialInvitation }) {
         direction: 'rtl',
       }}
     >
+      {scanToast ? (
+        <div
+          style={{
+            position: 'fixed',
+            top: isPhone ? '12px' : '18px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 140,
+            width: isPhone ? 'calc(100vw - 24px)' : 'min(460px, calc(100vw - 36px))',
+            background: scanToast.type === 'success' ? 'rgba(236, 253, 245, 0.98)' : 'rgba(254, 242, 242, 0.98)',
+            color: scanToast.type === 'success' ? '#065f46' : '#b91c1c',
+            border: `1px solid ${scanToast.type === 'success' ? 'rgba(6,95,70,0.16)' : 'rgba(185,28,28,0.16)'}`,
+            borderRadius: '18px',
+            boxShadow: '0 18px 44px rgba(15, 23, 42, 0.18)',
+            backdropFilter: 'blur(16px)',
+            padding: isPhone ? '12px 14px' : '14px 16px',
+          }}
+        >
+          <div style={{ display: 'grid', gap: '4px' }}>
+            <strong style={{ fontSize: isPhone ? '0.92rem' : '0.98rem' }}>{scanToast.title}</strong>
+            <span style={{ fontSize: isPhone ? '0.84rem' : '0.9rem', lineHeight: 1.8 }}>{scanToast.message}</span>
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ maxWidth: shellMaxWidth, margin: '0 auto', display: 'grid', gap: shellGap }}>
         <section
           style={{
@@ -815,7 +895,7 @@ export default function CheckInClient({ initialInvitation }) {
                       <div style={{ marginTop: '10px', color: '#b91c1c', fontSize: isPhone ? '0.86rem' : '0.92rem' }}>{cameraError}</div>
                     ) : (
                       <div style={{ marginTop: '10px', color: '#6b7280', fontSize: isPhone ? '0.86rem' : '0.92rem', lineHeight: 1.8 }}>
-                        وجّه الكاميرا إلى كود QR وسيتم تسجيل الدخول تلقائيًا.
+                        وجّه الكاميرا إلى كود QR وسيتم التحقق منه أولًا ثم إظهار نتيجة سريعة قبل تسجيل الدخول.
                       </div>
                     )}
                   </div>
