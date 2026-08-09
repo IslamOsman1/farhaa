@@ -2439,6 +2439,11 @@
       if (!point) return;
 
       selectElement(wrapper.dataset.id);
+      if (wrapper.dataset.locked === 'true' && actionNode?.dataset?.farhaAction !== 'delete') {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
 
       const action = actionNode?.dataset?.farhaAction;
       if (action === 'delete') {
@@ -2615,8 +2620,9 @@
     container.style.width = `${Math.max(target.scrollWidth || 0, target.clientWidth || 0, target.offsetWidth || 0)}px`;
     container.style.height = `${Math.max(target.scrollHeight || 0, target.clientHeight || 0, target.offsetHeight || 0)}px`;
 
+    const sortedElements = [...elements].sort((left, right) => toPxNumber(left?.zIndex, 0) - toPxNumber(right?.zIndex, 0));
     const existingWrappers = Array.from(container.children);
-    const newIds = elements.map(el => String(el.id));
+    const newIds = sortedElements.map((el) => String(el.id));
 
     existingWrappers.forEach(wrapper => {
       if (!newIds.includes(String(wrapper.dataset.id))) {
@@ -2651,7 +2657,7 @@
       document.body.addEventListener('click', runtimeState.canvasClickHandler);
     }
 
-    elements.forEach(el => {
+    sortedElements.forEach((el, index) => {
       let wrapper = container.querySelector(`[data-id="${el.id}"]`);
       if (!wrapper) {
         wrapper = document.createElement('div');
@@ -2660,19 +2666,25 @@
         wrapper.style.position = 'absolute';
         container.appendChild(wrapper);
       }
+      container.appendChild(wrapper);
 
       wrapper.dataset.type = el.type;
       wrapper.dataset.cropX = String(Number.isFinite(parseFloat(el.cropX)) ? parseFloat(el.cropX) : 50);
       wrapper.dataset.cropY = String(Number.isFinite(parseFloat(el.cropY)) ? parseFloat(el.cropY) : 50);
       wrapper.dataset.cropMode = wrapper.dataset.cropMode || 'false';
+      wrapper.dataset.locked = el.locked ? 'true' : 'false';
+      wrapper.dataset.hidden = el.hidden ? 'true' : 'false';
       wrapper.style.left = `${el.x || 0}px`;
       wrapper.style.top = `${el.y || 0}px`;
-      wrapper.style.pointerEvents = 'auto';
+      wrapper.style.display = el.hidden ? 'none' : 'block';
+      wrapper.style.pointerEvents = el.hidden ? 'none' : 'auto';
       wrapper.style.touchAction = el.type === 'text' ? 'manipulation' : 'none';
       wrapper.style.userSelect = el.type === 'text' ? 'text' : 'none';
       wrapper.style.webkitUserSelect = el.type === 'text' ? 'text' : 'none';
-      wrapper.style.cursor = runtimeState.preview ? 'default' : 'inherit';
+      wrapper.style.cursor = runtimeState.preview ? (el.locked ? 'not-allowed' : 'default') : 'inherit';
       wrapper.style.maxWidth = 'calc(100% - 12px)';
+      wrapper.style.opacity = String(clamp(toPxNumber(el.opacity, 1), 0.05, 1));
+      wrapper.style.zIndex = String(toPxNumber(el.zIndex, index + 1));
 
       if (el.type === 'image') {
         const nextWidth = el.width || '150px';
@@ -2696,6 +2708,8 @@
         contentRoot.className = 'farha-custom-element__content';
         wrapper.appendChild(contentRoot);
       }
+      contentRoot.style.transform = `rotate(${toPxNumber(el.rotation, 0)}deg)`;
+      contentRoot.style.transformOrigin = 'center center';
 
       let controlsRoot = wrapper.querySelector('.farha-custom-element__controls');
       if (!controlsRoot) {
@@ -2748,7 +2762,10 @@
           inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
           inner.addEventListener('click', (e) => {
             e.stopPropagation();
-            runtimeState.selectedCustomElementId = el.id;
+            selectElement(el.id);
+            if (el.locked) {
+              return;
+            }
             openFloatingTextEditor({
               target: inner,
               initialValue: inner.innerText || '',
@@ -2805,6 +2822,7 @@
         controlsRoot.style.gap = '6px';
         controlsRoot.style.pointerEvents = 'auto';
         controlsRoot.style.zIndex = '2';
+        controlsRoot.style.opacity = el.locked ? '0.72' : '1';
 
         const makeActionButton = (label, action) => {
           const button = document.createElement('button');
@@ -2851,7 +2869,7 @@
         resizeHandle.style.color = '#fff';
         resizeHandle.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.22)';
         resizeHandle.style.cursor = 'nwse-resize';
-        resizeHandle.style.display = isSelected ? 'block' : 'none';
+        resizeHandle.style.display = isSelected && !el.locked ? 'block' : 'none';
       } else {
         controlsRoot.style.display = 'none';
         resizeHandle.style.display = 'none';

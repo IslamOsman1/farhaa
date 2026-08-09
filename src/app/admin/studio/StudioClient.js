@@ -14,7 +14,8 @@ const DEVICE_PRESETS = {
 };
 
 const SECTION_META = {
-  'custom-elements': { icon: '*', label: 'Free Elements', description: 'Add movable text and images over the template' },
+  'custom-elements': { icon: '✚', label: 'العناصر الحرة', description: 'إضافة نصوص وصور متحركة فوق القالب' },
+  layers: { icon: '🗂', label: 'الطبقات', description: 'إدارة العناصر الحرة وترتيبها والتحكم بها' },
   basic: { icon: '👤', label: 'الأساسيات', description: 'أسماء العروسين وبيانات المناسبة' },
   wording: { icon: '📝', label: 'النصوص', description: 'رسائل الدعوة والعناوين' },
   families: { icon: '👪', label: 'العائلات', description: 'أسماء وتواقيع العائلتين' },
@@ -31,6 +32,144 @@ const SECTION_META = {
 
 function arrayValue(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function toFiniteNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getCustomElementLabel(element, index) {
+  if (element?.name) {
+    return element.name;
+  }
+
+  const baseLabel = element?.type === 'text' ? 'نص حر' : element?.type === 'image' ? 'صورة حرة' : 'عنصر حر';
+  return `${baseLabel} ${index + 1}`;
+}
+
+function normalizeCustomElements(elements) {
+  return arrayValue(elements).map((element, index) => ({
+    ...element,
+    name: getCustomElementLabel(element, index),
+    opacity: toFiniteNumber(element?.opacity, 1),
+    rotation: toFiniteNumber(element?.rotation, 0),
+    zIndex: toFiniteNumber(element?.zIndex, index + 1),
+    cropX: toFiniteNumber(element?.cropX, 50),
+    cropY: toFiniteNumber(element?.cropY, 50),
+    hidden: Boolean(element?.hidden),
+    locked: Boolean(element?.locked),
+  }));
+}
+
+function cloneValue(value) {
+  if (value == null) {
+    return value;
+  }
+
+  return JSON.parse(JSON.stringify(value));
+}
+
+function defaultFieldValueFromManifest(manifest, key, type) {
+  const defaults = manifest?.defaultValues || {};
+  if (Object.prototype.hasOwnProperty.call(defaults, key)) {
+    return cloneValue(defaults[key]);
+  }
+
+  if (type === 'gallery' || type === 'schedule' || type === 'list') {
+    return [];
+  }
+
+  if (type === 'boolean') {
+    return false;
+  }
+
+  return '';
+}
+
+function buildDefaultCustomElement(type, seed = {}) {
+  const base = {
+    opacity: 1,
+    rotation: 0,
+    hidden: false,
+    locked: false,
+    cropX: 50,
+    cropY: 50,
+  };
+
+  if (type === 'text') {
+    return {
+      ...base,
+      fontSize: '24px',
+      color: '#1f2937',
+      fontFamily: '',
+      ...seed,
+    };
+  }
+
+  return {
+    ...base,
+    width: '150px',
+    height: '150px',
+    ...seed,
+  };
+}
+
+function getElementStyleClipboardPayload(element) {
+  if (!element) {
+    return null;
+  }
+
+  const common = {
+    opacity: toFiniteNumber(element.opacity, 1),
+    rotation: toFiniteNumber(element.rotation, 0),
+  };
+
+  if (element.type === 'text') {
+    return {
+      type: 'text',
+      styles: {
+        ...common,
+        fontSize: element.fontSize || '24px',
+        color: element.color || '#1f2937',
+        fontFamily: element.fontFamily || '',
+      },
+    };
+  }
+
+  return {
+    type: 'image',
+    styles: {
+      ...common,
+      width: element.width || '150px',
+      height: element.height || '150px',
+      cropX: toFiniteNumber(element.cropX, 50),
+      cropY: toFiniteNumber(element.cropY, 50),
+    },
+  };
+}
+
+function normalizeDraftState(input) {
+  const safe = input || {};
+  return {
+    ...safe,
+    contentConfig: safe.contentConfig || {},
+    themeConfig: safe.themeConfig || {},
+    sectionConfig: safe.sectionConfig || {},
+    openingConfig: safe.openingConfig || {},
+    textOverrides: safe.textOverrides || {},
+    uiConfig: {
+      ...(safe.uiConfig || {}),
+      editorGuides: safe.uiConfig?.editorGuides !== false,
+    },
+    devicePreview: {
+      mode: 'mobile',
+      width: 390,
+      height: 844,
+      ...(safe.devicePreview || {}),
+    },
+    customElements: normalizeCustomElements(safe.customElements || []),
+  };
 }
 
 function buildPreviewInvitation(session, draft) {
@@ -357,7 +496,8 @@ const QUICK_MEDIA_KEYS = new Set([
 
 export default function StudioClient({ session, manifests, openings, inventory }) {
   const router = useRouter();
-  const [draft, setDraft] = useState(session.draft);
+  const initialDraft = useMemo(() => normalizeDraftState(session.draft), [session.draft]);
+  const [draft, setDraft] = useState(initialDraft);
   const [openSection, setOpenSection] = useState('basic');
   const [saveState, setSaveState] = useState('saved');
   const [notice, setNotice] = useState('');
@@ -365,8 +505,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [previewReloadToken, setPreviewReloadToken] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
   const [canvasClickMenu, setCanvasClickMenu] = useState(null);
+  const [selectedElementId, setSelectedElementId] = useState(null);
+  const [styleClipboard, setStyleClipboard] = useState(null);
+  const [historyMeta, setHistoryMeta] = useState({ canUndo: false, canRedo: false, pastCount: 0, futureCount: 0 });
   const autosaveRef = useRef(null);
-  const lastSavedRef = useRef(JSON.stringify(session.draft));
+  const lastSavedRef = useRef(JSON.stringify(initialDraft));
+  const historyRef = useRef({ current: null, past: [], future: [] });
+  const suppressHistoryRef = useRef(false);
 
   const currentManifest = useMemo(
     () => manifests.find((item) => item.slug === draft.templateSlug) || manifests[0],
@@ -406,41 +551,269 @@ export default function StudioClient({ session, manifests, openings, inventory }
     [currentManifest],
   );
 
+  const normalizedCustomElements = useMemo(
+    () => normalizeCustomElements(draft.customElements || []),
+    [draft.customElements],
+  );
+  const orderedLayerElements = useMemo(
+    () => [...normalizedCustomElements].sort((left, right) => (left.zIndex || 0) - (right.zIndex || 0)),
+    [normalizedCustomElements],
+  );
+  const layerElementsForPanel = useMemo(
+    () => [...orderedLayerElements].reverse(),
+    [orderedLayerElements],
+  );
+  const selectedCustomElement = useMemo(
+    () => orderedLayerElements.find((item) => item.id === selectedElementId) || null,
+    [orderedLayerElements, selectedElementId],
+  );
+
+  function syncHistoryMeta() {
+    setHistoryMeta({
+      canUndo: historyRef.current.past.length > 0,
+      canRedo: historyRef.current.future.length > 0,
+      pastCount: historyRef.current.past.length,
+      futureCount: historyRef.current.future.length,
+    });
+  }
+
+  function applySnapshotFromHistory(serializedSnapshot, direction) {
+    const currentSerialized = historyRef.current.current;
+    if (!serializedSnapshot || !currentSerialized) {
+      return;
+    }
+
+    suppressHistoryRef.current = true;
+    if (direction === 'undo') {
+      historyRef.current.future.unshift(currentSerialized);
+      historyRef.current.future = historyRef.current.future.slice(0, 50);
+      historyRef.current.past.pop();
+    } else {
+      historyRef.current.past.push(currentSerialized);
+      historyRef.current.past = historyRef.current.past.slice(-50);
+      historyRef.current.future.shift();
+    }
+    historyRef.current.current = serializedSnapshot;
+    syncHistoryMeta();
+    setDraft(normalizeDraftState(JSON.parse(serializedSnapshot)));
+    setNotice(direction === 'undo' ? 'تم التراجع عن آخر تعديل.' : 'تمت إعادة التعديل.');
+  }
+
+  function handleUndo() {
+    if (!historyRef.current.past.length) {
+      return;
+    }
+
+    const previousSnapshot = historyRef.current.past[historyRef.current.past.length - 1];
+    applySnapshotFromHistory(previousSnapshot, 'undo');
+  }
+
+  function handleRedo() {
+    if (!historyRef.current.future.length) {
+      return;
+    }
+
+    const nextSnapshot = historyRef.current.future[0];
+    applySnapshotFromHistory(nextSnapshot, 'redo');
+  }
+
   const activeSections = useMemo(() => {
     const fieldSections = Object.keys(groupedFields).filter((key) => SECTION_META[key]);
-    return [...fieldSections, 'custom-elements', 'opening', 'design', 'sections', 'advanced'];
+    return [...fieldSections, 'custom-elements', 'layers', 'opening', 'design', 'sections', 'advanced'];
   }, [groupedFields]);
 
-  function addCustomElement(type, position, content = '') {
-    setDraft((current) => {
-      const nextElement = {
-        id: `custom-${Math.random().toString(36).slice(2, 11)}`,
-        type,
-        content,
-        x: Math.max(12, Math.round(position?.x ?? 40)),
-        y: Math.max(12, Math.round(position?.y ?? 40)),
-        ...(type === 'text'
-          ? {
-              fontSize: '24px',
-              color: '#1f2937',
-            }
-          : {
-              width: '150px',
-              height: 'auto',
-            }),
-      };
+  function updateCustomElements(updater) {
+    setDraft((current) => ({
+      ...current,
+      customElements: normalizeCustomElements(updater(current.customElements || [])),
+    }));
+  }
 
+  function patchCustomElement(id, updates) {
+    updateCustomElements((elements) =>
+      elements.map((element) =>
+        element.id === id
+          ? {
+              ...element,
+              ...(typeof updates === 'function' ? updates(element) : updates),
+            }
+          : element,
+      ),
+    );
+  }
+
+  function removeCustomElement(id) {
+    updateCustomElements((elements) => elements.filter((element) => element.id !== id));
+    setSelectedElementId((current) => (current === id ? null : current));
+  }
+
+  function moveCustomElement(id, direction) {
+    updateCustomElements((elements) => {
+      const next = [...elements];
+      const currentIndex = next.findIndex((element) => element.id === id);
+      if (currentIndex === -1) {
+        return next;
+      }
+
+      const targetIndex = currentIndex + direction;
+      if (targetIndex < 0 || targetIndex >= next.length) {
+        return next;
+      }
+
+      const [item] = next.splice(currentIndex, 1);
+      next.splice(targetIndex, 0, item);
+      return next.map((element, index) => ({ ...element, zIndex: index + 1 }));
+    });
+    setSelectedElementId(id);
+    setOpenSection('layers');
+  }
+
+  function duplicateCustomElement(id) {
+    const source = orderedLayerElements.find((element) => element.id === id);
+    if (!source) {
+      return;
+    }
+
+    const duplicateId = `custom-${Math.random().toString(36).slice(2, 11)}`;
+    updateCustomElements((elements) => [
+      ...elements,
+      {
+        ...source,
+        id: duplicateId,
+        name: `${source.name || getCustomElementLabel(source, elements.length)} (نسخة)`,
+        x: Math.max(12, toFiniteNumber(source.x, 40) + 18),
+        y: Math.max(12, toFiniteNumber(source.y, 40) + 18),
+        hidden: false,
+        locked: false,
+      },
+    ]);
+    setSelectedElementId(duplicateId);
+    setOpenSection('layers');
+  }
+
+  function addCustomElement(type, position, content = '') {
+    const nextId = `custom-${Math.random().toString(36).slice(2, 11)}`;
+    setDraft((current) => {
+      const elements = current.customElements || [];
       return {
         ...current,
-        customElements: [...(current.customElements || []), nextElement],
+        customElements: normalizeCustomElements([
+          ...elements,
+          {
+            id: nextId,
+            type,
+            name: getCustomElementLabel({ type }, elements.length),
+            content,
+            x: Math.max(12, Math.round(position?.x ?? 40)),
+            y: Math.max(12, Math.round(position?.y ?? 40)),
+            ...buildDefaultCustomElement(type, {
+              zIndex: elements.length + 1,
+            }),
+          },
+        ]),
         ui: {
           ...current.ui,
           addCustomElementMode: '',
         },
       };
     });
-    setOpenSection('custom-elements');
+    setSelectedElementId(nextId);
+    setOpenSection('layers');
   }
+
+  useEffect(() => {
+    const currentElements = draft.customElements || [];
+    const normalized = normalizeCustomElements(currentElements);
+    const needsNormalization = currentElements.some((element, index) => {
+      const next = normalized[index];
+      return (
+        element?.name !== next.name
+        || toFiniteNumber(element?.opacity, 1) !== next.opacity
+        || toFiniteNumber(element?.rotation, 0) !== next.rotation
+        || toFiniteNumber(element?.zIndex, index + 1) !== next.zIndex
+        || toFiniteNumber(element?.cropX, 50) !== next.cropX
+        || toFiniteNumber(element?.cropY, 50) !== next.cropY
+        || Boolean(element?.hidden) !== next.hidden
+        || Boolean(element?.locked) !== next.locked
+      );
+    });
+
+    if (!needsNormalization) {
+      return;
+    }
+
+    setDraft((current) => ({
+      ...current,
+      customElements: normalized,
+    }));
+  }, [draft.customElements]);
+
+  useEffect(() => {
+    if (!orderedLayerElements.length) {
+      if (selectedElementId !== null) {
+        setSelectedElementId(null);
+      }
+      return;
+    }
+
+    if (!selectedElementId || !orderedLayerElements.some((element) => element.id === selectedElementId)) {
+      setSelectedElementId(orderedLayerElements[orderedLayerElements.length - 1].id);
+    }
+  }, [orderedLayerElements, selectedElementId]);
+
+  useEffect(() => {
+    const serialized = JSON.stringify(draft);
+    if (historyRef.current.current == null) {
+      historyRef.current.current = serialized;
+      syncHistoryMeta();
+      return;
+    }
+
+    if (suppressHistoryRef.current) {
+      historyRef.current.current = serialized;
+      suppressHistoryRef.current = false;
+      syncHistoryMeta();
+      return;
+    }
+
+    if (serialized === historyRef.current.current) {
+      return;
+    }
+
+    historyRef.current.past.push(historyRef.current.current);
+    historyRef.current.past = historyRef.current.past.slice(-50);
+    historyRef.current.future = [];
+    historyRef.current.current = serialized;
+    syncHistoryMeta();
+  }, [draft]);
+
+  useEffect(() => {
+    function handleHistoryShortcuts(event) {
+      const target = event.target;
+      if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
+
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+
+      const key = String(event.key || '').toLowerCase();
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      if (key === 'y' || (key === 'z' && event.shiftKey)) {
+        event.preventDefault();
+        handleRedo();
+      }
+    }
+
+    window.addEventListener('keydown', handleHistoryShortcuts);
+    return () => window.removeEventListener('keydown', handleHistoryShortcuts);
+  }, []);
 
   const persistDraft = useEffectEvent(async (nextDraft) => {
     setSaveState('saving');
@@ -469,21 +842,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
   useEffect(() => {
     function handleMessage(event) {
       if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
-        setDraft(current => {
-          const els = current.customElements || [];
-          const idx = els.findIndex(e => e.id === event.data.payload.id);
-          if (idx === -1) return current;
-          const newEls = [...els];
-          newEls[idx] = { ...newEls[idx], ...event.data.payload.updates };
-          return { ...current, customElements: newEls };
-        });
+        patchCustomElement(event.data.payload.id, event.data.payload.updates);
       } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
-        setDraft(current => ({
-          ...current,
-          customElements: (current.customElements || []).filter((item) => item.id !== event.data.payload.id),
-        }));
+        removeCustomElement(event.data.payload.id);
       } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
-        setOpenSection('custom-elements');
+        setSelectedElementId(event.data.payload?.id || null);
+        setOpenSection('layers');
       } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
         const { path, text } = event.data.payload;
         setDraft(current => ({
@@ -593,6 +957,170 @@ export default function StudioClient({ session, manifests, openings, inventory }
     setContentValue(key, nextItems);
   }
 
+  function setCustomElementNumber(id, key, value, fallback = 0) {
+    const numeric = Number(value);
+    patchCustomElement(id, {
+      [key]: Number.isFinite(numeric) ? numeric : fallback,
+    });
+  }
+
+  function setCustomElementDimension(id, key, value, fallback = '0px') {
+    const normalizedValue = String(value || '').trim();
+    if (!normalizedValue) {
+      patchCustomElement(id, { [key]: fallback });
+      return;
+    }
+
+    if (/^\d+(\.\d+)?$/.test(normalizedValue)) {
+      patchCustomElement(id, { [key]: `${normalizedValue}px` });
+      return;
+    }
+
+    patchCustomElement(id, { [key]: normalizedValue });
+  }
+
+  function resetSelectedCustomElement() {
+    if (!selectedCustomElement) {
+      return;
+    }
+
+    patchCustomElement(selectedCustomElement.id, (element) => ({
+      ...buildDefaultCustomElement(element.type, {
+        name: element.name,
+        content: element.content,
+        x: toFiniteNumber(element.x, 40),
+        y: toFiniteNumber(element.y, 40),
+        zIndex: toFiniteNumber(element.zIndex, 1),
+      }),
+    }));
+    setNotice(`تمت إعادة ضبط العنصر: ${selectedCustomElement.name}`);
+  }
+
+  function copySelectedElementStyles() {
+    if (!selectedCustomElement) {
+      return;
+    }
+
+    const payload = getElementStyleClipboardPayload(selectedCustomElement);
+    setStyleClipboard(payload);
+    setNotice(`تم نسخ تنسيق العنصر: ${selectedCustomElement.name}`);
+  }
+
+  function pasteStylesToSelectedElement() {
+    if (!selectedCustomElement || !styleClipboard) {
+      return;
+    }
+
+    if (styleClipboard.type !== selectedCustomElement.type) {
+      patchCustomElement(selectedCustomElement.id, {
+        opacity: styleClipboard.styles.opacity,
+        rotation: styleClipboard.styles.rotation,
+      });
+      setNotice('تم لصق التنسيق المشترك فقط لأن نوع العنصر مختلف.');
+      return;
+    }
+
+    patchCustomElement(selectedCustomElement.id, styleClipboard.styles);
+    setNotice(`تم لصق التنسيق على: ${selectedCustomElement.name}`);
+  }
+
+  function canResetSection(sectionKey) {
+    return !['advanced'].includes(sectionKey);
+  }
+
+  function resetSection(sectionKey) {
+    if (sectionKey === 'design') {
+      setDraft((current) => ({
+        ...current,
+        themeConfig: cloneValue(currentManifest.defaultValues?.theme || {}),
+      }));
+      setNotice('تمت إعادة ضبط إعدادات التصميم.');
+      return;
+    }
+
+    if (sectionKey === 'sections') {
+      setDraft((current) => ({
+        ...current,
+        sectionConfig: cloneValue(currentManifest.defaultValues?.sections || {}),
+      }));
+      setNotice('تمت إعادة ضبط إعدادات الأقسام.');
+      return;
+    }
+
+    if (sectionKey === 'opening') {
+      const preferredOpening =
+        availableOpenings.find(
+          (opening) =>
+            opening.slug === 'native-template'
+            && currentManifest.openingCompatibility?.includes(opening.slug),
+        )
+        || availableOpenings.find((opening) => currentManifest.openingCompatibility?.includes(opening.slug))
+        || availableOpenings[0]
+        || currentOpening;
+
+      setDraft((current) => ({
+        ...current,
+        openingSlug: preferredOpening?.slug || 'native-template',
+        openingConfig: {
+          allowSkip: true,
+          ...(preferredOpening?.defaultConfig || {}),
+        },
+      }));
+      setPreviewReloadToken((value) => value + 1);
+      setNotice('تمت إعادة ضبط الافتتاحية.');
+      return;
+    }
+
+    if (sectionKey === 'custom-elements') {
+      setDraft((current) => ({
+        ...current,
+        customElements: [],
+      }));
+      setSelectedElementId(null);
+      setNotice('تم حذف جميع العناصر الحرة من هذه الجلسة.');
+      return;
+    }
+
+    if (sectionKey === 'layers') {
+      if (selectedCustomElement) {
+        resetSelectedCustomElement();
+      }
+      return;
+    }
+
+    const sectionFields = groupedFields[sectionKey] || [];
+    if (!sectionFields.length && sectionKey !== 'media') {
+      return;
+    }
+
+    setDraft((current) => {
+      const nextContentConfig = { ...current.contentConfig };
+      const fieldsToReset = [...sectionFields];
+
+      if (sectionKey === 'media') {
+        QUICK_MEDIA_KEYS.forEach((key) => {
+          if (!fieldsToReset.some((field) => field.key === key)) {
+            fieldsToReset.push({ key, type: key === 'musicUrl' ? 'audio' : 'image' });
+          }
+        });
+      }
+
+      fieldsToReset.forEach((field) => {
+        nextContentConfig[field.key] = defaultFieldValueFromManifest(currentManifest, field.key, field.type);
+        if (isTranslatableField(field)) {
+          const englishKey = getEnglishKey(field.key);
+          nextContentConfig[englishKey] = defaultFieldValueFromManifest(currentManifest, englishKey, field.type);
+        }
+      });
+
+      return {
+        ...current,
+        contentConfig: nextContentConfig,
+      };
+    });
+    setNotice(`تمت إعادة ضبط قسم: ${SECTION_META[sectionKey]?.label || sectionKey}`);
+  }
+
   function handleOpenSection(sectionKey) {
     setOpenSection((current) => (current === sectionKey ? '' : sectionKey));
   }
@@ -680,6 +1208,18 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
         {isOpen ? (
           <div className="studio-accordion__body">
+            {canResetSection(sectionKey) ? (
+              <div className="studio-section-actions">
+                <button
+                  type="button"
+                  className="mini-btn"
+                  onClick={() => resetSection(sectionKey)}
+                  disabled={sectionKey === 'layers' && !selectedCustomElement}
+                >
+                  {sectionKey === 'layers' ? 'Reset Element' : 'Reset Section'}
+                </button>
+              </div>
+            ) : null}
             {sectionKey === 'design' ? (
               <div className="studio-form-grid">
                 {currentManifest.themeOptions.map((field) => (
@@ -759,7 +1299,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
             {sectionKey === 'custom-elements' ? (
               <div className="studio-stack">
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <div className="studio-inline-actions">
                   <button
                     type="button"
                     className="btn-secondary"
@@ -782,106 +1322,330 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   </button>
                 </div>
                 {draft.ui?.addCustomElementMode ? (
-                  <p className="studio-help-text" style={{ color: '#00796b', background: '#e0f2f1', padding: '8px', borderRadius: '4px' }}>
+                  <p className="studio-help-text studio-help-text--success">
                     ✅ وضع الإضافة مفعل. اضغط في أي مكان على المحاكي لتثبيت العنصر!
                   </p>
                 ) : (
                   <p className="studio-help-text">
-                    💡 اضغط على مكان فارغ في المحاكي لإضافة نص أو صورة مباشرةً، أو اختر من الأزرار بالأعلى.
+                    💡 اضغط على مكان فارغ في المحاكي لإضافة نص أو صورة مباشرة، ثم اختر العنصر من لوحة الطبقات لتعديله بدقة.
                   </p>
                 )}
+                <div className="studio-element-summary-grid">
+                  <div className="studio-element-summary-card">
+                    <span>العناصر الحرة</span>
+                    <strong>{orderedLayerElements.length}</strong>
+                  </div>
+                  <div className="studio-element-summary-card">
+                    <span>العنصر المحدد</span>
+                    <strong>{selectedCustomElement ? selectedCustomElement.name : 'لا يوجد'}</strong>
+                  </div>
+                </div>
+                <div className="studio-selection-summary">
+                  {selectedCustomElement ? (
+                    <>
+                      <div className="studio-selection-summary__meta">
+                        <strong>{selectedCustomElement.name}</strong>
+                        <small>
+                          {selectedCustomElement.type === 'text' ? 'نص حر' : 'صورة حرة'}
+                          {' · '}
+                          X:{Math.round(toFiniteNumber(selectedCustomElement.x, 0))}
+                          {' / '}
+                          Y:{Math.round(toFiniteNumber(selectedCustomElement.y, 0))}
+                        </small>
+                      </div>
+                      <button type="button" className="mini-btn" onClick={() => setOpenSection('layers')}>
+                        إدارة الطبقات
+                      </button>
+                    </>
+                  ) : (
+                    <p className="studio-layer-empty">اختر عنصرًا من المحاكي أو أضف عنصرًا جديدًا ليظهر هنا.</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
 
-                <div className="studio-custom-elements-list">
-                  {(draft.customElements || []).map(el => (
-                    <div key={el.id} className="studio-custom-element-item" style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <strong>{el.type === 'text' ? 'نص' : 'صورة'}</strong>
+            {sectionKey === 'layers' ? (
+              <div className="studio-stack">
+                <div className="studio-layers-toolbar">
+                  <span className="studio-layer-count">عدد الطبقات: {orderedLayerElements.length}</span>
+                  {selectedCustomElement ? (
+                    <div className="studio-inline-actions">
+                      <button type="button" className="mini-btn" onClick={() => duplicateCustomElement(selectedCustomElement.id)}>
+                        نسخ العنصر
+                      </button>
+                      <button type="button" className="mini-btn danger" onClick={() => removeCustomElement(selectedCustomElement.id)}>
+                        حذف
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="studio-layers-list">
+                  {layerElementsForPanel.map((element) => {
+                    const currentIndex = orderedLayerElements.findIndex((item) => item.id === element.id);
+                    const isSelected = selectedCustomElement?.id === element.id;
+                    const canRaise = currentIndex < orderedLayerElements.length - 1;
+                    const canLower = currentIndex > 0;
+
+                    return (
+                      <div key={element.id} className={`studio-layer-row ${isSelected ? 'active' : ''}`}>
+                        <button
+                          type="button"
+                          className={`studio-layer-row__select ${isSelected ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedElementId(element.id);
+                            setOpenSection('layers');
+                          }}
+                        >
+                          <span className="studio-layer-row__type">{element.type === 'text' ? 'T' : 'IMG'}</span>
+                          <span className="studio-layer-row__meta">
+                            <strong>{element.name}</strong>
+                            <small>
+                              طبقة {element.zIndex}
+                              {element.hidden ? ' · مخفية' : ''}
+                              {element.locked ? ' · مقفلة' : ''}
+                            </small>
+                          </span>
+                        </button>
+
+                        <div className="studio-layer-row__actions">
+                          <button type="button" className="mini-btn" disabled={!canRaise} onClick={() => moveCustomElement(element.id, 1)}>
+                            رفع
+                          </button>
+                          <button type="button" className="mini-btn" disabled={!canLower} onClick={() => moveCustomElement(element.id, -1)}>
+                            خفض
+                          </button>
+                          <button
+                            type="button"
+                            className={`mini-btn ${element.hidden ? 'active' : ''}`}
+                            onClick={() => patchCustomElement(element.id, { hidden: !element.hidden })}
+                          >
+                            {element.hidden ? 'إظهار' : 'إخفاء'}
+                          </button>
+                          <button
+                            type="button"
+                            className={`mini-btn ${element.locked ? 'active' : ''}`}
+                            onClick={() => patchCustomElement(element.id, { locked: !element.locked })}
+                          >
+                            {element.locked ? 'فتح' : 'قفل'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {!layerElementsForPanel.length ? (
+                    <p className="studio-layer-empty">لا توجد طبقات حرة بعد. أضف نصًا أو صورة من قسم العناصر الحرة.</p>
+                  ) : null}
+                </div>
+
+                {selectedCustomElement ? (
+                  <div className="studio-layer-inspector">
+                    <div className="studio-layer-inspector__head">
+                      <div>
+                        <strong>{selectedCustomElement.name}</strong>
+                        <small>
+                          {selectedCustomElement.type === 'text' ? 'نص حر قابل للتحريك' : 'صورة حرة قابلة للتحريك'}
+                        </small>
+                      </div>
+                      <div className="studio-inline-actions">
+                        <button type="button" className="mini-btn" onClick={copySelectedElementStyles}>
+                          نسخ التنسيق
+                        </button>
                         <button
                           type="button"
                           className="mini-btn"
-                          onClick={() => {
-                            setDraft(current => ({
-                              ...current,
-                              customElements: current.customElements.filter(e => e.id !== el.id)
-                            }));
-                          }}
-                          style={{ color: '#d32f2f' }}
+                          onClick={pasteStylesToSelectedElement}
+                          disabled={!styleClipboard}
                         >
+                          لصق التنسيق
+                        </button>
+                        <button type="button" className="mini-btn" onClick={resetSelectedCustomElement}>
+                          Reset Element
+                        </button>
+                        <button type="button" className="mini-btn" onClick={() => duplicateCustomElement(selectedCustomElement.id)}>
+                          نسخ
+                        </button>
+                        <button type="button" className="mini-btn danger" onClick={() => removeCustomElement(selectedCustomElement.id)}>
                           حذف
                         </button>
                       </div>
-                      
-                      {el.type === 'text' && (
-                        <>
-                          <textarea
-                            value={el.content}
-                            onChange={(e) => {
-                              setDraft(current => ({
-                                ...current,
-                                customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, content: e.target.value } : e2)
-                              }));
-                            }}
-                            className="studio-input"
-                            rows={3}
-                            placeholder="اكتب النص هنا"
-                          />
-                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                            <input
-                              type="color"
-                              value={el.color || '#000000'}
-                              onChange={(e) => {
-                                setDraft(current => ({
-                                  ...current,
-                                  customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, color: e.target.value } : e2)
-                                }));
-                              }}
-                              title="لون النص"
-                            />
-                            <select
-                              value={el.fontSize || '24px'}
-                              onChange={(e) => {
-                                setDraft(current => ({
-                                  ...current,
-                                  customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, fontSize: e.target.value } : e2)
-                                }));
-                              }}
-                              className="studio-input"
-                            >
-                              <option value="12px">صغير جداً</option>
-                              <option value="16px">صغير</option>
-                              <option value="24px">متوسط</option>
-                              <option value="32px">كبير</option>
-                              <option value="48px">كبير جداً</option>
-                            </select>
-                          </div>
-                        </>
-                      )}
-                      
-                      {el.type === 'image' && (
-                        <MediaPicker
-                          label="تغيير الصورة"
-                          value={el.content}
-                          onChange={(url) => {
-                            if (url) {
-                              setDraft(current => ({
-                                ...current,
-                                customElements: current.customElements.map(e2 => e2.id === el.id ? { ...e2, content: url } : e2)
-                              }));
-                            }
-                          }}
-                          trigger={
-                            <button type="button" className="mini-btn">
-                              تغيير الصورة
-                            </button>
+                    </div>
+
+                    <div className="studio-form-grid">
+                      <label className="studio-field">
+                        <span>اسم الطبقة</span>
+                        <input
+                          type="text"
+                          value={selectedCustomElement.name || ''}
+                          onChange={(event) => patchCustomElement(selectedCustomElement.id, { name: event.target.value })}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>النوع</span>
+                        <input
+                          type="text"
+                          value={selectedCustomElement.type === 'text' ? 'نص حر' : 'صورة حرة'}
+                          readOnly
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الموضع الأفقي X</span>
+                        <input
+                          type="number"
+                          value={Math.round(toFiniteNumber(selectedCustomElement.x, 0))}
+                          onChange={(event) => setCustomElementNumber(selectedCustomElement.id, 'x', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الموضع الرأسي Y</span>
+                        <input
+                          type="number"
+                          value={Math.round(toFiniteNumber(selectedCustomElement.y, 0))}
+                          onChange={(event) => setCustomElementNumber(selectedCustomElement.id, 'y', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الشفافية %</span>
+                        <input
+                          type="number"
+                          min="5"
+                          max="100"
+                          value={Math.round(toFiniteNumber(selectedCustomElement.opacity, 1) * 100)}
+                          onChange={(event) =>
+                            patchCustomElement(selectedCustomElement.id, {
+                              opacity: Math.min(1, Math.max(0.05, toFiniteNumber(event.target.value, 100) / 100)),
+                            })
                           }
                         />
+                      </label>
+                      <label className="studio-field">
+                        <span>الدوران</span>
+                        <input
+                          type="number"
+                          min="-180"
+                          max="180"
+                          value={Math.round(toFiniteNumber(selectedCustomElement.rotation, 0))}
+                          onChange={(event) => setCustomElementNumber(selectedCustomElement.id, 'rotation', event.target.value)}
+                        />
+                      </label>
+                      <div className="studio-field studio-field--switch">
+                        <span>إظهار الطبقة</span>
+                        <label className="studio-switch">
+                          <input
+                            type="checkbox"
+                            checked={!selectedCustomElement.hidden}
+                            onChange={(event) => patchCustomElement(selectedCustomElement.id, { hidden: !event.target.checked })}
+                          />
+                          <span className="studio-switch__track" />
+                        </label>
+                      </div>
+                      <div className="studio-field studio-field--switch">
+                        <span>السماح بالحركة</span>
+                        <label className="studio-switch">
+                          <input
+                            type="checkbox"
+                            checked={!selectedCustomElement.locked}
+                            onChange={(event) => patchCustomElement(selectedCustomElement.id, { locked: !event.target.checked })}
+                          />
+                          <span className="studio-switch__track" />
+                        </label>
+                      </div>
+
+                      {selectedCustomElement.type === 'text' ? (
+                        <>
+                          <label className="studio-field studio-field--full">
+                            <span>محتوى النص</span>
+                            <textarea
+                              rows={4}
+                              value={selectedCustomElement.content || ''}
+                              onChange={(event) => patchCustomElement(selectedCustomElement.id, { content: event.target.value })}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>حجم الخط</span>
+                            <input
+                              type="text"
+                              value={selectedCustomElement.fontSize || '24px'}
+                              onChange={(event) => setCustomElementDimension(selectedCustomElement.id, 'fontSize', event.target.value, '24px')}
+                            />
+                          </label>
+                          <label className="studio-field studio-field--compact">
+                            <span>لون النص</span>
+                            <input
+                              type="color"
+                              value={selectedCustomElement.color || '#1f2937'}
+                              onChange={(event) => patchCustomElement(selectedCustomElement.id, { color: event.target.value })}
+                            />
+                          </label>
+                          <label className="studio-field studio-field--full">
+                            <span>Font Family</span>
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={selectedCustomElement.fontFamily || ''}
+                              placeholder="مثال: Tajawal, serif"
+                              onChange={(event) => patchCustomElement(selectedCustomElement.id, { fontFamily: event.target.value })}
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <label className="studio-field studio-field--full">
+                            <span>الصورة</span>
+                            <MediaPicker
+                              label="اختيار صورة"
+                              value={selectedCustomElement.content}
+                              accept="image"
+                              folder="studio-free-elements"
+                              onChange={(url) => {
+                                if (url) {
+                                  patchCustomElement(selectedCustomElement.id, { content: url });
+                                }
+                              }}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>العرض</span>
+                            <input
+                              type="text"
+                              value={selectedCustomElement.width || '150px'}
+                              onChange={(event) => setCustomElementDimension(selectedCustomElement.id, 'width', event.target.value, '150px')}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>الارتفاع</span>
+                            <input
+                              type="text"
+                              value={selectedCustomElement.height || '150px'}
+                              onChange={(event) => setCustomElementDimension(selectedCustomElement.id, 'height', event.target.value, '150px')}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>قص أفقي</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={Math.round(toFiniteNumber(selectedCustomElement.cropX, 50))}
+                              onChange={(event) => setCustomElementNumber(selectedCustomElement.id, 'cropX', event.target.value, 50)}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>قص رأسي</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={Math.round(toFiniteNumber(selectedCustomElement.cropY, 50))}
+                              onChange={(event) => setCustomElementNumber(selectedCustomElement.id, 'cropY', event.target.value, 50)}
+                            />
+                          </label>
+                        </>
                       )}
                     </div>
-                  ))}
-                  {(draft.customElements || []).length === 0 && (
-                    <p style={{ textAlign: 'center', opacity: 0.5, margin: '20px 0' }}>لا يوجد عناصر حرة</p>
-                  )}
-                </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
@@ -1036,6 +1800,14 @@ export default function StudioClient({ session, manifests, openings, inventory }
               />
               <span>دعوة بلغتين</span>
             </label>
+            <label className="studio-boolean-field studio-toolbar-toggle">
+              <input
+                type="checkbox"
+                checked={draft.uiConfig?.editorGuides !== false}
+                onChange={(event) => setUiValue('editorGuides', event.target.checked)}
+              />
+              <span>إظهار الأدلة</span>
+            </label>
             <div className="studio-toolbar-group">
               {Object.entries(DEVICE_PRESETS).map(([key, preset]) => (
                 <button
@@ -1053,6 +1825,26 @@ export default function StudioClient({ session, manifests, openings, inventory }
                 </button>
               ))}
             </div>
+            <div className="studio-toolbar-group">
+              <button
+                type="button"
+                className="mini-btn"
+                onClick={handleUndo}
+                disabled={!historyMeta.canUndo}
+                title="Ctrl/Cmd + Z"
+              >
+                تراجع
+              </button>
+              <button
+                type="button"
+                className="mini-btn"
+                onClick={handleRedo}
+                disabled={!historyMeta.canRedo}
+                title="Ctrl/Cmd + Y"
+              >
+                إعادة
+              </button>
+            </div>
             <div className="studio-toolbar-group studio-toolbar-group--ghost">
               <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>تحديث</button>
               <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>إعادة الافتتاحية</button>
@@ -1064,88 +1856,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
         <div className="studio-canvas__frame">
           <div className="studio-phone-stage studio-phone-stage--sticky">
-            <div className={`studio-device studio-device--${draft.devicePreview.mode}`}>
-              <div className="studio-phone-shell">
-                        {canvasClickMenu && (
-          <div style={{
-            position: 'absolute',
-            top: canvasClickMenu.y + 'px',
-            left: canvasClickMenu.x + 'px',
-            background: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            display: 'flex',
-            gap: '8px',
-            padding: '8px',
-            zIndex: 1000,
-            transform: 'translate(-50%, -50%)'
-          }}>
-            <button
-              type="button"
-              className="mini-btn"
-              onClick={() => {
-                setDraft(current => {
-                  const newEl = {
-                    id: 'custom-' + Math.random().toString(36).substr(2, 9),
-                    type: 'text',
-                    content: 'نص جديد',
-                    x: canvasClickMenu.x,
-                    y: canvasClickMenu.y,
-                    fontSize: '24px',
-                    color: '#000000',
-                  };
-                  return {
-                    ...current,
-                    customElements: [...(current.customElements || []), newEl],
-                  };
-                });
-                setCanvasClickMenu(null);
-                setOpenSection('custom-elements');
-              }}
-              style={{ padding: '8px', fontSize: '18px', width: '40px', height: '40px' }}
-              title="إضافة نص"
-            >
-              T
-            </button>
-            <MediaPicker
-              label="+"
-              value=""
-              onChange={(url) => {
-                if (url) {
-                  setDraft(current => {
-                    const newEl = {
-                      id: 'custom-' + Math.random().toString(36).substr(2, 9),
-                      type: 'image',
-                      content: url,
-                      x: canvasClickMenu.x,
-                      y: canvasClickMenu.y,
-                      width: '150px',
-                      height: 'auto',
-                    };
-                    return {
-                      ...current,
-                      customElements: [...(current.customElements || []), newEl],
-                    };
-                  });
-                  setCanvasClickMenu(null);
-                  setOpenSection('custom-elements');
-                }
-              }}
-              trigger={<button type="button" className="mini-btn" style={{ padding: '8px', fontSize: '20px', width: '40px', height: '40px', background: '#e0f2f1', color: '#00796b', border: 'none' }} title="إضافة صورة">+</button>}
-            />
-            <button
-              type="button"
-              className="mini-btn"
-              onClick={() => setCanvasClickMenu(null)}
-              style={{ padding: '8px', fontSize: '18px', width: '40px', height: '40px', color: '#d32f2f', background: '#ffebee', border: 'none' }}
-              title="إغلاق"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        <RenderFrame
+          <div className={`studio-device studio-device--${draft.devicePreview.mode}`}>
+            <div className="studio-phone-shell">
+              <RenderFrame
                   key={`${draft.devicePreview.mode}-${previewReloadToken}`}
                   templateSlug={currentManifest.slug}
                   renderConfig={renderConfig}
@@ -1153,6 +1866,63 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   className="studio-frame-wrapper"
                   frameClassName="studio-frame"
                 />
+              {draft.uiConfig?.editorGuides !== false ? (
+                <div className="studio-guides" aria-hidden="true">
+                  <span className="studio-guides__safe" />
+                  <span className="studio-guides__center-x" />
+                  <span className="studio-guides__center-y" />
+                </div>
+              ) : null}
+              {canvasClickMenu ? (
+                <div
+                  className="studio-canvas-menu"
+                  style={{
+                    top: `${canvasClickMenu.y}px`,
+                    left: `${canvasClickMenu.x}px`,
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="mini-btn"
+                    onClick={() => {
+                      addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
+                      setCanvasClickMenu(null);
+                    }}
+                    title="إضافة نص"
+                  >
+                    T
+                  </button>
+                  <MediaPicker
+                    label="+"
+                    value=""
+                    accept="image"
+                    folder="studio-free-elements"
+                    onChange={(url) => {
+                      if (url) {
+                        addCustomElement('image', { x: canvasClickMenu.x, y: canvasClickMenu.y }, url);
+                        setCanvasClickMenu(null);
+                      }
+                    }}
+                    trigger={
+                      <button
+                        type="button"
+                        className="mini-btn studio-canvas-menu__image-trigger"
+                        title="إضافة صورة"
+                      >
+                        +
+                      </button>
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="mini-btn studio-canvas-menu__close"
+                    onClick={() => setCanvasClickMenu(null)}
+                    title="إغلاق"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : null}
               </div>
             </div>
           </div>
