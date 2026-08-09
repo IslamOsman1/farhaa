@@ -52,6 +52,39 @@ function getStatusStyle(status) {
   }
 }
 
+const cardStyle = {
+  background: '#fff',
+  borderRadius: '24px',
+  padding: '22px',
+  border: '1px solid rgba(127,42,31,0.12)',
+  boxShadow: '0 18px 50px rgba(15, 23, 42, 0.06)',
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '12px 14px',
+  borderRadius: '14px',
+  border: '1px solid #dbe3ef',
+  background: '#fff',
+  color: '#111827',
+  fontSize: '0.98rem',
+};
+
+const mainInputStyle = {
+  ...inputStyle,
+  padding: '14px 16px',
+  borderRadius: '16px',
+  fontSize: '1rem',
+};
+
+function formatDate(dateValue) {
+  try {
+    return new Date(dateValue).toLocaleString('ar-EG');
+  } catch {
+    return '-';
+  }
+}
+
 export default function CheckInClient({ initialInvitation }) {
   const [pin, setPin] = useState('');
   const [authorized, setAuthorized] = useState(!initialInvitation.entryConfig?.pinRequired);
@@ -68,9 +101,11 @@ export default function CheckInClient({ initialInvitation }) {
   const [loading, setLoading] = useState(false);
   const [processingScan, setProcessingScan] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
+  const [sharePageBusy, setSharePageBusy] = useState(false);
   const [cameraSupported, setCameraSupported] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [cameraError, setCameraError] = useState('');
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const detectorRef = useRef(null);
@@ -84,7 +119,7 @@ export default function CheckInClient({ initialInvitation }) {
 
   async function fetchOverview(query = '') {
     setLoading(true);
-    setFeedback({ type: '', message: '' });
+    setFeedback((current) => (current.type === 'success' && current.message ? current : { type: '', message: '' }));
 
     try {
       const params = new URLSearchParams();
@@ -178,8 +213,45 @@ export default function CheckInClient({ initialInvitation }) {
   async function handleQuickCheckIn(rawValue) {
     try {
       await submitScan(rawValue);
-    } catch (error) {
+    } catch {
       // Feedback already shown in submitScan.
+    }
+  }
+
+  async function handleCopyPageLink() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const absoluteUrl = window.location.href;
+    setSharePageBusy(true);
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(absoluteUrl);
+      } else {
+        const helperInput = document.createElement('input');
+        helperInput.value = absoluteUrl;
+        helperInput.style.position = 'fixed';
+        helperInput.style.opacity = '0';
+        document.body.appendChild(helperInput);
+        helperInput.focus();
+        helperInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(helperInput);
+      }
+
+      setFeedback({
+        type: 'success',
+        message: 'تم نسخ رابط صفحة البوابة. يمكنك إرساله الآن لصاحب الدعوة أو لفريق القاعة.',
+      });
+    } catch {
+      setFeedback({
+        type: 'error',
+        message: 'تعذر نسخ الرابط تلقائيًا. انسخ رابط الصفحة من شريط المتصفح.',
+      });
+    } finally {
+      setSharePageBusy(false);
     }
   }
 
@@ -262,7 +334,7 @@ export default function CheckInClient({ initialInvitation }) {
             console.error('Barcode detection failed:', detectError);
           }
         }, 700);
-      } catch (error) {
+      } catch {
         setCameraEnabled(false);
         setCameraError('تعذر تشغيل الكاميرا على هذا الجهاز أو المتصفح.');
       }
@@ -313,14 +385,23 @@ export default function CheckInClient({ initialInvitation }) {
             boxShadow: '0 18px 50px rgba(15, 23, 42, 0.08)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '18px',
+              flexWrap: 'wrap',
+              alignItems: 'flex-start',
+            }}
+          >
             <div>
               <div style={{ color: '#9a7b42', fontWeight: 700, marginBottom: '8px' }}>بوابة الدخول الذكية</div>
               <h1 style={{ margin: 0, color: '#111827', fontSize: '2rem' }}>{invitationTitle || 'بطاقات الدخول'}</h1>
               <p style={{ margin: '10px 0 0', color: '#6b7280', lineHeight: 1.9 }}>
-                امسح الـ QR أو ابحث باسم الضيف أو الكود لتسجيل الدخول مع حفظ كل العمليات مباشرة.
+                امسح رمز QR أو ابحث باسم الضيف أو الكود، وسجّل الدخول مباشرة مع حفظ كل العمليات في نفس اللحظة.
               </p>
             </div>
+
             <div
               style={{
                 minWidth: '220px',
@@ -342,11 +423,7 @@ export default function CheckInClient({ initialInvitation }) {
         {!authorized ? (
           <section
             style={{
-              background: '#fff',
-              borderRadius: '24px',
-              padding: '24px',
-              border: '1px solid rgba(127,42,31,0.12)',
-              boxShadow: '0 18px 50px rgba(15, 23, 42, 0.06)',
+              ...cardStyle,
               maxWidth: '520px',
               margin: '0 auto',
               width: '100%',
@@ -354,7 +431,7 @@ export default function CheckInClient({ initialInvitation }) {
           >
             <h2 style={{ marginTop: 0, color: '#111827' }}>إدخال رمز بوابة الدخول</h2>
             <p style={{ color: '#6b7280', lineHeight: 1.8 }}>
-              هذه الصفحة مخصصة لفريق القاعة. أدخل رمز الـ PIN للبدء في مسح الأكواد أو البحث عن الضيوف.
+              هذه الصفحة مخصصة لفريق القاعة. أدخل رمز PIN للبدء في مسح الأكواد أو البحث عن الضيوف.
             </p>
 
             <form onSubmit={handleUnlock} style={{ display: 'grid', gap: '12px' }}>
@@ -363,7 +440,7 @@ export default function CheckInClient({ initialInvitation }) {
                 value={pin}
                 onChange={(event) => setPin(event.target.value)}
                 placeholder="PIN"
-                style={{ padding: '14px 16px', borderRadius: '16px', border: '1px solid #dbe3ef', fontSize: '1rem' }}
+                style={mainInputStyle}
               />
               <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'جارٍ التحقق...' : 'فتح البوابة'}
@@ -395,58 +472,67 @@ export default function CheckInClient({ initialInvitation }) {
             </section>
 
             <section style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(320px, 0.85fr)' }}>
-              <div
-                style={{
-                  background: '#fff',
-                  borderRadius: '24px',
-                  padding: '22px',
-                  border: '1px solid rgba(127,42,31,0.12)',
-                  boxShadow: '0 18px 50px rgba(15, 23, 42, 0.06)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={cardStyle}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    marginBottom: '16px',
+                  }}
+                >
                   <h2 style={{ margin: 0, color: '#111827' }}>المسح والبحث</h2>
-                  {cameraSupported ? (
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      onClick={() => setCameraEnabled((current) => !current)}
-                    >
-                      {cameraEnabled ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      void handleCopyPageLink();
+                    }}
+                    disabled={sharePageBusy}
+                  >
+                    {sharePageBusy ? 'جارٍ النسخ...' : 'نسخ رابط الصفحة'}
+                  </button>
                 </div>
 
-                <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: '14px' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '12px',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    marginBottom: '14px',
+                  }}
+                >
                   <input
                     type="text"
                     value={gateLabel}
                     onChange={(event) => setGateLabel(event.target.value)}
                     placeholder="اسم البوابة"
-                    style={{ padding: '12px 14px', borderRadius: '14px', border: '1px solid #dbe3ef' }}
+                    style={inputStyle}
                   />
                   <input
                     type="text"
                     value={staffName}
                     onChange={(event) => setStaffName(event.target.value)}
                     placeholder="اسم الموظف"
-                    style={{ padding: '12px 14px', borderRadius: '14px', border: '1px solid #dbe3ef' }}
+                    style={inputStyle}
                   />
                   <input
                     type="text"
                     value={staffCode}
                     onChange={(event) => setStaffCode(event.target.value)}
                     placeholder="كود الموظف"
-                    style={{ padding: '12px 14px', borderRadius: '14px', border: '1px solid #dbe3ef' }}
+                    style={inputStyle}
                   />
                   <input
                     type="number"
                     min="1"
                     max="50"
                     value={checkedInCount}
-                    onChange={(event) => setCheckedInCount(Number(event.target.value || 1))}
+                    onChange={(event) => setCheckedInCount(Math.max(1, Number(event.target.value || 1)))}
                     placeholder="عدد الداخلين"
-                    style={{ padding: '12px 14px', borderRadius: '14px', border: '1px solid #dbe3ef' }}
+                    style={inputStyle}
                   />
                 </div>
 
@@ -473,20 +559,49 @@ export default function CheckInClient({ initialInvitation }) {
                       <div style={{ marginTop: '10px', color: '#b91c1c', fontSize: '0.92rem' }}>{cameraError}</div>
                     ) : (
                       <div style={{ marginTop: '10px', color: '#6b7280', fontSize: '0.92rem' }}>
-                        وجه الكاميرا إلى كود QR وسيتم تسجيل الدخول تلقائيًا.
+                        وجّه الكاميرا إلى كود QR وسيتم تسجيل الدخول تلقائيًا.
                       </div>
                     )}
                   </div>
                 ) : null}
 
-                <form onSubmit={(event) => { event.preventDefault(); void submitScan(scanInput); }} style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}>
-                  <input
-                    type="text"
-                    value={scanInput}
-                    onChange={(event) => setScanInput(event.target.value)}
-                    placeholder="الصق بيانات QR أو أدخل كود FRH-..."
-                    style={{ padding: '14px 16px', borderRadius: '16px', border: '1px solid #dbe3ef', fontSize: '1rem' }}
-                  />
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitScan(scanInput);
+                  }}
+                  style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}
+                >
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      value={scanInput}
+                      onChange={(event) => setScanInput(event.target.value)}
+                      placeholder="الصق بيانات QR أو أدخل كود FRH-..."
+                      style={{ ...mainInputStyle, flex: '1 1 320px', minWidth: 0 }}
+                    />
+                    {cameraSupported ? (
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={() => setCameraEnabled((current) => !current)}
+                        style={{ minWidth: '160px' }}
+                      >
+                        {cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => {
+                        void handleCopyPageLink();
+                      }}
+                      disabled={sharePageBusy}
+                      style={{ minWidth: '160px' }}
+                    >
+                      {sharePageBusy ? 'جارٍ النسخ...' : 'نسخ الرابط'}
+                    </button>
+                  </div>
                   <button type="submit" className="btn btn-primary" disabled={processingScan}>
                     {processingScan ? 'جارٍ تسجيل الدخول...' : 'تأكيد الدخول الآن'}
                   </button>
@@ -500,7 +615,7 @@ export default function CheckInClient({ initialInvitation }) {
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder="ابحث عن ضيف أو كود"
-                      style={{ flex: '1 1 260px', padding: '14px 16px', borderRadius: '16px', border: '1px solid #dbe3ef' }}
+                      style={{ ...mainInputStyle, flex: '1 1 260px' }}
                     />
                     <button type="submit" className="btn btn-outline" disabled={loading}>
                       {loading ? 'جارٍ البحث...' : 'بحث'}
@@ -516,6 +631,7 @@ export default function CheckInClient({ initialInvitation }) {
                     <div style={{ display: 'grid', gap: '12px' }}>
                       {matches.map((entryPass) => {
                         const badge = getStatusStyle(entryPass.status);
+
                         return (
                           <div
                             key={entryPass.id}
@@ -530,25 +646,44 @@ export default function CheckInClient({ initialInvitation }) {
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                               <div>
-                                <div style={{ fontWeight: 800, color: '#111827', marginBottom: '4px' }}>{entryPass.guestName || entryPass.passCode}</div>
+                                <div style={{ fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
+                                  {entryPass.guestName || entryPass.passCode}
+                                </div>
                                 <div style={{ color: '#6b7280', fontSize: '0.92rem' }}>
                                   الكود: {entryPass.passCode} {entryPass.phone ? `• ${entryPass.phone}` : ''}
                                 </div>
                               </div>
-                              <span style={{ padding: '6px 10px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700, ...badge }}>
+                              <span
+                                style={{
+                                  padding: '6px 10px',
+                                  borderRadius: '999px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 700,
+                                  ...badge,
+                                }}
+                              >
                                 {getStatusLabel(entryPass.status)}
                               </span>
                             </div>
+
                             <div style={{ color: '#374151', fontSize: '0.95rem' }}>
                               المسموح: {entryPass.allowedEntries} • المستخدم: {entryPass.usedEntries} • المتبقي: {entryPass.remainingEntries}
                               {entryPass.tableNumber ? ` • الطاولة: ${entryPass.tableNumber}` : ''}
                             </div>
+
                             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                               <button
                                 type="button"
                                 className="btn btn-primary"
-                                disabled={processingScan || entryPass.status === 'USED' || entryPass.status === 'DISABLED' || entryPass.status === 'CANCELLED'}
-                                onClick={() => { void handleQuickCheckIn(entryPass.passCode); }}
+                                disabled={
+                                  processingScan ||
+                                  entryPass.status === 'USED' ||
+                                  entryPass.status === 'DISABLED' ||
+                                  entryPass.status === 'CANCELLED'
+                                }
+                                onClick={() => {
+                                  void handleQuickCheckIn(entryPass.passCode);
+                                }}
                               >
                                 تسجيل {checkedInCount} دخول
                               </button>
@@ -568,18 +703,25 @@ export default function CheckInClient({ initialInvitation }) {
                 </div>
               </div>
 
-              <div
-                style={{
-                  background: '#fff',
-                  borderRadius: '24px',
-                  padding: '22px',
-                  border: '1px solid rgba(127,42,31,0.12)',
-                  boxShadow: '0 18px 50px rgba(15, 23, 42, 0.06)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={cardStyle}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    marginBottom: '14px',
+                  }}
+                >
                   <h2 style={{ margin: 0, color: '#111827' }}>آخر عمليات الدخول</h2>
-                  <button type="button" className="btn btn-outline" onClick={() => { void fetchOverview(searchQuery); }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      void fetchOverview(searchQuery);
+                    }}
+                  >
                     تحديث
                   </button>
                 </div>
@@ -587,31 +729,31 @@ export default function CheckInClient({ initialInvitation }) {
                 <div style={{ display: 'grid', gap: '12px' }}>
                   {recentLogs.length === 0 ? (
                     <div style={{ color: '#6b7280' }}>لا توجد عمليات دخول مسجلة بعد.</div>
-                  ) : recentLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      style={{
-                        borderRadius: '18px',
-                        border: '1px solid rgba(127,42,31,0.12)',
-                        padding: '14px 16px',
-                        background: '#fcfcfd',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                        <div style={{ fontWeight: 800, color: '#111827' }}>
-                          {log.entryPass?.guestName || log.entryPass?.passCode || 'بطاقة دخول'}
+                  ) : (
+                    recentLogs.map((log) => (
+                      <div
+                        key={log.id}
+                        style={{
+                          borderRadius: '18px',
+                          border: '1px solid rgba(127,42,31,0.12)',
+                          padding: '14px 16px',
+                          background: '#fcfcfd',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                          <div style={{ fontWeight: 800, color: '#111827' }}>
+                            {log.entryPass?.guestName || log.entryPass?.passCode || 'بطاقة دخول'}
+                          </div>
+                          <div style={{ color: '#6b7280', fontSize: '0.88rem' }}>{formatDate(log.createdAt)}</div>
                         </div>
-                        <div style={{ color: '#6b7280', fontSize: '0.88rem' }}>
-                          {new Date(log.createdAt).toLocaleString('ar-EG')}
+                        <div style={{ marginTop: '6px', color: '#374151', fontSize: '0.94rem', lineHeight: 1.8 }}>
+                          تم تسجيل {log.checkedInCount} دخول • المتبقي: {log.remainingAfter}
+                          {log.gateLabel ? ` • البوابة: ${log.gateLabel}` : ''}
+                          {log.staffName ? ` • الموظف: ${log.staffName}` : ''}
                         </div>
                       </div>
-                      <div style={{ marginTop: '6px', color: '#374151', fontSize: '0.94rem', lineHeight: 1.8 }}>
-                        تم تسجيل {log.checkedInCount} دخول • المتبقي: {log.remainingAfter}
-                        {log.gateLabel ? ` • البوابة: ${log.gateLabel}` : ''}
-                        {log.staffName ? ` • الموظف: ${log.staffName}` : ''}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </section>
