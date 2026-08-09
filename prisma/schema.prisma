@@ -117,6 +117,7 @@ model Invitation {
   sectionConfig   Json?
   seoConfig       Json?
   shareConfig     Json?
+  entryConfig     Json?
   legacyConfig    Json?
   migrationState  Json?
   
@@ -144,6 +145,8 @@ model Invitation {
   gallery         GalleryItem[]
   schedule        EventSchedule[]
   rsvps           RSVP[]
+  entryPasses     EntryPass[]
+  entryCheckIns   EntryCheckInLog[]
   visits          Visit[]
   revisions       InvitationRevision[]
 
@@ -190,10 +193,64 @@ model RSVP {
   status       String     @default("confirmed")
   companions   Int        @default(0)
   message      String?
+  entryPass    EntryPass?
   createdAt    DateTime   @default(now())
 
   @@index([invitationId])
   @@index([status])
+}
+
+model EntryPass {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  invitationId   String            @db.ObjectId
+  invitation     Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  rsvpId         String?           @unique @db.ObjectId
+  rsvp           RSVP?             @relation(fields: [rsvpId], references: [id])
+  passType       String            @default("NAMED") // NAMED | ANONYMOUS
+  passCode       String            @unique
+  linkToken      String            @unique
+  qrToken        String            @unique
+  guestName      String?
+  phone          String?
+  tableNumber    String?
+  notes          String?
+  allowedEntries Int               @default(1)
+  usedEntries    Int               @default(0)
+  status         String            @default("ACTIVE") // ACTIVE | DISABLED | CANCELLED
+  isEnabled      Boolean           @default(true)
+  lastCheckedInAt DateTime?
+  expiresAt      DateTime?
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime?         @updatedAt
+  scanLogs       EntryCheckInLog[]
+
+  @@index([invitationId])
+  @@index([guestName])
+  @@index([phone])
+  @@index([status])
+  @@index([passType])
+}
+
+model EntryCheckInLog {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  invitationId   String     @db.ObjectId
+  invitation     Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  entryPassId    String     @db.ObjectId
+  entryPass      EntryPass  @relation(fields: [entryPassId], references: [id], onDelete: Cascade)
+  checkedInCount Int        @default(1)
+  remainingAfter Int        @default(0)
+  gateLabel      String?
+  deviceLabel    String?
+  staffName      String?
+  staffCode      String?
+  sourceIp       String?
+  userAgent      String?
+  createdAt      DateTime   @default(now())
+
+  @@index([invitationId])
+  @@index([entryPassId])
+  @@index([createdAt])
 }
 
 model Visit {

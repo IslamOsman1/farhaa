@@ -6,11 +6,22 @@ import {
   getOpeningBySlug,
   getTemplateManifest,
 } from '@/lib/template-system';
+import {
+  generateEntryPassQrDataUrl,
+  getEntryPassPublicLink,
+  getEntryPassQrRoute,
+  getEntryPassRemaining,
+} from '@/lib/entry-pass';
 
 export const dynamic = 'force-dynamic';
 
-export default async function InvitationPage({ params }) {
+function firstParam(value) {
+  return Array.isArray(value) ? (value[0] || '') : (value || '');
+}
+
+export default async function InvitationPage({ params, searchParams }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const invitation = await prisma.invitation.findUnique({
     where: { slug: resolvedParams.slug },
     include: {
@@ -35,11 +46,54 @@ export default async function InvitationPage({ params }) {
     opening,
     preview: false,
   });
+
+  const entryToken = firstParam(resolvedSearchParams?.entry);
+  let entryPassUi = null;
+
+  if (entryToken) {
+    const entryPass = await prisma.entryPass.findFirst({
+      where: {
+        invitationId: invitation.id,
+        linkToken: entryToken,
+        isEnabled: true,
+        status: { not: 'CANCELLED' },
+      },
+      select: {
+        id: true,
+        passCode: true,
+        passType: true,
+        guestName: true,
+        allowedEntries: true,
+        usedEntries: true,
+        linkToken: true,
+        tableNumber: true,
+      },
+    });
+
+    if (entryPass) {
+      entryPassUi = {
+        id: entryPass.id,
+        passCode: entryPass.passCode,
+        passType: entryPass.passType,
+        guestName: entryPass.guestName || '',
+        allowedEntries: entryPass.allowedEntries || 0,
+        usedEntries: entryPass.usedEntries || 0,
+        remainingEntries: getEntryPassRemaining(entryPass),
+        tableNumber: entryPass.tableNumber || '',
+        publicLink: getEntryPassPublicLink({ invitation, entryPass }),
+        qrCodeViewUrl: getEntryPassQrRoute(entryPass.id),
+        qrCodeDownloadUrl: getEntryPassQrRoute(entryPass.id, true),
+        qrCodeDataUrl: await generateEntryPassQrDataUrl({ invitation, entryPass }),
+      };
+    }
+  }
+
   const publicRenderConfig = {
     ...renderConfig,
     ui: {
       ...(renderConfig.ui || {}),
       showPromoBar: false,
+      entryPass: entryPassUi,
     },
   };
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/admin-session';
+import { getEntryPassQrRoute } from '@/lib/entry-pass';
 import { getRsvpQrRoute } from '@/lib/rsvp-qr';
 
 export const dynamic = 'force-dynamic';
@@ -39,8 +40,24 @@ export default async function InvitationRsvpPage({ params }) {
       groomName: true,
       brideName: true,
       clientName: true,
+      _count: {
+        select: {
+          rsvps: true,
+          entryPasses: true,
+        },
+      },
       rsvps: {
         orderBy: { createdAt: 'desc' },
+        include: {
+          entryPass: {
+            select: {
+              id: true,
+              passCode: true,
+              allowedEntries: true,
+              usedEntries: true,
+            },
+          },
+        },
       },
     },
   });
@@ -58,7 +75,7 @@ export default async function InvitationRsvpPage({ params }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ marginBottom: '4px' }}>إدارة الحضور والـ QR</h2>
+          <h2 style={{ marginBottom: '4px' }}>إدارة الحضور والردود</h2>
           <div style={{ color: '#64748b' }}>
             {invitation.groomName} و {invitation.brideName}
             {invitation.clientName ? ` - ${invitation.clientName}` : ''}
@@ -72,7 +89,13 @@ export default async function InvitationRsvpPage({ params }) {
             تنزيل التعليقات فقط
           </a>
           <a href={`/api/admin/invitations/${invitation.id}/rsvps?format=qr-html`} className="btn btn-primary">
-            تنزيل كل QR Codes
+            تنزيل QR الردود
+          </a>
+          <Link href={`/admin/invitations/${invitation.id}/entry-passes`} className="btn btn-primary">
+            تصاريح الدخول
+          </Link>
+          <a href={`/check-in/${invitation.slug}`} target="_blank" rel="noreferrer" className="btn btn-outline">
+            بوابة الفحص
           </a>
           <Link href="/admin/invitations" className="btn btn-outline">
             رجوع للدعوات
@@ -97,6 +120,10 @@ export default async function InvitationRsvpPage({ params }) {
           <div className="stat-card-title">التعليقات</div>
           <div className="stat-card-value">{commentsCount}</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-card-title">تصاريح الدخول</div>
+          <div className="stat-card-value">{invitation._count?.entryPasses || 0}</div>
+        </div>
       </div>
 
       <div className="admin-card">
@@ -110,6 +137,7 @@ export default async function InvitationRsvpPage({ params }) {
               <th>الحالة</th>
               <th>المرافقون</th>
               <th>الهاتف</th>
+              <th>بطاقة الدخول</th>
               <th>التعليق</th>
               <th>QR</th>
               <th>التاريخ</th>
@@ -118,10 +146,17 @@ export default async function InvitationRsvpPage({ params }) {
           <tbody>
             {invitation.rsvps.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center' }}>لا توجد ردود حتى الآن.</td>
+                <td colSpan="8" style={{ textAlign: 'center' }}>لا توجد ردود حتى الآن.</td>
               </tr>
             ) : invitation.rsvps.map((rsvp) => {
               const badge = getStatusBadge(rsvp.status);
+              const qrViewUrl = rsvp.entryPass?.id
+                ? getEntryPassQrRoute(rsvp.entryPass.id)
+                : getRsvpQrRoute(rsvp.id);
+              const qrDownloadUrl = rsvp.entryPass?.id
+                ? getEntryPassQrRoute(rsvp.entryPass.id, true)
+                : getRsvpQrRoute(rsvp.id, true);
+
               return (
                 <tr key={rsvp.id}>
                   <td>{rsvp.guestName}</td>
@@ -132,13 +167,25 @@ export default async function InvitationRsvpPage({ params }) {
                   </td>
                   <td>{rsvp.companions || 0}</td>
                   <td>{rsvp.phone || '-'}</td>
+                  <td>
+                    {rsvp.entryPass ? (
+                      <div>
+                        <div style={{ fontWeight: 800 }}>{rsvp.entryPass.passCode}</div>
+                        <small style={{ color: '#64748b' }}>
+                          {rsvp.entryPass.usedEntries} / {rsvp.entryPass.allowedEntries}
+                        </small>
+                      </div>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
                   <td style={{ maxWidth: '320px', whiteSpace: 'pre-wrap' }}>{rsvp.message || '-'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <a href={getRsvpQrRoute(rsvp.id)} target="_blank" rel="noreferrer" className="btn btn-sm">
+                      <a href={qrViewUrl} target="_blank" rel="noreferrer" className="btn btn-sm">
                         عرض
                       </a>
-                      <a href={getRsvpQrRoute(rsvp.id, true)} className="btn btn-sm" style={{ background: '#1a73e8', color: '#fff' }}>
+                      <a href={qrDownloadUrl} className="btn btn-sm" style={{ background: '#1a73e8', color: '#fff' }}>
                         تحميل
                       </a>
                     </div>

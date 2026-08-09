@@ -11,7 +11,7 @@ export async function GET() {
       include: {
         template: { select: { name: true, nameAr: true } },
         _count: {
-          select: { rsvps: true, visits: true },
+          select: { rsvps: true, visits: true, entryPasses: true },
         },
       },
     });

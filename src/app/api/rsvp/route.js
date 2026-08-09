@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
-import { generateRsvpQrDataUrl, getRsvpQrDownloadName, getRsvpQrRoute } from '@/lib/rsvp-qr';
+import {
+  ensureEntryPassForRsvp,
+  generateEntryPassQrDataUrl,
+  getEntryPassDownloadName,
+  getEntryPassPublicLink,
+  getEntryPassQrRoute,
+} from '@/lib/entry-pass';
 
 const rsvpPayloadSchema = z.object({
   invitationId: z.string().trim().min(1).optional(),
@@ -31,9 +37,9 @@ const WINDOW_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 20;
 
 function getIp(request) {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    'unknown';
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown';
 }
 
 function canSubmit(ip) {
@@ -63,9 +69,10 @@ export async function POST(request) {
     const invitationId = payload.invitationId || payload.invitation_id || '';
     const invitationSlug = payload.invitationSlug || payload.invitation_slug || '';
     const guestName = payload.guestName || payload.guest_name || '';
-    const companions = payload.guests != null ? Math.max(0, (payload.guests || 1) - 1) : (payload.companions || 0);
-    const normalizedStatus =
-      payload.status
+    const companions = payload.guests != null
+      ? Math.max(0, (payload.guests || 1) - 1)
+      : (payload.companions || 0);
+    const normalizedStatus = payload.status
       || (payload.attending === 'yes' ? 'confirmed' : payload.attending === 'no' ? 'declined' : payload.attending)
       || 'confirmed';
 
@@ -73,7 +80,11 @@ export async function POST(request) {
       where: invitationId
         ? { id: invitationId }
         : { slug: invitationSlug },
-      select: { id: true, slug: true, status: true },
+      select: {
+        id: true,
+        slug: true,
+        status: true,
+      },
     });
 
     if (!invitation) {
@@ -95,22 +106,45 @@ export async function POST(request) {
       },
     });
 
-    const qrCodeDataUrl = await generateRsvpQrDataUrl({ invitation, rsvp });
+    const shouldIssueEntryPass = normalizedStatus !== 'declined';
+    const entryPass = shouldIssueEntryPass
+      ? await ensureEntryPassForRsvp({
+          invitation,
+          rsvp,
+          allowedEntries: companions + 1,
+        })
+      : null;
+    const qrCodeDataUrl = entryPass
+      ? await generateEntryPassQrDataUrl({ invitation, entryPass })
+      : null;
 
     return NextResponse.json(
       {
         success: true,
-        message: 'تم استلام ردكم بنجاح. نشكركم على التأكيد.',
+        message: 'تم استلام تأكيد الحضور بنجاح.',
         rsvp,
+        entryPass: entryPass
+          ? {
+              id: entryPass.id,
+              passCode: entryPass.passCode,
+              passType: entryPass.passType,
+              guestName: entryPass.guestName,
+              allowedEntries: entryPass.allowedEntries,
+              usedEntries: entryPass.usedEntries,
+              remainingEntries: Math.max(0, entryPass.allowedEntries - entryPass.usedEntries),
+              publicLink: getEntryPassPublicLink({ invitation, entryPass }),
+            }
+          : null,
         qrCodeDataUrl,
-        qrCodeViewUrl: getRsvpQrRoute(rsvp.id),
-        qrCodeDownloadUrl: getRsvpQrRoute(rsvp.id, true),
-        qrCodeDownloadName: getRsvpQrDownloadName({ invitation, rsvp }),
+        qrCodeViewUrl: entryPass ? getEntryPassQrRoute(entryPass.id) : null,
+        qrCodeDownloadUrl: entryPass ? getEntryPassQrRoute(entryPass.id, true) : null,
+        qrCodeDownloadName: entryPass ? getEntryPassDownloadName({ invitation, entryPass }) : null,
       },
       { status: 201 },
     );
   } catch (error) {
     console.error('RSVP Error:', error);
+
     if (error instanceof z.ZodError) {
       const firstIssue = error.issues[0];
       return NextResponse.json(
@@ -121,6 +155,7 @@ export async function POST(request) {
         { status: 400 },
       );
     }
+
     return NextResponse.json({ error: error.message || 'Failed to submit RSVP.' }, { status: 500 });
   }
 }

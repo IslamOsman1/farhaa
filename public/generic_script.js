@@ -168,6 +168,7 @@
     languageToggle: null,
     selectedCustomElementId: null,
     activeTextEditor: null,
+    entryPassUi: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -605,6 +606,7 @@
     ensureLanguageToggle(renderConfig, bindings);
     ensureMusicControls(fields.musicUrl || '');
     applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
+    mountEntryPassLauncher(renderConfig.ui?.entryPass || null);
     
     attachStudioInlineEditors(bindings);
     applyCustomElements(renderConfig.customElements || []);
@@ -2854,6 +2856,273 @@
         controlsRoot.style.display = 'none';
         resizeHandle.style.display = 'none';
       }
+    });
+  }
+  function hijackRsvpForms(forceRebind) {
+    const forms = document.querySelectorAll('form.t-form, form.js-form-proccess, #rsvp-form, #da3wa-rsvp-form, form.rsvp-form');
+
+    forms.forEach((form) => {
+      if (form.dataset.farhaBound === 'true' && !forceRebind) return;
+
+      syncRsvpFormReferences(form);
+      form.dataset.farhaBound = 'true';
+      form.removeAttribute('action');
+      form.onsubmit = null;
+      restorePersistedRsvpTicket(form);
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        const data = collectRsvpPayload(form);
+        const submitButton = form.querySelector('button[type="submit"], #submitBtn, .send');
+        const feedback = findRsvpFeedbackTarget(form);
+        const originalText = submitButton ? submitButton.textContent : '';
+
+        if (!data.invitationId && !data.invitationSlug) {
+          showFeedback(feedback, 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.', false);
+          return;
+        }
+
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = runtimeState.preview ? 'معاينة فقط...' : 'جارٍ الإرسال...';
+        }
+
+        try {
+          if (runtimeState.preview) {
+            showFeedback(feedback, 'هذه معاينة فقط. تم حفظ الرد تجريبيًا داخل وضع المعاينة.', true);
+            form.reset();
+            return;
+          }
+
+          const response = await fetch('/api/rsvp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || 'تعذر إرسال الرد');
+          }
+
+          showFeedback(feedback, result.message || 'تم استلام ردكم بنجاح.', true);
+          renderRsvpQrTicket(form, result);
+          form.reset();
+        } catch (error) {
+          console.error('RSVP submit failed:', error);
+          showFeedback(feedback, error.message || 'حدث خطأ أثناء إرسال الرد.', false);
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText || 'إرسال';
+          }
+        }
+      }, true);
+    });
+  }
+
+  function localizeRsvpMessage(text) {
+    const value = String(text || '').trim();
+    if (!value) return value;
+
+    const dictionary = new Map([
+      ['Invitation reference is required.', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation reference is required', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation not found.', 'لم يتم العثور على الدعوة الحالية.'],
+      ['Failed to submit RSVP.', 'تعذر إرسال تأكيد الحضور.'],
+      ['Invalid RSVP payload.', 'بيانات تأكيد الحضور غير مكتملة.'],
+      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح. حاول مرة أخرى لاحقًا.'],
+      ['Invitation is not accepting RSVP responses right now.', 'هذه الدعوة لا تستقبل تأكيدات حضور الآن.'],
+      ['تم استلام تأكيد الحضور بنجاح.', 'تم استلام تأكيد الحضور بنجاح.'],
+      ['تم استلام ردكم بنجاح.', 'تم استلام ردكم بنجاح.'],
+      ['This RSVP does not have an active entry pass.', 'لا توجد بطاقة دخول نشطة لهذا الرد.'],
+    ]);
+
+    if (dictionary.has(value)) {
+      return dictionary.get(value);
+    }
+
+    if (value.includes('Invitation reference is required')) {
+      return 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.';
+    }
+
+    if (value.includes('Invitation not found')) {
+      return 'لم يتم العثور على الدعوة الحالية.';
+    }
+
+    if (/[ÃØÙ]/.test(value)) {
+      return 'تمت العملية بنجاح، لكن النص القديم في القالب كان بترميز غير صحيح.';
+    }
+
+    return value;
+  }
+
+  function renderRsvpQrTicket(form, result) {
+    if (!result || !result.qrCodeDataUrl) return;
+
+    const feedback = findRsvpFeedbackTarget(form);
+    let host = form.parentElement?.querySelector('.farha-rsvp-ticket') || feedback;
+    if (!host) {
+      host = document.createElement('div');
+      host.className = 'farha-rsvp-ticket';
+      form.insertAdjacentElement('afterend', host);
+    } else {
+      host.classList.add('farha-rsvp-ticket');
+    }
+
+    const entryPass = result.entryPass || null;
+    const remainingEntries = entryPass ? Number(entryPass.remainingEntries || 0) : null;
+
+    host.style.display = 'block';
+    host.style.marginTop = '16px';
+    host.style.padding = '18px';
+    host.style.borderRadius = '18px';
+    host.style.background = '#fff';
+    host.style.border = '1px solid rgba(127,42,31,.18)';
+    host.style.boxShadow = '0 18px 40px rgba(15,23,42,.08)';
+    host.style.textAlign = 'center';
+    host.style.minHeight = 'auto';
+    host.style.color = '';
+
+    host.innerHTML = `
+      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">رمز QR الخاص بالدخول</div>
+      <img
+        src="${result.qrCodeDataUrl}"
+        alt="Entry QR Code"
+        style="width:min(72vw,220px);height:auto;display:block;margin:0 auto 12px;background:#fff;padding:10px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.08)"
+      />
+      <div style="font-size:13px;color:#6b7280;line-height:1.8;margin-bottom:12px;">
+        ${entryPass ? `الكود: ${entryPass.passCode || '-'}${remainingEntries != null ? ` • المتبقي: ${remainingEntries}` : ''}` : 'هذا الرمز خاص بحضورك فقط، ويمكنك تنزيله والاحتفاظ به.'}
+      </div>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <a
+          href="${result.qrCodeDataUrl}"
+          download="${result.qrCodeDownloadName || 'farha-entry-pass.png'}"
+          style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700;"
+        >
+          تحميل QR
+        </a>
+        ${result.qrCodeViewUrl ? `
+          <a
+            href="${result.qrCodeViewUrl}"
+            target="_blank"
+            rel="noreferrer"
+            style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18);"
+          >
+            فتح الكود
+          </a>
+        ` : ''}
+        ${entryPass?.publicLink ? `
+          <a
+            href="${entryPass.publicLink}"
+            target="_blank"
+            rel="noreferrer"
+            style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#ecfdf5;color:#065f46;text-decoration:none;font-weight:700;border:1px solid rgba(6,95,70,.18);"
+          >
+            الرابط الفردي
+          </a>
+        ` : ''}
+      </div>
+    `;
+
+    persistRsvpTicket(result);
+    host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function mountEntryPassLauncher(entryPass) {
+    runtimeState.entryPassUi = entryPass || null;
+
+    const existing = document.getElementById('farha-entry-pass-portal');
+    const existingStyle = document.getElementById('farha-entry-pass-style');
+    if (!entryPass || !entryPass.qrCodeDataUrl || runtimeState.preview) {
+      existing?.remove();
+      existingStyle?.remove();
+      return;
+    }
+
+    if (!existingStyle) {
+      const style = document.createElement('style');
+      style.id = 'farha-entry-pass-style';
+      style.textContent = `
+        #farha-entry-pass-portal{margin:18px auto 0;max-width:420px;padding:18px;border-radius:20px;background:rgba(255,255,255,.96);border:1px solid rgba(127,42,31,.14);box-shadow:0 18px 40px rgba(15,23,42,.08);text-align:center;direction:rtl;font-family:"Tajawal",system-ui,sans-serif}
+        #farha-entry-pass-portal .farha-entry-pass-open{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:999px;background:#7f2a1f;color:#fff;border:none;font:700 14px "Tajawal",system-ui,sans-serif;cursor:pointer}
+        #farha-entry-pass-portal .farha-entry-pass-title{font-weight:800;color:#111827;font-size:18px;margin:0 0 6px}
+        #farha-entry-pass-portal .farha-entry-pass-sub{color:#6b7280;font-size:13px;line-height:1.8;margin:0 0 14px}
+        #farha-entry-pass-modal{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px}
+        #farha-entry-pass-modal .sheet{width:min(92vw,420px);background:#fff;border-radius:24px;padding:20px;box-shadow:0 22px 60px rgba(15,23,42,.2);direction:rtl;text-align:center;font-family:"Tajawal",system-ui,sans-serif}
+        #farha-entry-pass-modal .close{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;border:none;background:#f8fafc;color:#7f2a1f;font-size:22px;cursor:pointer}
+      `;
+      document.head.appendChild(style);
+    }
+
+    const portal = existing || document.createElement('section');
+    portal.id = 'farha-entry-pass-portal';
+    portal.innerHTML = `
+      <h3 class="farha-entry-pass-title">بطاقة الدخول</h3>
+      <p class="farha-entry-pass-sub">
+        ${entryPass.guestName ? `هذه البطاقة مخصصة لـ ${entryPass.guestName}. ` : ''}
+        ${entryPass.remainingEntries != null ? `المتبقي: ${entryPass.remainingEntries} من ${entryPass.allowedEntries}.` : ''}
+      </p>
+      <button type="button" class="farha-entry-pass-open">إظهار QR الدخول</button>
+    `;
+
+    const anchor = document.querySelector('#da3wa-rsvp, #rsvp-section, form.rsvp-form, #da3wa-rsvp-form');
+    if (!existing) {
+      if (anchor && anchor.parentElement) {
+        if (anchor.tagName === 'FORM') {
+          anchor.insertAdjacentElement('afterend', portal);
+        } else {
+          anchor.appendChild(portal);
+        }
+      } else {
+        portal.style.position = 'fixed';
+        portal.style.left = '16px';
+        portal.style.bottom = '16px';
+        portal.style.zIndex = '9999';
+        portal.style.maxWidth = '320px';
+        document.body.appendChild(portal);
+      }
+    }
+
+    const openButton = portal.querySelector('.farha-entry-pass-open');
+    openButton?.addEventListener('click', () => {
+      document.getElementById('farha-entry-pass-modal')?.remove();
+      const modal = document.createElement('div');
+      modal.id = 'farha-entry-pass-modal';
+      modal.innerHTML = `
+        <div class="sheet">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px">
+            <div style="text-align:right">
+              <div style="font-weight:800;color:#111827;font-size:20px">QR الدخول</div>
+              <div style="color:#6b7280;font-size:13px">${entryPass.passCode || ''}</div>
+            </div>
+            <button type="button" class="close" aria-label="إغلاق">×</button>
+          </div>
+          <img src="${entryPass.qrCodeDataUrl}" alt="Entry QR Code" style="width:min(74vw,240px);height:auto;display:block;margin:0 auto 14px;background:#fff;padding:10px;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.08)" />
+          <div style="font-size:14px;color:#374151;line-height:1.9;margin-bottom:14px">
+            ${entryPass.guestName ? `<div><strong>الاسم:</strong> ${entryPass.guestName}</div>` : ''}
+            <div><strong>المسموح:</strong> ${entryPass.allowedEntries || 0}</div>
+            <div><strong>المتبقي:</strong> ${entryPass.remainingEntries || 0}</div>
+            ${entryPass.tableNumber ? `<div><strong>الطاولة:</strong> ${entryPass.tableNumber}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <a href="${entryPass.qrCodeDownloadUrl || entryPass.qrCodeViewUrl || '#'}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700">فتح / تحميل QR</a>
+            ${entryPass.publicLink ? `<a href="${entryPass.publicLink}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18)">الرابط الفردي</a>` : ''}
+          </div>
+        </div>
+      `;
+
+      const closeModal = () => modal.remove();
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+      modal.querySelector('.close')?.addEventListener('click', closeModal);
+      document.body.appendChild(modal);
     });
   }
 })();

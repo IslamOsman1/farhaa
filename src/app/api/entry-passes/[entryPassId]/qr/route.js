@@ -1,44 +1,31 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import {
-  ensureEntryPassForRsvp,
   generateEntryPassQrSvg,
   getEntryPassDownloadName,
 } from '@/lib/entry-pass';
 
 export async function GET(request, { params }) {
   try {
-    const { rsvpId } = await params;
-    const rsvp = await prisma.rSVP.findUnique({
-      where: { id: rsvpId },
+    const { entryPassId } = await params;
+    const entryPass = await prisma.entryPass.findUnique({
+      where: { id: entryPassId },
       include: {
         invitation: {
           select: {
             id: true,
             slug: true,
-            status: true,
           },
         },
-        entryPass: true,
       },
     });
 
-    if (!rsvp?.invitation) {
-      return NextResponse.json({ error: 'RSVP not found.' }, { status: 404 });
+    if (!entryPass?.invitation) {
+      return NextResponse.json({ error: 'Entry pass not found.' }, { status: 404 });
     }
-
-    if (rsvp.status === 'declined') {
-      return NextResponse.json({ error: 'This RSVP does not have an active entry pass.' }, { status: 404 });
-    }
-
-    const entryPass = rsvp.entryPass || await ensureEntryPassForRsvp({
-      invitation: rsvp.invitation,
-      rsvp,
-      allowedEntries: Number(rsvp.companions || 0) + 1,
-    });
 
     const svg = await generateEntryPassQrSvg({
-      invitation: rsvp.invitation,
+      invitation: entryPass.invitation,
       entryPass,
     });
     const download = request.nextUrl.searchParams.get('download') === '1';
@@ -50,7 +37,7 @@ export async function GET(request, { params }) {
         ...(download
           ? {
               'Content-Disposition': `attachment; filename="${getEntryPassDownloadName({
-                invitation: rsvp.invitation,
+                invitation: entryPass.invitation,
                 entryPass,
                 extension: 'svg',
               })}"`,
