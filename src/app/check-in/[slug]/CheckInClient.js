@@ -2,20 +2,39 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, compact = false }) {
   return (
     <div
       style={{
         background: '#fff',
-        borderRadius: '18px',
-        padding: '16px',
+        borderRadius: compact ? '16px' : '18px',
+        padding: compact ? '14px 12px' : '16px',
         border: '1px solid rgba(127,42,31,0.12)',
         boxShadow: '0 14px 30px rgba(15, 23, 42, 0.06)',
       }}
     >
-      <div style={{ color: '#7f2a1f', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 700 }}>{label}</div>
-      <div style={{ color: '#111827', fontSize: '1.8rem', fontWeight: 800 }}>{value}</div>
+      <div
+        style={{
+          color: '#7f2a1f',
+          fontSize: compact ? '0.76rem' : '0.9rem',
+          marginBottom: compact ? '6px' : '8px',
+          fontWeight: 700,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ color: '#111827', fontSize: compact ? '1.45rem' : '1.8rem', fontWeight: 800 }}>{value}</div>
     </div>
+  );
+}
+
+function FieldBlock({ label, children, hint }) {
+  return (
+    <label style={{ display: 'grid', gap: '8px' }}>
+      <span style={{ color: '#7f2a1f', fontSize: '0.82rem', fontWeight: 800 }}>{label}</span>
+      {children}
+      {hint ? <span style={{ color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.6 }}>{hint}</span> : null}
+    </label>
   );
 }
 
@@ -143,6 +162,7 @@ export default function CheckInClient({ initialInvitation }) {
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [cameraRequesting, setCameraRequesting] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [viewportWidth, setViewportWidth] = useState(0);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -363,10 +383,17 @@ export default function CheckInClient({ initialInvitation }) {
       return undefined;
     }
 
+    const syncViewport = () => setViewportWidth(window.innerWidth);
+
     setCameraSupported(Boolean(navigator.mediaDevices?.getUserMedia));
     setDeviceLabel(window.navigator.userAgent.slice(0, 100));
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
 
-    return () => stopCamera();
+    return () => {
+      window.removeEventListener('resize', syncViewport);
+      stopCamera();
+    };
   }, []);
 
   useEffect(() => {
@@ -454,57 +481,181 @@ export default function CheckInClient({ initialInvitation }) {
     remainingEntries: 0,
   };
 
-  const scanInputPaddingEnd = cameraSupported ? '142px' : '84px';
+  const isPhone = viewportWidth > 0 ? viewportWidth <= 640 : false;
+  const isTablet = viewportWidth > 0 ? viewportWidth <= 1024 : false;
+  const isNarrowLayout = viewportWidth > 0 ? viewportWidth <= 980 : false;
+  const shareLabel = isPhone ? 'رابط' : 'نسخ';
+  const pagePadding = isPhone ? '12px' : isTablet ? '18px' : '24px';
+  const shellGap = isPhone ? '14px' : '20px';
+  const shellMaxWidth = isPhone ? '100%' : '1280px';
+  const heroPadding = isPhone ? '18px' : '24px';
+  const dynamicCardStyle = {
+    ...cardStyle,
+    padding: isPhone ? '16px' : '22px',
+    borderRadius: isPhone ? '22px' : '24px',
+  };
+  const compactInputStyle = {
+    ...inputStyle,
+    padding: isPhone ? '11px 12px' : inputStyle.padding,
+    fontSize: isPhone ? '0.92rem' : inputStyle.fontSize,
+    borderRadius: isPhone ? '12px' : inputStyle.borderRadius,
+  };
+  const compactMainInputStyle = {
+    ...mainInputStyle,
+    padding: isPhone ? '13px 14px' : mainInputStyle.padding,
+    fontSize: isPhone ? '0.95rem' : mainInputStyle.fontSize,
+    borderRadius: isPhone ? '14px' : mainInputStyle.borderRadius,
+  };
+  const scanInputPaddingEnd = cameraSupported ? (isPhone ? '136px' : '146px') : isPhone ? '88px' : '84px';
+  const summaryGridColumns = isPhone ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(180px, 1fr))';
+  const layoutColumns = isNarrowLayout ? '1fr' : 'minmax(0, 1.18fr) minmax(340px, 0.82fr)';
+  const formGridColumns = isPhone ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(180px, 1fr))';
+  const searchBarColumns = isPhone ? '1fr' : 'minmax(0, 1fr) auto';
+  const recentLogsContainerStyle =
+    isPhone || isTablet
+      ? {
+          maxHeight: isPhone ? '400px' : '520px',
+          overflowY: 'auto',
+          paddingInlineEnd: '4px',
+        }
+      : {};
+  const searchResultsContainerStyle = isPhone
+    ? {
+        maxHeight: '320px',
+        overflowY: 'auto',
+        paddingInlineEnd: '4px',
+      }
+    : {};
 
   return (
     <div
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(180deg, #f9f6ef 0%, #f3f6fb 100%)',
-        padding: '24px',
+        padding: pagePadding,
         direction: 'rtl',
       }}
     >
-      <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gap: '20px' }}>
+      <div style={{ maxWidth: shellMaxWidth, margin: '0 auto', display: 'grid', gap: shellGap }}>
         <section
           style={{
-            background: '#fff',
-            borderRadius: '28px',
-            padding: '24px',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(252,248,239,0.98) 54%, rgba(244,248,255,0.98) 100%)',
+            borderRadius: isPhone ? '24px' : '28px',
+            padding: heroPadding,
             border: '1px solid rgba(195,154,88,0.18)',
             boxShadow: '0 18px 50px rgba(15, 23, 42, 0.08)',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: '18px',
-              flexWrap: 'wrap',
-              alignItems: 'flex-start',
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background:
+                'radial-gradient(circle at top right, rgba(195,154,88,0.16) 0%, rgba(195,154,88,0) 38%), radial-gradient(circle at bottom left, rgba(127,42,31,0.08) 0%, rgba(127,42,31,0) 34%)',
+            }}
+          />
+
+          <div
+            style={{
+              position: 'relative',
+              display: 'grid',
+              gap: isPhone ? '16px' : '18px',
+              gridTemplateColumns: isPhone ? '1fr' : 'minmax(0, 1.2fr) minmax(220px, 0.8fr)',
+              alignItems: 'start',
             }}
           >
             <div>
-              <div style={{ color: '#9a7b42', fontWeight: 700, marginBottom: '8px' }}>بوابة الدخول الذكية</div>
-              <h1 style={{ margin: 0, color: '#111827', fontSize: '2rem' }}>{invitationTitle || 'بطاقات الدخول'}</h1>
-              <p style={{ margin: '10px 0 0', color: '#6b7280', lineHeight: 1.9 }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: isPhone ? '8px 12px' : '9px 14px',
+                  borderRadius: '999px',
+                  background: 'rgba(195,154,88,0.12)',
+                  color: '#9a7b42',
+                  fontWeight: 800,
+                  fontSize: isPhone ? '0.78rem' : '0.84rem',
+                  marginBottom: '12px',
+                }}
+              >
+                بوابة الفحص الذكية
+              </div>
+
+              <h1 style={{ margin: 0, color: '#111827', fontSize: isPhone ? '1.7rem' : '2rem', lineHeight: 1.15 }}>
+                {invitationTitle || 'بطاقات الدخول'}
+              </h1>
+
+              <p style={{ margin: '10px 0 0', color: '#6b7280', lineHeight: 1.9, fontSize: isPhone ? '0.94rem' : '1rem' }}>
                 امسح رمز QR أو ابحث باسم الضيف أو الكود، وسجل الدخول مباشرة مع حفظ كل العمليات في نفس اللحظة.
               </p>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '10px',
+                  marginTop: isPhone ? '14px' : '16px',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '9px 12px',
+                    borderRadius: '14px',
+                    background: 'rgba(255,255,255,0.84)',
+                    border: '1px solid rgba(127,42,31,0.1)',
+                    color: '#475569',
+                    fontSize: isPhone ? '0.82rem' : '0.88rem',
+                  }}
+                >
+                  مصممة للعمل السريع من الموبايل
+                </div>
+                <div
+                  style={{
+                    padding: '9px 12px',
+                    borderRadius: '14px',
+                    background: 'rgba(255,255,255,0.84)',
+                    border: '1px solid rgba(127,42,31,0.1)',
+                    color: '#475569',
+                    fontSize: isPhone ? '0.82rem' : '0.88rem',
+                  }}
+                >
+                  مسح مباشر + بحث + تسجيل فوري
+                </div>
+              </div>
             </div>
 
             <div
               style={{
-                minWidth: '220px',
-                background: '#f8fafc',
-                borderRadius: '20px',
-                padding: '14px 16px',
+                minWidth: 0,
+                background: 'rgba(248,250,252,0.88)',
+                borderRadius: isPhone ? '18px' : '20px',
+                padding: isPhone ? '14px' : '16px',
                 border: '1px solid rgba(127,42,31,0.1)',
+                backdropFilter: 'blur(8px)',
               }}
             >
-              <div style={{ color: '#7f2a1f', fontWeight: 800, marginBottom: '6px' }}>الدعوة</div>
+              <div style={{ color: '#7f2a1f', fontWeight: 800, marginBottom: '6px', fontSize: isPhone ? '0.82rem' : '0.9rem' }}>
+                الدعوة
+              </div>
               <div style={{ color: '#111827', fontWeight: 700 }}>{initialInvitation.slug}</div>
-              <div style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '6px' }}>
+              <div style={{ color: '#6b7280', fontSize: isPhone ? '0.84rem' : '0.9rem', marginTop: '6px', lineHeight: 1.8 }}>
                 {initialInvitation.entryConfig?.pinRequired ? 'الدخول محمي برمز PIN' : 'الدخول مفتوح بدون PIN'}
+              </div>
+              <div
+                style={{
+                  marginTop: '12px',
+                  paddingTop: '12px',
+                  borderTop: '1px solid rgba(127,42,31,0.08)',
+                  color: '#94a3b8',
+                  fontSize: isPhone ? '0.78rem' : '0.82rem',
+                  lineHeight: 1.8,
+                }}
+              >
+                أرسل هذا الرابط لفريق القاعة وسيتمكن من تأكيد الدخول أو المسح بالكاميرا من نفس الصفحة.
               </div>
             </div>
           </div>
@@ -513,25 +664,21 @@ export default function CheckInClient({ initialInvitation }) {
         {!authorized ? (
           <section
             style={{
-              ...cardStyle,
+              ...dynamicCardStyle,
               maxWidth: '520px',
               margin: '0 auto',
               width: '100%',
             }}
           >
-            <h2 style={{ marginTop: 0, color: '#111827' }}>إدخال رمز بوابة الدخول</h2>
-            <p style={{ color: '#6b7280', lineHeight: 1.8 }}>
+            <h2 style={{ marginTop: 0, marginBottom: '10px', color: '#111827', fontSize: isPhone ? '1.35rem' : '1.5rem' }}>
+              إدخال رمز بوابة الدخول
+            </h2>
+            <p style={{ color: '#6b7280', lineHeight: 1.8, fontSize: isPhone ? '0.92rem' : '1rem' }}>
               هذه الصفحة مخصصة لفريق القاعة. أدخل رمز PIN للبدء في مسح الأكواد أو البحث عن الضيوف.
             </p>
 
             <form onSubmit={handleUnlock} style={{ display: 'grid', gap: '12px' }}>
-              <input
-                type="password"
-                value={pin}
-                onChange={(event) => setPin(event.target.value)}
-                placeholder="PIN"
-                style={mainInputStyle}
-              />
+              <input type="password" value={pin} onChange={(event) => setPin(event.target.value)} placeholder="PIN" style={compactMainInputStyle} />
               <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'جارٍ التحقق...' : 'فتح البوابة'}
               </button>
@@ -544,88 +691,116 @@ export default function CheckInClient({ initialInvitation }) {
                 style={{
                   background: feedback.type === 'success' ? '#ecfdf5' : '#fef2f2',
                   color: feedback.type === 'success' ? '#065f46' : '#b91c1c',
-                  borderRadius: '18px',
-                  padding: '16px 18px',
+                  borderRadius: isPhone ? '16px' : '18px',
+                  padding: isPhone ? '14px 16px' : '16px 18px',
                   border: `1px solid ${feedback.type === 'success' ? 'rgba(6,95,70,0.18)' : 'rgba(185,28,28,0.18)'}`,
                   fontWeight: 700,
+                  fontSize: isPhone ? '0.9rem' : '0.96rem',
+                  lineHeight: 1.8,
                 }}
               >
                 {feedback.message}
               </section>
             ) : null}
 
-            <section style={{ display: 'grid', gap: '14px', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-              <StatCard label="إجمالي التصاريح" value={summaryCards.totalPasses} />
-              <StatCard label="الدخولات المسموحة" value={summaryCards.totalAllowedEntries} />
-              <StatCard label="الدخولات المستخدمة" value={summaryCards.totalUsedEntries} />
-              <StatCard label="المتبقي" value={summaryCards.remainingEntries} />
+            <section style={{ display: 'grid', gap: isPhone ? '10px' : '14px', gridTemplateColumns: summaryGridColumns }}>
+              <StatCard label="إجمالي التصاريح" value={summaryCards.totalPasses} compact={isPhone} />
+              <StatCard label="الدخولات المسموحة" value={summaryCards.totalAllowedEntries} compact={isPhone} />
+              <StatCard label="الدخولات المستخدمة" value={summaryCards.totalUsedEntries} compact={isPhone} />
+              <StatCard label="المتبقي" value={summaryCards.remainingEntries} compact={isPhone} />
             </section>
 
-            <section style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'minmax(0, 1.15fr) minmax(320px, 0.85fr)' }}>
-              <div style={cardStyle}>
+            <section style={{ display: 'grid', gap: shellGap, gridTemplateColumns: layoutColumns }}>
+              <div style={dynamicCardStyle}>
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    gap: '12px',
+                    gap: '14px',
                     flexWrap: 'wrap',
-                    alignItems: 'center',
-                    marginBottom: '16px',
+                    alignItems: 'flex-start',
+                    marginBottom: isPhone ? '14px' : '16px',
                   }}
                 >
-                  <h2 style={{ margin: 0, color: '#111827' }}>المسح والبحث</h2>
-                  <div style={{ color: '#6b7280', fontSize: '0.92rem' }}>امسح الكود أو انسخ رابط البوابة من نفس الحقل</div>
+                  <div style={{ display: 'grid', gap: '6px', minWidth: 0 }}>
+                    <div style={{ color: '#9a7b42', fontSize: '0.8rem', fontWeight: 800 }}>منطقة التشغيل</div>
+                    <h2 style={{ margin: 0, color: '#111827', fontSize: isPhone ? '1.35rem' : '1.5rem' }}>المسح والبحث</h2>
+                    <div style={{ color: '#6b7280', fontSize: isPhone ? '0.86rem' : '0.92rem', lineHeight: 1.8 }}>
+                      امسح الكود أو الصق بياناته أو انسخ رابط البوابة من نفس الحقل.
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 12px',
+                      borderRadius: '16px',
+                      background: 'rgba(248,250,252,0.92)',
+                      border: '1px solid rgba(127,42,31,0.1)',
+                      color: '#334155',
+                      fontSize: isPhone ? '0.82rem' : '0.88rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '9px',
+                        height: '9px',
+                        borderRadius: '999px',
+                        background: cameraEnabled ? '#16a34a' : '#c39a58',
+                        boxShadow: cameraEnabled ? '0 0 0 5px rgba(22,163,74,0.14)' : '0 0 0 5px rgba(195,154,88,0.14)',
+                      }}
+                    />
+                    {cameraEnabled ? 'الكاميرا قيد التشغيل' : 'جاهزة للمسح اليدوي أو بالكاميرا'}
+                  </div>
                 </div>
 
                 <div
                   style={{
                     display: 'grid',
                     gap: '12px',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    marginBottom: '14px',
+                    gridTemplateColumns: formGridColumns,
+                    marginBottom: '16px',
+                    padding: isPhone ? '12px' : '14px',
+                    borderRadius: '20px',
+                    background: 'rgba(248,250,252,0.7)',
+                    border: '1px solid rgba(127,42,31,0.08)',
                   }}
                 >
-                  <input
-                    type="text"
-                    value={gateLabel}
-                    onChange={(event) => setGateLabel(event.target.value)}
-                    placeholder="اسم البوابة"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="text"
-                    value={staffName}
-                    onChange={(event) => setStaffName(event.target.value)}
-                    placeholder="اسم الموظف"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="text"
-                    value={staffCode}
-                    onChange={(event) => setStaffCode(event.target.value)}
-                    placeholder="كود الموظف"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={checkedInCount}
-                    onChange={(event) => setCheckedInCount(Math.max(1, Number(event.target.value || 1)))}
-                    placeholder="عدد الداخلين"
-                    style={inputStyle}
-                  />
+                  <FieldBlock label="اسم البوابة">
+                    <input type="text" value={gateLabel} onChange={(event) => setGateLabel(event.target.value)} placeholder="اسم البوابة" style={compactInputStyle} />
+                  </FieldBlock>
+                  <FieldBlock label="اسم الموظف">
+                    <input type="text" value={staffName} onChange={(event) => setStaffName(event.target.value)} placeholder="اسم الموظف" style={compactInputStyle} />
+                  </FieldBlock>
+                  <FieldBlock label="كود الموظف">
+                    <input type="text" value={staffCode} onChange={(event) => setStaffCode(event.target.value)} placeholder="كود الموظف" style={compactInputStyle} />
+                  </FieldBlock>
+                  <FieldBlock label="عدد الداخلين">
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={checkedInCount}
+                      onChange={(event) => setCheckedInCount(Math.max(1, Number(event.target.value || 1)))}
+                      placeholder="عدد الداخلين"
+                      style={compactInputStyle}
+                    />
+                  </FieldBlock>
                 </div>
 
                 {cameraEnabled ? (
                   <div style={{ marginBottom: '16px' }}>
                     <div
                       style={{
-                        borderRadius: '22px',
+                        borderRadius: isPhone ? '20px' : '22px',
                         overflow: 'hidden',
                         border: '1px solid rgba(127,42,31,0.12)',
                         background: '#111827',
-                        minHeight: '260px',
+                        minHeight: isPhone ? '220px' : '260px',
+                        boxShadow: '0 16px 42px rgba(15, 23, 42, 0.18)',
                       }}
                     >
                       <video
@@ -633,14 +808,14 @@ export default function CheckInClient({ initialInvitation }) {
                         muted
                         playsInline
                         autoPlay
-                        style={{ width: '100%', display: 'block', minHeight: '260px', objectFit: 'cover' }}
+                        style={{ width: '100%', display: 'block', minHeight: isPhone ? '220px' : '260px', objectFit: 'cover' }}
                       />
                     </div>
                     {cameraError ? (
-                      <div style={{ marginTop: '10px', color: '#b91c1c', fontSize: '0.92rem' }}>{cameraError}</div>
+                      <div style={{ marginTop: '10px', color: '#b91c1c', fontSize: isPhone ? '0.86rem' : '0.92rem' }}>{cameraError}</div>
                     ) : (
-                      <div style={{ marginTop: '10px', color: '#6b7280', fontSize: '0.92rem' }}>
-                        وجه الكاميرا إلى كود QR وسيتم تسجيل الدخول تلقائيًا.
+                      <div style={{ marginTop: '10px', color: '#6b7280', fontSize: isPhone ? '0.86rem' : '0.92rem', lineHeight: 1.8 }}>
+                        وجّه الكاميرا إلى كود QR وسيتم تسجيل الدخول تلقائيًا.
                       </div>
                     )}
                   </div>
@@ -653,6 +828,8 @@ export default function CheckInClient({ initialInvitation }) {
                   }}
                   style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}
                 >
+                  <div style={{ color: '#7f2a1f', fontWeight: 800, fontSize: isPhone ? '0.9rem' : '0.96rem' }}>المسح السريع</div>
+
                   <div style={{ position: 'relative', minWidth: 0 }}>
                     <input
                       type="text"
@@ -660,7 +837,7 @@ export default function CheckInClient({ initialInvitation }) {
                       onChange={(event) => setScanInput(event.target.value)}
                       placeholder="الصق بيانات QR أو أدخل كود FRH-..."
                       style={{
-                        ...mainInputStyle,
+                        ...compactMainInputStyle,
                         width: '100%',
                         minWidth: 0,
                         paddingInlineEnd: scanInputPaddingEnd,
@@ -675,7 +852,7 @@ export default function CheckInClient({ initialInvitation }) {
                         transform: 'translateY(-50%)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
+                        gap: isPhone ? '6px' : '8px',
                       }}
                     >
                       <button
@@ -688,14 +865,16 @@ export default function CheckInClient({ initialInvitation }) {
                         aria-label="نسخ رابط الصفحة"
                         style={{
                           ...inlineActionButtonStyle,
-                          minWidth: '64px',
-                          padding: '0 12px',
-                          gap: '6px',
+                          minWidth: isPhone ? '74px' : '64px',
+                          height: isPhone ? '38px' : '40px',
+                          padding: isPhone ? '0 10px' : '0 12px',
+                          gap: isPhone ? '4px' : '6px',
                           opacity: sharePageBusy ? 0.7 : 1,
+                          borderRadius: isPhone ? '11px' : '12px',
                         }}
                       >
                         <CopyIcon />
-                        <span style={{ fontSize: '0.88rem', fontWeight: 700 }}>{sharePageBusy ? '...' : 'نسخ'}</span>
+                        <span style={{ fontSize: isPhone ? '0.8rem' : '0.88rem', fontWeight: 700 }}>{sharePageBusy ? '...' : shareLabel}</span>
                       </button>
 
                       {cameraSupported ? (
@@ -709,12 +888,14 @@ export default function CheckInClient({ initialInvitation }) {
                           disabled={cameraRequesting}
                           style={{
                             ...inlineActionButtonStyle,
-                            width: '40px',
-                            minWidth: '40px',
+                            width: isPhone ? '38px' : '40px',
+                            minWidth: isPhone ? '38px' : '40px',
+                            height: isPhone ? '38px' : '40px',
                             padding: '0',
                             background: cameraEnabled ? '#7f2a1f' : '#fff',
                             color: cameraEnabled ? '#fff' : '#7f2a1f',
                             opacity: cameraRequesting ? 0.7 : 1,
+                            borderRadius: isPhone ? '11px' : '12px',
                           }}
                         >
                           <CameraIcon size={20} />
@@ -729,14 +910,14 @@ export default function CheckInClient({ initialInvitation }) {
                 </form>
 
                 <form onSubmit={handleSearch} style={{ display: 'grid', gap: '12px' }}>
-                  <div style={{ color: '#7f2a1f', fontWeight: 800 }}>بحث بالاسم أو الهاتف أو الكود</div>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ color: '#7f2a1f', fontWeight: 800, fontSize: isPhone ? '0.9rem' : '0.96rem' }}>بحث بالاسم أو الهاتف أو الكود</div>
+                  <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: searchBarColumns }}>
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder="ابحث عن ضيف أو كود"
-                      style={{ ...mainInputStyle, flex: '1 1 260px' }}
+                      style={{ ...compactMainInputStyle, width: '100%' }}
                     />
                     <button type="submit" className="btn btn-outline" disabled={loading}>
                       {loading ? 'جارٍ البحث...' : 'بحث'}
@@ -745,11 +926,17 @@ export default function CheckInClient({ initialInvitation }) {
                 </form>
 
                 <div style={{ marginTop: '18px' }}>
-                  <h3 style={{ margin: '0 0 12px', color: '#111827' }}>نتائج البحث</h3>
+                  <h3 style={{ margin: '0 0 12px', color: '#111827', fontSize: isPhone ? '1rem' : '1.08rem' }}>نتائج البحث</h3>
                   {matches.length === 0 ? (
-                    <div style={{ color: '#6b7280' }}>لا توجد نتائج مطابقة حاليًا.</div>
+                    <div style={{ color: '#6b7280', fontSize: isPhone ? '0.9rem' : '0.96rem' }}>لا توجد نتائج مطابقة حاليًا.</div>
                   ) : (
-                    <div style={{ display: 'grid', gap: '12px' }}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gap: '12px',
+                        ...searchResultsContainerStyle,
+                      }}
+                    >
                       {matches.map((entryPass) => {
                         const badge = getStatusStyle(entryPass.status);
 
@@ -757,9 +944,9 @@ export default function CheckInClient({ initialInvitation }) {
                           <div
                             key={entryPass.id}
                             style={{
-                              borderRadius: '18px',
+                              borderRadius: isPhone ? '16px' : '18px',
                               border: '1px solid rgba(127,42,31,0.12)',
-                              padding: '16px',
+                              padding: isPhone ? '14px' : '16px',
                               background: '#fcfcfd',
                               display: 'grid',
                               gap: '10px',
@@ -768,7 +955,7 @@ export default function CheckInClient({ initialInvitation }) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                               <div>
                                 <div style={{ fontWeight: 800, color: '#111827', marginBottom: '4px' }}>{entryPass.guestName || entryPass.passCode}</div>
-                                <div style={{ color: '#6b7280', fontSize: '0.92rem' }}>
+                                <div style={{ color: '#6b7280', fontSize: isPhone ? '0.86rem' : '0.92rem', lineHeight: 1.7 }}>
                                   الكود: {entryPass.passCode}
                                   {entryPass.phone ? ` • ${entryPass.phone}` : ''}
                                 </div>
@@ -777,7 +964,7 @@ export default function CheckInClient({ initialInvitation }) {
                                 style={{
                                   padding: '6px 10px',
                                   borderRadius: '999px',
-                                  fontSize: '0.85rem',
+                                  fontSize: isPhone ? '0.78rem' : '0.85rem',
                                   fontWeight: 700,
                                   ...badge,
                                 }}
@@ -786,12 +973,12 @@ export default function CheckInClient({ initialInvitation }) {
                               </span>
                             </div>
 
-                            <div style={{ color: '#374151', fontSize: '0.95rem' }}>
+                            <div style={{ color: '#374151', fontSize: isPhone ? '0.88rem' : '0.95rem', lineHeight: 1.85 }}>
                               المسموح: {entryPass.allowedEntries} • المستخدم: {entryPass.usedEntries} • المتبقي: {entryPass.remainingEntries}
                               {entryPass.tableNumber ? ` • الطاولة: ${entryPass.tableNumber}` : ''}
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'grid', gap: '8px', gridTemplateColumns: isPhone ? '1fr' : 'repeat(2, max-content)' }}>
                               <button
                                 type="button"
                                 className="btn btn-primary"
@@ -819,7 +1006,7 @@ export default function CheckInClient({ initialInvitation }) {
                 </div>
               </div>
 
-              <div style={cardStyle}>
+              <div style={dynamicCardStyle}>
                 <div
                   style={{
                     display: 'flex',
@@ -827,10 +1014,13 @@ export default function CheckInClient({ initialInvitation }) {
                     gap: '12px',
                     flexWrap: 'wrap',
                     alignItems: 'center',
-                    marginBottom: '14px',
+                    marginBottom: isPhone ? '12px' : '14px',
                   }}
                 >
-                  <h2 style={{ margin: 0, color: '#111827' }}>آخر عمليات الدخول</h2>
+                  <div style={{ display: 'grid', gap: '4px' }}>
+                    <div style={{ color: '#9a7b42', fontSize: '0.8rem', fontWeight: 800 }}>تحديث</div>
+                    <h2 style={{ margin: 0, color: '#111827', fontSize: isPhone ? '1.2rem' : '1.5rem' }}>آخر عمليات الدخول</h2>
+                  </div>
                   <button
                     type="button"
                     className="btn btn-outline"
@@ -842,25 +1032,31 @@ export default function CheckInClient({ initialInvitation }) {
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gap: '12px' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '12px',
+                    ...recentLogsContainerStyle,
+                  }}
+                >
                   {recentLogs.length === 0 ? (
-                    <div style={{ color: '#6b7280' }}>لا توجد عمليات دخول مسجلة بعد.</div>
+                    <div style={{ color: '#6b7280', fontSize: isPhone ? '0.9rem' : '0.96rem' }}>لا توجد عمليات دخول مسجلة بعد.</div>
                   ) : (
                     recentLogs.map((log) => (
                       <div
                         key={log.id}
                         style={{
-                          borderRadius: '18px',
+                          borderRadius: isPhone ? '16px' : '18px',
                           border: '1px solid rgba(127,42,31,0.12)',
-                          padding: '14px 16px',
+                          padding: isPhone ? '13px 14px' : '14px 16px',
                           background: '#fcfcfd',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
                           <div style={{ fontWeight: 800, color: '#111827' }}>{log.entryPass?.guestName || log.entryPass?.passCode || 'بطاقة دخول'}</div>
-                          <div style={{ color: '#6b7280', fontSize: '0.88rem' }}>{formatDate(log.createdAt)}</div>
+                          <div style={{ color: '#6b7280', fontSize: isPhone ? '0.8rem' : '0.88rem' }}>{formatDate(log.createdAt)}</div>
                         </div>
-                        <div style={{ marginTop: '6px', color: '#374151', fontSize: '0.94rem', lineHeight: 1.8 }}>
+                        <div style={{ marginTop: '6px', color: '#374151', fontSize: isPhone ? '0.86rem' : '0.94rem', lineHeight: 1.8 }}>
                           تم تسجيل {log.checkedInCount} دخول • المتبقي: {log.remainingAfter}
                           {log.gateLabel ? ` • البوابة: ${log.gateLabel}` : ''}
                           {log.staffName ? ` • الموظف: ${log.staffName}` : ''}
