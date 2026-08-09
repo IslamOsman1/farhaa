@@ -52,6 +52,29 @@ function getStatusStyle(status) {
   }
 }
 
+function CameraIcon({ size = 22 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M4 8.5C4 7.39543 4.89543 6.5 6 6.5H7.55C8.12 6.5 8.66 6.256 9.04 5.83L9.58 5.22C9.96 4.794 10.5 4.55 11.07 4.55H12.93C13.5 4.55 14.04 4.794 14.42 5.22L14.96 5.83C15.34 6.256 15.88 6.5 16.45 6.5H18C19.1046 6.5 20 7.39543 20 8.5V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17V8.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12.5" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="17.5" cy="9" r="0.8" fill="currentColor" />
+    </svg>
+  );
+}
+
 const cardStyle = {
   background: '#fff',
   borderRadius: '24px',
@@ -585,9 +608,18 @@ export default function CheckInClient({ initialInvitation }) {
                         type="button"
                         className="btn btn-outline"
                         onClick={() => setCameraEnabled((current) => !current)}
-                        style={{ minWidth: '160px' }}
+                        title={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                        aria-label={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                        style={{
+                          minWidth: '58px',
+                          width: '58px',
+                          padding: '0',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
                       >
-                        {cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                        <CameraIcon />
                       </button>
                     ) : null}
                     <button
