@@ -57,6 +57,7 @@ function buildQueryString(filters) {
 export default function AdminInvitationsPage() {
   const [invitations, setInvitations] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [capabilities, setCapabilities] = useState({ canManageRsvps: false });
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState('');
   const [flash, setFlash] = useState({ type: '', message: '' });
@@ -75,6 +76,7 @@ export default function AdminInvitationsPage() {
       const result = await response.json();
       setInvitations(result?.data?.invitations || []);
       setTemplates(result?.data?.templates || []);
+      setCapabilities(result?.data?.capabilities || { canManageRsvps: false });
     } catch (error) {
       console.error(error);
       setFlash({ type: 'error', message: 'تعذر تحميل الدعوات.' });
@@ -144,6 +146,33 @@ export default function AdminInvitationsPage() {
     } catch (error) {
       console.error(error);
       setFlash({ type: 'error', message: error.message || 'تعذر نسخ الدعوة.' });
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function copyOwnerPortalLink(id) {
+    setBusyKey(`owner-portal:${id}`);
+    setFlash({ type: '', message: '' });
+
+    try {
+      const response = await fetch(`/api/admin/invitations/${id}/owner-portal`, {
+        cache: 'no-store',
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'تعذر تجهيز رابط صاحب الدعوة.');
+      }
+
+      const absoluteUrl = result?.data?.overviewUrl
+        || new URL(result?.data?.overviewPath || '', window.location.origin).toString();
+
+      await navigator.clipboard.writeText(absoluteUrl);
+      setFlash({ type: 'success', message: 'تم نسخ رابط صاحب الدعوة.' });
+    } catch (error) {
+      console.error(error);
+      setFlash({ type: 'error', message: error.message || 'تعذر نسخ رابط صاحب الدعوة.' });
     } finally {
       setBusyKey('');
     }
@@ -442,6 +471,18 @@ export default function AdminInvitationsPage() {
                         >
                           نسخ الدعوة
                         </button>
+
+                        {capabilities.canManageRsvps ? (
+                          <button
+                            type="button"
+                            onClick={() => { void copyOwnerPortalLink(invitation.id); }}
+                            className="btn btn-sm"
+                            style={{ background: '#8b5cf6', color: '#fff' }}
+                            disabled={busyKey === `owner-portal:${invitation.id}`}
+                          >
+                            {busyKey === `owner-portal:${invitation.id}` ? 'جارٍ النسخ...' : 'نسخ رابط المالك'}
+                          </button>
+                        ) : null}
 
                         {invitation.status === 'PUBLISHED' ? (
                           <>

@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { apiError, apiSuccess } from '@/lib/api-response';
 import { requirePermission } from '@/lib/admin-session';
+import { hasPermission } from '@/lib/admin-security';
 import { getInvitationEffectiveStatus } from '@/lib/invitation-admin';
 
 function parseDateStart(value) {
@@ -70,7 +71,7 @@ function buildWhere(searchParams) {
 
 export async function GET(request) {
   try {
-    await requirePermission('invitations.view');
+    const user = await requirePermission('invitations.view');
     const where = buildWhere(request.nextUrl.searchParams);
 
     const [invitations, templates] = await Promise.all([
@@ -106,6 +107,9 @@ export async function GET(request) {
     return apiSuccess({
       invitations: normalizedInvitations,
       templates,
+      capabilities: {
+        canManageRsvps: hasPermission(user.role, 'rsvps.manage'),
+      },
       filters: {
         q: request.nextUrl.searchParams.get('q') || '',
         status: request.nextUrl.searchParams.get('status') || 'ALL',
