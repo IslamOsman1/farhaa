@@ -2001,6 +2001,12 @@
       </div>
     `;
 
+    host.innerHTML = host.innerHTML
+      .replace('QR Code Ø§Ù„Ø®Ø§Øµ Ø¨Ø­Ø¶ÙˆØ±Ùƒ', 'رمز QR الخاص بحضورك')
+      .replace('Ù‡Ø°Ø§ Ø§Ù„ÙƒÙˆØ¯ ÙØ±ÙŠØ¯ Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙÙ‚Ø· ÙˆÙŠÙ…ÙƒÙ† ØªÙ†Ø²ÙŠÙ„Ù‡ ÙˆØ§Ù„Ø§Ø­ØªÙØ§Ø¸ Ø¨Ù‡.', 'هذا الرمز خاص بحضورك فقط، ويمكنك تنزيله والاحتفاظ به.')
+      .replace('ØªØ­Ù…ÙŠÙ„ QR', 'تحميل QR')
+      .replace('ÙØªØ­ Ø§Ù„ÙƒÙˆØ¯', 'فتح الكود');
+
     persistRsvpTicket(result);
 
     host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
