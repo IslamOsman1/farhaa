@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@zxing/browser": "^0.2.1",
     "bcryptjs": "^3.0.3",
     "csv-stringify": "^6.8.1",
     "iconv-lite": "^0.7.3",

@@ -54,14 +54,7 @@ function getStatusStyle(status) {
 
 function CameraIcon({ size = 22 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path
         d="M4 8.5C4 7.39543 4.89543 6.5 6 6.5H7.55C8.12 6.5 8.66 6.256 9.04 5.83L9.58 5.22C9.96 4.794 10.5 4.55 11.07 4.55H12.93C13.5 4.55 14.04 4.794 14.42 5.22L14.96 5.83C15.34 6.256 15.88 6.5 16.45 6.5H18C19.1046 6.5 20 7.39543 20 8.5V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17V8.5Z"
         stroke="currentColor"
@@ -77,25 +70,9 @@ function CameraIcon({ size = 22 }) {
 
 function CopyIcon({ size = 18 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M9 9.75C9 8.50736 10.0074 7.5 11.25 7.5H17.25C18.4926 7.5 19.5 8.50736 19.5 9.75V17.25C19.5 18.4926 18.4926 19.5 17.25 19.5H11.25C10.0074 19.5 9 18.4926 9 17.25V9.75Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M15 7.5V6.75C15 5.50736 13.9926 4.5 12.75 4.5H6.75C5.50736 4.5 4.5 5.50736 4.5 6.75V14.25C4.5 15.4926 5.50736 16.5 6.75 16.5H9"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M9 9.75C9 8.50736 10.0074 7.5 11.25 7.5H17.25C18.4926 7.5 19.5 8.50736 19.5 9.75V17.25C19.5 18.4926 18.4926 19.5 17.25 19.5H11.25C10.0074 19.5 9 18.4926 9 17.25V9.75Z" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M15 7.5V6.75C15 5.50736 13.9926 4.5 12.75 4.5H6.75C5.50736 4.5 4.5 5.50736 4.5 6.75V14.25C4.5 15.4926 5.50736 16.5 6.75 16.5H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -123,6 +100,18 @@ const mainInputStyle = {
   padding: '14px 16px',
   borderRadius: '16px',
   fontSize: '1rem',
+};
+
+const inlineActionButtonStyle = {
+  height: '40px',
+  borderRadius: '12px',
+  border: '1px solid rgba(127,42,31,0.18)',
+  background: '#fff',
+  color: '#7f2a1f',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
 };
 
 function formatDate(dateValue) {
@@ -156,7 +145,8 @@ export default function CheckInClient({ initialInvitation }) {
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
-  const detectorRef = useRef(null);
+  const readerRef = useRef(null);
+  const scannerControlsRef = useRef(null);
   const scanLockRef = useRef(false);
   const lastScanRef = useRef('');
 
@@ -167,7 +157,6 @@ export default function CheckInClient({ initialInvitation }) {
 
   async function fetchOverview(query = '') {
     setLoading(true);
-    setFeedback((current) => (current.type === 'success' && current.message ? current : { type: '', message: '' }));
 
     try {
       const params = new URLSearchParams();
@@ -262,7 +251,7 @@ export default function CheckInClient({ initialInvitation }) {
     try {
       await submitScan(rawValue);
     } catch {
-      // Feedback already shown in submitScan.
+      // Feedback already shown by submitScan.
     }
   }
 
@@ -271,8 +260,8 @@ export default function CheckInClient({ initialInvitation }) {
       return;
     }
 
-    const absoluteUrl = window.location.href;
     setSharePageBusy(true);
+    const absoluteUrl = window.location.href;
 
     try {
       if (navigator.clipboard?.writeText) {
@@ -291,12 +280,12 @@ export default function CheckInClient({ initialInvitation }) {
 
       setFeedback({
         type: 'success',
-        message: 'تم نسخ رابط صفحة البوابة. يمكنك إرساله الآن لصاحب الدعوة أو لفريق القاعة.',
+        message: 'تم نسخ رابط صفحة البوابة. يمكنك الآن إرساله لصاحب الدعوة أو لفريق القاعة.',
       });
     } catch {
       setFeedback({
         type: 'error',
-        message: 'تعذر نسخ الرابط تلقائيًا. انسخ رابط الصفحة من شريط المتصفح.',
+        message: 'تعذر نسخ الرابط تلقائيًا. انسخه من شريط المتصفح.',
       });
     } finally {
       setSharePageBusy(false);
@@ -304,6 +293,18 @@ export default function CheckInClient({ initialInvitation }) {
   }
 
   function stopCamera() {
+    if (scannerControlsRef.current?.stop) {
+      scannerControlsRef.current.stop();
+    }
+
+    scannerControlsRef.current = null;
+
+    if (readerRef.current?.reset) {
+      readerRef.current.reset();
+    }
+
+    readerRef.current = null;
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -319,7 +320,7 @@ export default function CheckInClient({ initialInvitation }) {
       return undefined;
     }
 
-    setCameraSupported(Boolean(window.BarcodeDetector && navigator.mediaDevices?.getUserMedia));
+    setCameraSupported(Boolean(navigator.mediaDevices?.getUserMedia));
     setDeviceLabel(window.navigator.userAgent.slice(0, 100));
 
     return () => stopCamera();
@@ -332,69 +333,66 @@ export default function CheckInClient({ initialInvitation }) {
     }
 
     let cancelled = false;
-    let intervalId = null;
 
-    async function start() {
+    async function startCamera() {
       try {
         setCameraError('');
 
-        if (!detectorRef.current) {
-          detectorRef.current = new window.BarcodeDetector({ formats: ['qr_code'] });
+        if (!videoRef.current) {
+          throw new Error('Missing video element.');
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-          },
-          audio: false,
-        });
-
+        const { BrowserQRCodeReader } = await import('@zxing/browser');
         if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
           return;
         }
 
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
+        const reader = new BrowserQRCodeReader();
+        readerRef.current = reader;
 
-        intervalId = window.setInterval(async () => {
-          if (scanLockRef.current || !videoRef.current || videoRef.current.readyState < 2) {
+        const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, async (result, error) => {
+          if (error || scanLockRef.current) {
             return;
           }
 
-          try {
-            const detected = await detectorRef.current.detect(videoRef.current);
-            const rawValue = detected?.[0]?.rawValue ? String(detected[0].rawValue).trim() : '';
-            if (!rawValue || rawValue === lastScanRef.current) {
-              return;
-            }
+          const rawText = typeof result?.getText === 'function' ? result.getText() : result?.text;
+          const rawValue = String(rawText || '').trim();
+          if (!rawValue || rawValue === lastScanRef.current) {
+            return;
+          }
 
-            scanLockRef.current = true;
-            lastScanRef.current = rawValue;
+          scanLockRef.current = true;
+          lastScanRef.current = rawValue;
+
+          try {
             await handleQuickCheckIn(rawValue);
+          } finally {
             window.setTimeout(() => {
               scanLockRef.current = false;
             }, 1400);
-          } catch (detectError) {
-            console.error('Barcode detection failed:', detectError);
           }
-        }, 700);
-      } catch {
+        });
+
+        if (cancelled) {
+          controls?.stop?.();
+          return;
+        }
+
+        scannerControlsRef.current = controls;
+        if (videoRef.current?.srcObject instanceof MediaStream) {
+          streamRef.current = videoRef.current.srcObject;
+        }
+      } catch (error) {
+        console.error('Camera startup failed:', error);
         setCameraEnabled(false);
         setCameraError('تعذر تشغيل الكاميرا على هذا الجهاز أو المتصفح.');
       }
     }
 
-    void start();
+    void startCamera();
 
     return () => {
       cancelled = true;
-      if (intervalId) {
-        window.clearInterval(intervalId);
-      }
       stopCamera();
     };
   }, [authorized, cameraEnabled, cameraSupported, checkedInCount, deviceLabel, gateLabel, pin, staffCode, staffName]);
@@ -403,7 +401,6 @@ export default function CheckInClient({ initialInvitation }) {
     if (authorized) {
       void fetchOverview('');
     }
-    // Run once after authorization state changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authorized]);
 
@@ -413,6 +410,8 @@ export default function CheckInClient({ initialInvitation }) {
     totalUsedEntries: 0,
     remainingEntries: 0,
   };
+
+  const scanInputPaddingEnd = cameraSupported ? '142px' : '84px';
 
   return (
     <div
@@ -446,7 +445,7 @@ export default function CheckInClient({ initialInvitation }) {
               <div style={{ color: '#9a7b42', fontWeight: 700, marginBottom: '8px' }}>بوابة الدخول الذكية</div>
               <h1 style={{ margin: 0, color: '#111827', fontSize: '2rem' }}>{invitationTitle || 'بطاقات الدخول'}</h1>
               <p style={{ margin: '10px 0 0', color: '#6b7280', lineHeight: 1.9 }}>
-                امسح رمز QR أو ابحث باسم الضيف أو الكود، وسجّل الدخول مباشرة مع حفظ كل العمليات في نفس اللحظة.
+                امسح رمز QR أو ابحث باسم الضيف أو الكود، وسجل الدخول مباشرة مع حفظ كل العمليات في نفس اللحظة.
               </p>
             </div>
 
@@ -598,7 +597,7 @@ export default function CheckInClient({ initialInvitation }) {
                       <div style={{ marginTop: '10px', color: '#b91c1c', fontSize: '0.92rem' }}>{cameraError}</div>
                     ) : (
                       <div style={{ marginTop: '10px', color: '#6b7280', fontSize: '0.92rem' }}>
-                        وجّه الكاميرا إلى كود QR وسيتم تسجيل الدخول تلقائيًا.
+                        وجه الكاميرا إلى كود QR وسيتم تسجيل الدخول تلقائيًا.
                       </div>
                     )}
                   </div>
@@ -611,7 +610,7 @@ export default function CheckInClient({ initialInvitation }) {
                   }}
                   style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}
                 >
-                  <div style={{ position: 'relative', flex: '1 1 320px', minWidth: 0 }}>
+                  <div style={{ position: 'relative', minWidth: 0 }}>
                     <input
                       type="text"
                       value={scanInput}
@@ -621,11 +620,10 @@ export default function CheckInClient({ initialInvitation }) {
                         ...mainInputStyle,
                         width: '100%',
                         minWidth: 0,
-                        paddingLeft: '16px',
-                        paddingRight: '16px',
-                        paddingInlineEnd: cameraSupported ? '142px' : '82px',
+                        paddingInlineEnd: scanInputPaddingEnd,
                       }}
                     />
+
                     <div
                       style={{
                         position: 'absolute',
@@ -646,24 +644,17 @@ export default function CheckInClient({ initialInvitation }) {
                         title="نسخ رابط الصفحة"
                         aria-label="نسخ رابط الصفحة"
                         style={{
-                          height: '40px',
+                          ...inlineActionButtonStyle,
                           minWidth: '64px',
                           padding: '0 12px',
-                          borderRadius: '12px',
-                          border: '1px solid rgba(127,42,31,0.18)',
-                          background: '#fff',
-                          color: '#7f2a1f',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
                           gap: '6px',
-                          fontWeight: 700,
-                          cursor: sharePageBusy ? 'not-allowed' : 'pointer',
+                          opacity: sharePageBusy ? 0.7 : 1,
                         }}
                       >
                         <CopyIcon />
-                        <span style={{ fontSize: '0.88rem' }}>{sharePageBusy ? '...' : 'نسخ'}</span>
+                        <span style={{ fontSize: '0.88rem', fontWeight: 700 }}>{sharePageBusy ? '...' : 'نسخ'}</span>
                       </button>
+
                       {cameraSupported ? (
                         <button
                           type="button"
@@ -671,17 +662,12 @@ export default function CheckInClient({ initialInvitation }) {
                           title={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
                           aria-label={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
                           style={{
+                            ...inlineActionButtonStyle,
                             width: '40px',
-                            height: '40px',
-                            borderRadius: '12px',
-                            border: '1px solid rgba(127,42,31,0.18)',
+                            minWidth: '40px',
+                            padding: '0',
                             background: cameraEnabled ? '#7f2a1f' : '#fff',
                             color: cameraEnabled ? '#fff' : '#7f2a1f',
-                            padding: '0',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
                           }}
                         >
                           <CameraIcon size={20} />
@@ -689,6 +675,7 @@ export default function CheckInClient({ initialInvitation }) {
                       ) : null}
                     </div>
                   </div>
+
                   <button type="submit" className="btn btn-primary" disabled={processingScan}>
                     {processingScan ? 'جارٍ تسجيل الدخول...' : 'تأكيد الدخول الآن'}
                   </button>
@@ -733,11 +720,10 @@ export default function CheckInClient({ initialInvitation }) {
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                               <div>
-                                <div style={{ fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
-                                  {entryPass.guestName || entryPass.passCode}
-                                </div>
+                                <div style={{ fontWeight: 800, color: '#111827', marginBottom: '4px' }}>{entryPass.guestName || entryPass.passCode}</div>
                                 <div style={{ color: '#6b7280', fontSize: '0.92rem' }}>
-                                  الكود: {entryPass.passCode} {entryPass.phone ? `• ${entryPass.phone}` : ''}
+                                  الكود: {entryPass.passCode}
+                                  {entryPass.phone ? ` • ${entryPass.phone}` : ''}
                                 </div>
                               </div>
                               <span
@@ -774,11 +760,7 @@ export default function CheckInClient({ initialInvitation }) {
                               >
                                 تسجيل {checkedInCount} دخول
                               </button>
-                              <button
-                                type="button"
-                                className="btn btn-outline"
-                                onClick={() => setScanInput(entryPass.passCode)}
-                              >
+                              <button type="button" className="btn btn-outline" onClick={() => setScanInput(entryPass.passCode)}>
                                 تعبئة الكود
                               </button>
                             </div>
@@ -828,9 +810,7 @@ export default function CheckInClient({ initialInvitation }) {
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                          <div style={{ fontWeight: 800, color: '#111827' }}>
-                            {log.entryPass?.guestName || log.entryPass?.passCode || 'بطاقة دخول'}
-                          </div>
+                          <div style={{ fontWeight: 800, color: '#111827' }}>{log.entryPass?.guestName || log.entryPass?.passCode || 'بطاقة دخول'}</div>
                           <div style={{ color: '#6b7280', fontSize: '0.88rem' }}>{formatDate(log.createdAt)}</div>
                         </div>
                         <div style={{ marginTop: '6px', color: '#374151', fontSize: '0.94rem', lineHeight: 1.8 }}>
