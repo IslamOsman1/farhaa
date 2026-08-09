@@ -75,6 +75,31 @@ function CameraIcon({ size = 22 }) {
   );
 }
 
+function CopyIcon({ size = 18 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M9 9.75C9 8.50736 10.0074 7.5 11.25 7.5H17.25C18.4926 7.5 19.5 8.50736 19.5 9.75V17.25C19.5 18.4926 18.4926 19.5 17.25 19.5H11.25C10.0074 19.5 9 18.4926 9 17.25V9.75Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M15 7.5V6.75C15 5.50736 13.9926 4.5 12.75 4.5H6.75C5.50736 4.5 4.5 5.50736 4.5 6.75V14.25C4.5 15.4926 5.50736 16.5 6.75 16.5H9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 const cardStyle = {
   background: '#fff',
   borderRadius: '24px',
@@ -507,16 +532,7 @@ export default function CheckInClient({ initialInvitation }) {
                   }}
                 >
                   <h2 style={{ margin: 0, color: '#111827' }}>المسح والبحث</h2>
-                  <button
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() => {
-                      void handleCopyPageLink();
-                    }}
-                    disabled={sharePageBusy}
-                  >
-                    {sharePageBusy ? 'جارٍ النسخ...' : 'نسخ رابط الصفحة'}
-                  </button>
+                  <div style={{ color: '#6b7280', fontSize: '0.92rem' }}>امسح الكود أو انسخ رابط البوابة من نفس الحقل</div>
                 </div>
 
                 <div
@@ -595,44 +611,83 @@ export default function CheckInClient({ initialInvitation }) {
                   }}
                   style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}
                 >
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ position: 'relative', flex: '1 1 320px', minWidth: 0 }}>
                     <input
                       type="text"
                       value={scanInput}
                       onChange={(event) => setScanInput(event.target.value)}
                       placeholder="الصق بيانات QR أو أدخل كود FRH-..."
-                      style={{ ...mainInputStyle, flex: '1 1 320px', minWidth: 0 }}
+                      style={{
+                        ...mainInputStyle,
+                        width: '100%',
+                        minWidth: 0,
+                        paddingLeft: '16px',
+                        paddingRight: '16px',
+                        paddingInlineEnd: cameraSupported ? '142px' : '82px',
+                      }}
                     />
-                    {cameraSupported ? (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        insetInlineEnd: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
                       <button
                         type="button"
-                        className="btn btn-outline"
-                        onClick={() => setCameraEnabled((current) => !current)}
-                        title={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
-                        aria-label={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                        onClick={() => {
+                          void handleCopyPageLink();
+                        }}
+                        disabled={sharePageBusy}
+                        title="نسخ رابط الصفحة"
+                        aria-label="نسخ رابط الصفحة"
                         style={{
-                          minWidth: '58px',
-                          width: '58px',
-                          padding: '0',
+                          height: '40px',
+                          minWidth: '64px',
+                          padding: '0 12px',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(127,42,31,0.18)',
+                          background: '#fff',
+                          color: '#7f2a1f',
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          gap: '6px',
+                          fontWeight: 700,
+                          cursor: sharePageBusy ? 'not-allowed' : 'pointer',
                         }}
                       >
-                        <CameraIcon />
+                        <CopyIcon />
+                        <span style={{ fontSize: '0.88rem' }}>{sharePageBusy ? '...' : 'نسخ'}</span>
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      onClick={() => {
-                        void handleCopyPageLink();
-                      }}
-                      disabled={sharePageBusy}
-                      style={{ minWidth: '160px' }}
-                    >
-                      {sharePageBusy ? 'جارٍ النسخ...' : 'نسخ الرابط'}
-                    </button>
+                      {cameraSupported ? (
+                        <button
+                          type="button"
+                          onClick={() => setCameraEnabled((current) => !current)}
+                          title={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                          aria-label={cameraEnabled ? 'إيقاف الكاميرا' : 'فتح الكاميرا'}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(127,42,31,0.18)',
+                            background: cameraEnabled ? '#7f2a1f' : '#fff',
+                            color: cameraEnabled ? '#fff' : '#7f2a1f',
+                            padding: '0',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <CameraIcon size={20} />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                   <button type="submit" className="btn btn-primary" disabled={processingScan}>
                     {processingScan ? 'جارٍ تسجيل الدخول...' : 'تأكيد الدخول الآن'}
