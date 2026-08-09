@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import OwnerPortalLinkActions from '@/components/admin/OwnerPortalLinkActions';
 
 const initialForm = {
   count: 10,
@@ -19,7 +20,11 @@ function StatCard({ label, value }) {
   );
 }
 
-export default function EntryPassesClient({ invitationId }) {
+export default function EntryPassesClient({
+  invitationId,
+  ownerOverviewPath = '',
+  ownerEntryPassesPath = '',
+}) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -125,6 +130,14 @@ export default function EntryPassesClient({ invitationId }) {
           </Link>
         </div>
       </div>
+
+      {ownerOverviewPath ? (
+        <OwnerPortalLinkActions
+          overviewPath={ownerOverviewPath}
+          entryPassesPath={ownerEntryPassesPath}
+          description="هذا الرابط مخصص لصاحب الدعوة لمتابعة الردود والتصاريح من بوابة قراءة فقط."
+        />
+      ) : null}
 
       <div className="stat-cards">
         <StatCard label="إجمالي التصاريح" value={summary.totalPasses || 0} />

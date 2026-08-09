@@ -1,9 +1,7 @@
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
-import { requirePermission } from '@/lib/admin-session';
 import { getEntryPassQrRoute } from '@/lib/entry-pass';
-import OwnerPortalLinkActions from '@/components/admin/OwnerPortalLinkActions';
-import { buildInvitationOwnerPortalPath, ensureInvitationOwnerPortalToken } from '@/lib/owner-portal';
+import { buildInvitationOwnerPortalPath, hasInvitationOwnerPortalAccess } from '@/lib/owner-portal';
 import { getRsvpQrRoute } from '@/lib/rsvp-qr';
 
 export const dynamic = 'force-dynamic';
@@ -30,9 +28,10 @@ function getStatusBadge(status) {
   }
 }
 
-export default async function InvitationRsvpPage({ params }) {
-  await requirePermission('rsvps.manage');
+export default async function OwnerInvitationOverviewPage({ params, searchParams }) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const accessToken = typeof resolvedSearchParams?.token === 'string' ? resolvedSearchParams.token : '';
 
   const invitation = await prisma.invitation.findUnique({
     where: { id },
@@ -66,24 +65,29 @@ export default async function InvitationRsvpPage({ params }) {
   });
 
   if (!invitation) {
-    return <div className="admin-card">الدعوة غير موجودة.</div>;
+    return <div className="admin-card card-pad">الدعوة غير موجودة.</div>;
   }
 
-  const ownerPortalToken = await ensureInvitationOwnerPortalToken(invitation.id, invitation.shareConfig);
-  const ownerOverviewPath = buildInvitationOwnerPortalPath({
-    invitationId: invitation.id,
-    token: ownerPortalToken,
-  });
-  const ownerEntryPassesPath = buildInvitationOwnerPortalPath({
-    invitationId: invitation.id,
-    token: ownerPortalToken,
-    section: 'entry-passes',
-  });
+  if (!hasInvitationOwnerPortalAccess(invitation, accessToken)) {
+    return (
+      <div className="admin-card card-pad" style={{ maxWidth: '760px', margin: '0 auto' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '10px' }}>الرابط غير صالح</h3>
+        <p style={{ margin: 0, color: '#64748b' }}>
+          هذا الرابط غير صالح أو لا يملك صلاحية الوصول إلى بيانات هذه الدعوة.
+        </p>
+      </div>
+    );
+  }
 
   const confirmed = invitation.rsvps.filter((item) => item.status !== 'declined').length;
   const declined = invitation.rsvps.filter((item) => item.status === 'declined').length;
   const companions = invitation.rsvps.reduce((sum, item) => sum + (item.companions || 0), 0);
   const commentsCount = invitation.rsvps.filter((item) => item.message && String(item.message).trim()).length;
+  const entryPassesPath = buildInvitationOwnerPortalPath({
+    invitationId: invitation.id,
+    token: accessToken,
+    section: 'entry-passes',
+  });
 
   return (
     <div>
@@ -96,31 +100,14 @@ export default async function InvitationRsvpPage({ params }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <a href={`/api/admin/invitations/${invitation.id}/rsvps`} className="btn btn-outline">
-            تنزيل الردود + التعليقات
-          </a>
-          <a href={`/api/admin/invitations/${invitation.id}/rsvps?format=comments`} className="btn btn-outline">
-            تنزيل التعليقات فقط
-          </a>
-          <a href={`/api/admin/invitations/${invitation.id}/rsvps?format=qr-html`} className="btn btn-primary">
-            تنزيل QR الردود
-          </a>
-          <Link href={`/admin/invitations/${invitation.id}/entry-passes`} className="btn btn-primary">
+          <Link href={entryPassesPath} className="btn btn-primary">
             تصاريح الدخول
           </Link>
-          <a href={`/check-in/${invitation.slug}`} target="_blank" rel="noreferrer" className="btn btn-outline">
-            بوابة الفحص
+          <a href={`/invite/${invitation.slug}`} target="_blank" rel="noreferrer" className="btn btn-outline">
+            عرض الدعوة
           </a>
-          <Link href="/admin/invitations" className="btn btn-outline">
-            رجوع للدعوات
-          </Link>
         </div>
       </div>
-
-      <OwnerPortalLinkActions
-        overviewPath={ownerOverviewPath}
-        entryPassesPath={ownerEntryPassesPath}
-      />
 
       <div className="stat-cards">
         <div className="stat-card">
