@@ -16,6 +16,8 @@ const DEVICE_PRESETS = {
 const SECTION_META = {
   'custom-elements': { icon: '✚', label: 'العناصر الحرة', description: 'إضافة نصوص وصور متحركة فوق القالب' },
   layers: { icon: '🗂', label: 'الطبقات', description: 'إدارة العناصر الحرة وترتيبها والتحكم بها' },
+  'template-text': { icon: '🔤', label: 'نص القالب', description: 'العنصر النصي المحدد من داخل المعاينة المباشرة' },
+  history: { icon: '🕘', label: 'السجل', description: 'ملخص مرئي لآخر التعديلات والإصدارات المصغرة' },
   basic: { icon: '👤', label: 'الأساسيات', description: 'أسماء العروسين وبيانات المناسبة' },
   wording: { icon: '📝', label: 'النصوص', description: 'رسائل الدعوة والعناوين' },
   families: { icon: '👪', label: 'العائلات', description: 'أسماء وتواقيع العائلتين' },
@@ -151,6 +153,11 @@ function getElementStyleClipboardPayload(element) {
 
 function normalizeDraftState(input) {
   const safe = input || {};
+  const safeTextLocks =
+    safe.uiConfig?.textLocks && typeof safe.uiConfig.textLocks === 'object' && !Array.isArray(safe.uiConfig.textLocks)
+      ? safe.uiConfig.textLocks
+      : {};
+
   return {
     ...safe,
     contentConfig: safe.contentConfig || {},
@@ -161,6 +168,7 @@ function normalizeDraftState(input) {
     uiConfig: {
       ...(safe.uiConfig || {}),
       editorGuides: safe.uiConfig?.editorGuides !== false,
+      textLocks: safeTextLocks,
     },
     devicePreview: {
       mode: 'mobile',
@@ -506,12 +514,16 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [editorOpen, setEditorOpen] = useState(false);
   const [canvasClickMenu, setCanvasClickMenu] = useState(null);
   const [selectedElementId, setSelectedElementId] = useState(null);
+  const [selectedTemplateTextPath, setSelectedTemplateTextPath] = useState(null);
+  const [selectedTemplateTextLabel, setSelectedTemplateTextLabel] = useState('');
   const [styleClipboard, setStyleClipboard] = useState(null);
   const [historyMeta, setHistoryMeta] = useState({ canUndo: false, canRedo: false, pastCount: 0, futureCount: 0 });
+  const [activityLog, setActivityLog] = useState([]);
   const autosaveRef = useRef(null);
   const lastSavedRef = useRef(JSON.stringify(initialDraft));
   const historyRef = useRef({ current: null, past: [], future: [] });
   const suppressHistoryRef = useRef(false);
+  const activityCounterRef = useRef(0);
 
   const currentManifest = useMemo(
     () => manifests.find((item) => item.slug === draft.templateSlug) || manifests[0],
@@ -550,6 +562,10 @@ export default function StudioClient({ session, manifests, openings, inventory }
       }, {}),
     [currentManifest],
   );
+  const editableFieldMap = useMemo(
+    () => new Map(currentManifest.editableFields.map((field) => [field.key, field])),
+    [currentManifest],
+  );
 
   const normalizedCustomElements = useMemo(
     () => normalizeCustomElements(draft.customElements || []),
@@ -567,6 +583,43 @@ export default function StudioClient({ session, manifests, openings, inventory }
     () => orderedLayerElements.find((item) => item.id === selectedElementId) || null,
     [orderedLayerElements, selectedElementId],
   );
+  const templateTextLocks = useMemo(() => {
+    const value = draft.uiConfig?.textLocks;
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  }, [draft.uiConfig?.textLocks]);
+  const selectedTemplateText = useMemo(() => {
+    if (!selectedTemplateTextPath) {
+      return null;
+    }
+
+    const field = editableFieldMap.get(selectedTemplateTextPath);
+    const textOverrides = draft.textOverrides || {};
+    const resolvedText = Object.prototype.hasOwnProperty.call(textOverrides, selectedTemplateTextPath)
+      ? textOverrides[selectedTemplateTextPath]
+      : (draft.contentConfig?.[selectedTemplateTextPath] ?? '');
+
+    return {
+      path: selectedTemplateTextPath,
+      label: field?.labelAr || selectedTemplateTextLabel || selectedTemplateTextPath,
+      text: resolvedText == null ? '' : String(resolvedText),
+      locked: Boolean(templateTextLocks[selectedTemplateTextPath]),
+    };
+  }, [draft.contentConfig, draft.textOverrides, editableFieldMap, selectedTemplateTextLabel, selectedTemplateTextPath, templateTextLocks]);
+
+  function recordActivity(title, detail = '') {
+    const entry = {
+      id: `activity-${Date.now()}-${activityCounterRef.current}`,
+      title,
+      detail,
+      time: new Date().toLocaleTimeString('ar-EG', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      version: historyRef.current.past.length + 1,
+    };
+    activityCounterRef.current += 1;
+    setActivityLog((current) => [entry, ...current].slice(0, 18));
+  }
 
   function syncHistoryMeta() {
     setHistoryMeta({
@@ -575,6 +628,77 @@ export default function StudioClient({ session, manifests, openings, inventory }
       pastCount: historyRef.current.past.length,
       futureCount: historyRef.current.future.length,
     });
+  }
+
+  function getTextFieldLabel(path, fallbackLabel = '') {
+    return editableFieldMap.get(path)?.labelAr || fallbackLabel || path;
+  }
+
+  function setTemplateTextLock(path, locked) {
+    if (!path) {
+      return;
+    }
+
+    setDraft((current) => {
+      const nextLocks = {
+        ...((current.uiConfig?.textLocks && typeof current.uiConfig.textLocks === 'object') ? current.uiConfig.textLocks : {}),
+      };
+      if (locked) {
+        nextLocks[path] = true;
+      } else {
+        delete nextLocks[path];
+      }
+
+      return {
+        ...current,
+        uiConfig: {
+          ...(current.uiConfig || {}),
+          textLocks: nextLocks,
+        },
+      };
+    });
+    setNotice(locked ? `تم قفل النص: ${getTextFieldLabel(path)}` : `تم فتح النص: ${getTextFieldLabel(path)}`);
+    recordActivity(locked ? 'قفل نص من القالب' : 'فتح نص من القالب', getTextFieldLabel(path));
+  }
+
+  function resetTemplateText(path) {
+    if (!path) {
+      return;
+    }
+
+    setDraft((current) => {
+      const nextOverrides = { ...(current.textOverrides || {}) };
+      const nextLocks = {
+        ...((current.uiConfig?.textLocks && typeof current.uiConfig.textLocks === 'object') ? current.uiConfig.textLocks : {}),
+      };
+      delete nextOverrides[path];
+      delete nextLocks[path];
+
+      return {
+        ...current,
+        textOverrides: nextOverrides,
+        uiConfig: {
+          ...(current.uiConfig || {}),
+          textLocks: nextLocks,
+        },
+      };
+    });
+    setNotice(`تمت إعادة النص إلى القيمة الأصلية: ${getTextFieldLabel(path)}`);
+    recordActivity('إعادة ضبط نص من القالب', getTextFieldLabel(path));
+  }
+
+  function updateTemplateTextOverride(path, value) {
+    if (!path) {
+      return;
+    }
+
+    setDraft((current) => ({
+      ...current,
+      textOverrides: {
+        ...(current.textOverrides || {}),
+        [path]: value,
+      },
+    }));
   }
 
   function applySnapshotFromHistory(serializedSnapshot, direction) {
@@ -597,6 +721,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     syncHistoryMeta();
     setDraft(normalizeDraftState(JSON.parse(serializedSnapshot)));
     setNotice(direction === 'undo' ? 'تم التراجع عن آخر تعديل.' : 'تمت إعادة التعديل.');
+    recordActivity(direction === 'undo' ? 'Undo' : 'Redo', direction === 'undo' ? 'الرجوع إلى النسخة السابقة' : 'استعادة النسخة التالية');
   }
 
   function handleUndo() {
@@ -619,7 +744,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
   const activeSections = useMemo(() => {
     const fieldSections = Object.keys(groupedFields).filter((key) => SECTION_META[key]);
-    return [...fieldSections, 'custom-elements', 'layers', 'opening', 'design', 'sections', 'advanced'];
+    return [...fieldSections, 'custom-elements', 'layers', 'template-text', 'history', 'opening', 'design', 'sections', 'advanced'];
   }, [groupedFields]);
 
   function updateCustomElements(updater) {
@@ -643,8 +768,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
   }
 
   function removeCustomElement(id) {
+    const removedElement = orderedLayerElements.find((element) => element.id === id);
     updateCustomElements((elements) => elements.filter((element) => element.id !== id));
     setSelectedElementId((current) => (current === id ? null : current));
+    if (removedElement) {
+      setNotice(`تم حذف العنصر: ${removedElement.name}`);
+      recordActivity('حذف عنصر حر', removedElement.name);
+    }
   }
 
   function moveCustomElement(id, direction) {
@@ -666,6 +796,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     });
     setSelectedElementId(id);
     setOpenSection('layers');
+    recordActivity(direction > 0 ? 'رفع طبقة' : 'خفض طبقة', orderedLayerElements.find((element) => element.id === id)?.name || 'عنصر حر');
   }
 
   function duplicateCustomElement(id) {
@@ -689,6 +820,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
     ]);
     setSelectedElementId(duplicateId);
     setOpenSection('layers');
+    setSelectedTemplateTextPath(null);
+    setSelectedTemplateTextLabel('');
+    recordActivity('نسخ عنصر حر', source.name || 'عنصر حر');
   }
 
   function addCustomElement(type, position, content = '') {
@@ -719,6 +853,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
     });
     setSelectedElementId(nextId);
     setOpenSection('layers');
+    setSelectedTemplateTextPath(null);
+    setSelectedTemplateTextLabel('');
+    recordActivity(type === 'text' ? 'إضافة نص حر' : 'إضافة صورة حرة', getCustomElementLabel({ type }, orderedLayerElements.length));
   }
 
   useEffect(() => {
@@ -760,6 +897,10 @@ export default function StudioClient({ session, manifests, openings, inventory }
       setSelectedElementId(orderedLayerElements[orderedLayerElements.length - 1].id);
     }
   }, [orderedLayerElements, selectedElementId]);
+
+  useEffect(() => {
+    recordActivity('فتح الاستوديو', session.name);
+  }, [session.name]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -847,9 +988,19 @@ export default function StudioClient({ session, manifests, openings, inventory }
         removeCustomElement(event.data.payload.id);
       } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
         setSelectedElementId(event.data.payload?.id || null);
+        setSelectedTemplateTextPath(null);
+        setSelectedTemplateTextLabel('');
         setOpenSection('layers');
+      } else if (event.data?.type === 'FARHA_TEMPLATE_TEXT_SELECT') {
+        const nextPath = event.data.payload?.path || null;
+        setSelectedTemplateTextPath(nextPath);
+        setSelectedTemplateTextLabel(event.data.payload?.label || '');
+        if (nextPath) {
+          setSelectedElementId(null);
+          setOpenSection('template-text');
+        }
       } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
-        const { path, text } = event.data.payload;
+        const { path, text, label } = event.data.payload;
         setDraft(current => ({
           ...current,
           textOverrides: {
@@ -857,6 +1008,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
             [path]: text
           }
         }));
+        if (path) {
+          setSelectedTemplateTextPath(path);
+          setSelectedTemplateTextLabel(label || '');
+          setOpenSection('template-text');
+          recordActivity('تعديل نص من المعاينة', label || path);
+        }
       } else if (event.data?.type === 'FARHA_CANVAS_CLICK') {
         const { x, y } = event.data.payload;
         if (draft.ui?.addCustomElementMode === 'text') {
@@ -868,6 +1025,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setCanvasClickMenu({ x, y, forceImage: true });
           return;
         }
+        setSelectedTemplateTextPath(null);
+        setSelectedTemplateTextLabel('');
         setCanvasClickMenu({ x, y });
       }
     }
@@ -994,6 +1153,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
       }),
     }));
     setNotice(`تمت إعادة ضبط العنصر: ${selectedCustomElement.name}`);
+    recordActivity('إعادة ضبط عنصر حر', selectedCustomElement.name);
   }
 
   function copySelectedElementStyles() {
@@ -1004,6 +1164,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     const payload = getElementStyleClipboardPayload(selectedCustomElement);
     setStyleClipboard(payload);
     setNotice(`تم نسخ تنسيق العنصر: ${selectedCustomElement.name}`);
+    recordActivity('نسخ تنسيق عنصر', selectedCustomElement.name);
   }
 
   function pasteStylesToSelectedElement() {
@@ -1017,15 +1178,17 @@ export default function StudioClient({ session, manifests, openings, inventory }
         rotation: styleClipboard.styles.rotation,
       });
       setNotice('تم لصق التنسيق المشترك فقط لأن نوع العنصر مختلف.');
+      recordActivity('لصق تنسيق مشترك', selectedCustomElement.name);
       return;
     }
 
     patchCustomElement(selectedCustomElement.id, styleClipboard.styles);
     setNotice(`تم لصق التنسيق على: ${selectedCustomElement.name}`);
+    recordActivity('لصق تنسيق عنصر', selectedCustomElement.name);
   }
 
   function canResetSection(sectionKey) {
-    return !['advanced'].includes(sectionKey);
+    return !['advanced', 'history'].includes(sectionKey);
   }
 
   function resetSection(sectionKey) {
@@ -1035,6 +1198,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         themeConfig: cloneValue(currentManifest.defaultValues?.theme || {}),
       }));
       setNotice('تمت إعادة ضبط إعدادات التصميم.');
+      recordActivity('إعادة ضبط قسم', 'التصميم');
       return;
     }
 
@@ -1044,6 +1208,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         sectionConfig: cloneValue(currentManifest.defaultValues?.sections || {}),
       }));
       setNotice('تمت إعادة ضبط إعدادات الأقسام.');
+      recordActivity('إعادة ضبط قسم', 'الأقسام');
       return;
     }
 
@@ -1068,6 +1233,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
       }));
       setPreviewReloadToken((value) => value + 1);
       setNotice('تمت إعادة ضبط الافتتاحية.');
+      recordActivity('إعادة ضبط قسم', 'الافتتاحية');
       return;
     }
 
@@ -1078,12 +1244,20 @@ export default function StudioClient({ session, manifests, openings, inventory }
       }));
       setSelectedElementId(null);
       setNotice('تم حذف جميع العناصر الحرة من هذه الجلسة.');
+      recordActivity('إعادة ضبط قسم', 'العناصر الحرة');
       return;
     }
 
     if (sectionKey === 'layers') {
       if (selectedCustomElement) {
         resetSelectedCustomElement();
+      }
+      return;
+    }
+
+    if (sectionKey === 'template-text') {
+      if (selectedTemplateText) {
+        resetTemplateText(selectedTemplateText.path);
       }
       return;
     }
@@ -1119,6 +1293,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
       };
     });
     setNotice(`تمت إعادة ضبط قسم: ${SECTION_META[sectionKey]?.label || sectionKey}`);
+    recordActivity('إعادة ضبط قسم', SECTION_META[sectionKey]?.label || sectionKey);
   }
 
   function handleOpenSection(sectionKey) {
@@ -1214,9 +1389,16 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   type="button"
                   className="mini-btn"
                   onClick={() => resetSection(sectionKey)}
-                  disabled={sectionKey === 'layers' && !selectedCustomElement}
+                  disabled={
+                    (sectionKey === 'layers' && !selectedCustomElement)
+                    || (sectionKey === 'template-text' && !selectedTemplateText)
+                  }
                 >
-                  {sectionKey === 'layers' ? 'Reset Element' : 'Reset Section'}
+                  {sectionKey === 'layers'
+                    ? 'Reset Element'
+                    : sectionKey === 'template-text'
+                      ? 'Reset Text'
+                      : 'Reset Section'}
                 </button>
               </div>
             ) : null}
@@ -1394,6 +1576,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
                           className={`studio-layer-row__select ${isSelected ? 'active' : ''}`}
                           onClick={() => {
                             setSelectedElementId(element.id);
+                            setSelectedTemplateTextPath(null);
+                            setSelectedTemplateTextLabel('');
                             setOpenSection('layers');
                           }}
                         >
@@ -1646,6 +1830,114 @@ export default function StudioClient({ session, manifests, openings, inventory }
                     </div>
                   </div>
                 ) : null}
+              </div>
+            ) : null}
+
+            {sectionKey === 'template-text' ? (
+              <div className="studio-stack">
+                {selectedTemplateText ? (
+                  <>
+                    <div className="studio-text-inspector">
+                      <div className="studio-text-inspector__meta">
+                        <strong>{selectedTemplateText.label}</strong>
+                        <small>{selectedTemplateText.path}</small>
+                      </div>
+                      <div className="studio-inline-actions">
+                        <button
+                          type="button"
+                          className={`mini-btn ${selectedTemplateText.locked ? 'active' : ''}`}
+                          onClick={() => setTemplateTextLock(selectedTemplateText.path, !selectedTemplateText.locked)}
+                        >
+                          {selectedTemplateText.locked ? 'فتح النص' : 'قفل النص'}
+                        </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={() => resetTemplateText(selectedTemplateText.path)}
+                        >
+                          إعادة النص الأصلي
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="studio-element-summary-grid">
+                      <div className="studio-element-summary-card">
+                        <span>الحالة</span>
+                        <strong>{selectedTemplateText.locked ? 'مقفول' : 'مفتوح'}</strong>
+                      </div>
+                      <div className="studio-element-summary-card">
+                        <span>التحرير المباشر</span>
+                        <strong>{selectedTemplateText.locked ? 'متوقف' : 'مفعل'}</strong>
+                      </div>
+                    </div>
+
+                    <label className="studio-field studio-field--full">
+                      <span>النص الظاهر داخل القالب</span>
+                      <textarea
+                        rows={4}
+                        value={selectedTemplateText.text}
+                        disabled={selectedTemplateText.locked}
+                        onChange={(event) => updateTemplateTextOverride(selectedTemplateText.path, event.target.value)}
+                        onBlur={() => {
+                          if (!selectedTemplateText.locked) {
+                            recordActivity('تعديل نص من الاستوديو', selectedTemplateText.label);
+                          }
+                        }}
+                      />
+                    </label>
+                    <p className="studio-help-text">
+                      اضغط على أي نص داخل المعاينة ليظهر هنا. عند قفل النص سيتوقف التحرير المباشر من داخل القالب حتى تقوم بفتحه مرة أخرى.
+                    </p>
+                  </>
+                ) : (
+                  <div className="studio-empty-panel">
+                    <strong>لا يوجد نص محدد بعد</strong>
+                    <p>اضغط على أي عنوان أو فقرة داخل المعاينة المباشرة حتى تتمكن من قفلها أو تعديلها من هذا القسم.</p>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {sectionKey === 'history' ? (
+              <div className="studio-stack">
+                <div className="studio-version-grid">
+                  <div className="studio-version-card">
+                    <span>الإصدار الحالي</span>
+                    <strong>V{historyMeta.pastCount + 1}</strong>
+                  </div>
+                  <div className="studio-version-card">
+                    <span>إمكانية التراجع</span>
+                    <strong>{historyMeta.pastCount}</strong>
+                  </div>
+                  <div className="studio-version-card">
+                    <span>إمكانية الإعادة</span>
+                    <strong>{historyMeta.futureCount}</strong>
+                  </div>
+                  <div className="studio-version-card">
+                    <span>الحفظ الحالي</span>
+                    <strong>{saveState === 'saved' ? 'محفوظ' : saveState === 'saving' ? 'يحفظ الآن' : saveState === 'error' ? 'خطأ' : 'بانتظار الحفظ'}</strong>
+                  </div>
+                </div>
+
+                <div className="studio-history-list">
+                  {activityLog.length ? activityLog.map((item) => (
+                    <div key={item.id} className="studio-history-item">
+                      <div className="studio-history-item__meta">
+                        <strong>{item.title}</strong>
+                        <small>{item.detail || 'تعديل داخل الاستوديو'}</small>
+                      </div>
+                      <div className="studio-history-item__side">
+                        <span>V{item.version}</span>
+                        <small>{item.time}</small>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="studio-empty-panel">
+                      <strong>السجل فارغ حاليًا</strong>
+                      <p>سيظهر هنا كل ما تقوم به مثل التراجع، إعادة التعديل، قفل النصوص، وإدارة العناصر الحرة.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : null}
 

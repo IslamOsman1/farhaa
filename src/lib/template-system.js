@@ -1427,6 +1427,12 @@ export function buildInvitationRenderConfig({ invitation, manifest, opening, pre
         invitation?.uiConfig?.bilingualEnabled
         || invitation?.contentConfig?.__uiConfig?.bilingualEnabled,
       ),
+      textLocks:
+        invitation?.uiConfig?.textLocks && typeof invitation.uiConfig.textLocks === 'object' && !Array.isArray(invitation.uiConfig.textLocks)
+          ? invitation.uiConfig.textLocks
+          : invitation?.contentConfig?.__uiConfig?.textLocks && typeof invitation.contentConfig.__uiConfig.textLocks === 'object' && !Array.isArray(invitation.contentConfig.__uiConfig.textLocks)
+            ? invitation.contentConfig.__uiConfig.textLocks
+            : {},
       defaultLocale:
         invitation?.uiConfig?.defaultLocale
         || invitation?.contentConfig?.__uiConfig?.defaultLocale

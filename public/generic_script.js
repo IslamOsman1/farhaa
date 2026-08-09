@@ -167,6 +167,7 @@
     activeLocale: 'ar',
     languageToggle: null,
     selectedCustomElementId: null,
+    selectedTemplateTextPath: null,
     activeTextEditor: null,
     entryPassUi: null,
   };
@@ -360,6 +361,47 @@
     });
   }
 
+  function getTextLockMap() {
+    const locks = runtimeState.renderConfig?.ui?.textLocks;
+    return locks && typeof locks === 'object' && !Array.isArray(locks) ? locks : {};
+  }
+
+  function isTextPathLocked(path) {
+    return Boolean(path && getTextLockMap()[path]);
+  }
+
+  function getStudioFieldLabel(path) {
+    return runtimeState.manifest?.editableFields?.find((field) => field.key === path)?.labelAr || path;
+  }
+
+  function syncTemplateTextSelection() {
+    queryAll('.farha-studio-editable').forEach((node) => {
+      const path = node.dataset.farhaStudioField || '';
+      const isSelected = String(path) === String(runtimeState.selectedTemplateTextPath || '');
+      const locked = isTextPathLocked(path);
+      node.dataset.farhaSelected = isSelected ? 'true' : 'false';
+      node.dataset.farhaLocked = locked ? 'true' : 'false';
+      node.setAttribute('aria-disabled', locked ? 'true' : 'false');
+    });
+  }
+
+  function selectTemplateText(path, options = {}) {
+    runtimeState.selectedTemplateTextPath = path || null;
+    syncTemplateTextSelection();
+
+    window.parent.postMessage({
+      type: 'FARHA_TEMPLATE_TEXT_SELECT',
+      payload: path
+        ? {
+            path,
+            text: options.text ?? '',
+            label: options.label || getStudioFieldLabel(path),
+            locked: isTextPathLocked(path),
+          }
+        : { path: null },
+    }, '*');
+  }
+
   function initUniversalTextEditor() {
     if (!runtimeState.preview) return;
 
@@ -368,6 +410,7 @@
       node.style.webkitUserSelect = 'text';
       node.style.pointerEvents = 'auto';
     });
+    syncTemplateTextSelection();
   }
 
   function closeFloatingTextEditor(commit = true) {
@@ -2272,6 +2315,17 @@
           opacity: 0.8 !important;
           z-index: 99999;
         }
+        .farha-studio-editable[data-farha-selected="true"] {
+          outline: 2px solid #7f2a1f !important;
+          outline-offset: 4px !important;
+          background: rgba(255, 255, 255, 0.14) !important;
+          border-radius: 8px;
+          z-index: 99999;
+        }
+        .farha-studio-editable[data-farha-locked="true"] {
+          cursor: not-allowed !important;
+          filter: saturate(0.86);
+        }
         .farha-studio-editable::after {
           content: 'ØªØ¹Ø¯ÙŠÙ„';
           position: absolute;
@@ -2290,6 +2344,14 @@
         }
         .farha-studio-editable:hover::after {
           opacity: 1;
+        }
+        .farha-studio-editable[data-farha-selected="true"]::after,
+        .farha-studio-editable[data-farha-locked="true"]::after {
+          opacity: 1;
+        }
+        .farha-studio-editable[data-farha-locked="true"]::after {
+          content: 'مقفول';
+          background: #7f2a1f;
         }
         .farha-studio-editable[contenteditable="true"]:focus {
           outline: 2px solid #7f2a1f !important;
@@ -2322,6 +2384,7 @@
         el.style.webkitUserSelect = 'text';
         el.style.touchAction = 'manipulation';
         el.style.webkitTouchCallout = 'default';
+        el.dataset.farhaLocked = isTextPathLocked(fieldKey) ? 'true' : 'false';
 
         if (!el.dataset.farhaInlineBound) {
           el.addEventListener('mousedown', (event) => {
@@ -2332,6 +2395,13 @@
           }, { passive: true });
           el.addEventListener('click', (event) => {
             event.stopPropagation();
+            selectTemplateText(fieldKey, {
+              text: el.innerText || '',
+              label: getStudioFieldLabel(fieldKey),
+            });
+            if (isTextPathLocked(fieldKey)) {
+              return;
+            }
             openFloatingTextEditor({
               target: el,
               initialValue: el.innerText || '',
@@ -2341,6 +2411,7 @@
                   payload: {
                     path: fieldKey,
                     text: nextValue.trim(),
+                    label: getStudioFieldLabel(fieldKey),
                   },
                 }, '*');
               },
@@ -2350,6 +2421,7 @@
         }
       });
     });
+    syncTemplateTextSelection();
   }
 
 
@@ -2377,6 +2449,9 @@
 
     const selectElement = (id) => {
       runtimeState.selectedCustomElementId = id || null;
+      if (id) {
+        selectTemplateText(null);
+      }
       const container = document.getElementById('farha-custom-elements');
       if (!container) return;
       Array.from(container.children).forEach((wrapper) => {
@@ -2431,6 +2506,7 @@
       if (!wrapper) {
         if (!target.closest('.farha-studio-editable')) {
           selectElement(null);
+          selectTemplateText(null);
         }
         return;
       }
