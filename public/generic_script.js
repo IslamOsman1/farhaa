@@ -1862,10 +1862,41 @@
     );
   }
 
+  function localizeRsvpMessage(text) {
+    const value = String(text || '').trim();
+    if (!value) return value;
+
+    const dictionary = new Map([
+      ['Invitation reference is required.', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation reference is required', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation not found.', 'لم يتم العثور على الدعوة الحالية.'],
+      ['Failed to submit RSVP.', 'تعذر إرسال تأكيد الحضور.'],
+      ['Invalid RSVP payload.', 'بيانات تأكيد الحضور غير مكتملة.'],
+      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح. حاول مرة أخرى لاحقًا.'],
+      ['تم استلام ردكم بنجاح. نشكركم على التأكيد.', 'تم استلام تأكيد الحضور بنجاح.'],
+      ['ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø±Ø¯ÙƒÙ… Ø¨Ù†Ø¬Ø§Ø­. Ù†Ø´ÙƒØ±ÙƒÙ… Ø¹Ù„Ù‰ Ø§Ù„ØªØ£ÙƒÙŠØ¯.', 'تم استلام تأكيد الحضور بنجاح.'],
+      ['ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¯Ø¹ÙˆØ© Ø§Ù„Ø­Ø§Ù„ÙŠØ©. Ø£Ø¹Ø¯ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙØ­Ø© Ø«Ù… Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+    ]);
+
+    if (dictionary.has(value)) {
+      return dictionary.get(value);
+    }
+
+    if (value.includes('Invitation reference is required')) {
+      return 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.';
+    }
+
+    if (/[ÃØÙ]/.test(value)) {
+      return 'تم تنفيذ العملية، لكن النص الوارد من القالب قديم الترميز.';
+    }
+
+    return value;
+  }
+
   function showFeedback(target, text, success) {
     if (!target) return;
     target.style.display = 'block';
-    target.textContent = text;
+    target.textContent = localizeRsvpMessage(text);
     target.style.color = success ? '#1f9d61' : '#d9475c';
   }
 
