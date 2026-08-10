@@ -132,6 +132,8 @@ function buildDefaultNativeElementOverride(seed = {}) {
     selector: '',
     kind: 'native',
     mediaUrl: '',
+    cropX: 50,
+    cropY: 50,
     x: 0,
     y: 0,
     scale: 1,
@@ -155,6 +157,9 @@ function normalizeNativeElementOverrides(overrides) {
 
     accumulator[key] = buildDefaultNativeElementOverride({
       ...value,
+      mediaUrl: value.mediaUrl ? String(value.mediaUrl) : '',
+      cropX: toFiniteNumber(value.cropX, 50),
+      cropY: toFiniteNumber(value.cropY, 50),
       x: toFiniteNumber(value.x, 0),
       y: toFiniteNumber(value.y, 0),
       scale: Math.max(0.1, toFiniteNumber(value.scale, 1)),
@@ -603,6 +608,364 @@ function MediaSummaryCard({ label, value, type, onClear, onChange }) {
   );
 }
 
+function MediaCropModal({ request, onClose, onApply }) {
+  const frameRef = useRef(null);
+  const dragRef = useRef(null);
+  const [localSrc, setLocalSrc] = useState(request?.initialSrc || request?.previewUrl || '');
+  const [localCropX, setLocalCropX] = useState(toFiniteNumber(request?.cropX, 50));
+  const [localCropY, setLocalCropY] = useState(toFiniteNumber(request?.cropY, 50));
+
+  useEffect(() => {
+    if (!request) {
+      return;
+    }
+
+    setLocalSrc(request.initialSrc || request.previewUrl || '');
+    setLocalCropX(toFiniteNumber(request.cropX, 50));
+    setLocalCropY(toFiniteNumber(request.cropY, 50));
+  }, [request]);
+
+  if (!request) {
+    return null;
+  }
+
+  const normalizedAspectRatio = Math.min(2.2, Math.max(0.35, toFiniteNumber(request.aspectRatio, 390 / 844)));
+  const folder = request.scope === 'custom' ? 'studio-free-elements' : 'studio-native-elements';
+
+  function handlePointerDown(event) {
+    if (!localSrc) {
+      return;
+    }
+
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startCropX: localCropX,
+      startCropY: localCropY,
+    };
+
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function handlePointerMove(event) {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const rect = frameRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    const dx = event.clientX - dragRef.current.startX;
+    const dy = event.clientY - dragRef.current.startY;
+    const nextCropX = Math.min(100, Math.max(0, dragRef.current.startCropX - ((dx / Math.max(rect.width, 1)) * 100)));
+    const nextCropY = Math.min(100, Math.max(0, dragRef.current.startCropY - ((dy / Math.max(rect.height, 1)) * 100)));
+    setLocalCropX(nextCropX);
+    setLocalCropY(nextCropY);
+  }
+
+  function handlePointerEnd(event) {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+    }
+  }
+
+  return (
+    <>
+      <div className="studio-crop-modal" onClick={onClose}>
+        <div className="studio-crop-modal__dialog" onClick={(event) => event.stopPropagation()}>
+          <div className="studio-crop-modal__header">
+            <div>
+              <strong>{'\u0642\u0635 \u0627\u0644\u0635\u0648\u0631\u0629'}</strong>
+              <small>{request.label || '\u0639\u0646\u0635\u0631 \u0635\u0648\u0631\u064A'}</small>
+            </div>
+            <button type="button" className="mini-btn" onClick={onClose}>
+              {'\u0625\u063A\u0644\u0627\u0642'}
+            </button>
+          </div>
+
+          <div className="studio-crop-modal__toolbar">
+            <MediaPicker
+              label={'\u0627\u0633\u062A\u0628\u062F\u0627\u0644'}
+              value={localSrc}
+              accept="image"
+              folder={folder}
+              onChange={(url) => {
+                if (url) {
+                  setLocalSrc(url);
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="mini-btn"
+              onClick={() => {
+                setLocalSrc(request.initialSrc || request.previewUrl || '');
+                setLocalCropX(toFiniteNumber(request.cropX, 50));
+                setLocalCropY(toFiniteNumber(request.cropY, 50));
+              }}
+            >
+              {'\u0625\u0639\u0627\u062F\u0629'}
+            </button>
+          </div>
+
+          <div className="studio-crop-modal__canvas">
+            <div
+              ref={frameRef}
+              className="studio-crop-modal__frame"
+              style={{ aspectRatio: String(normalizedAspectRatio) }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerEnd}
+              onPointerCancel={handlePointerEnd}
+              onLostPointerCapture={handlePointerEnd}
+            >
+              {localSrc ? (
+                <>
+                  <img
+                    src={localSrc}
+                    alt=""
+                    draggable={false}
+                    className="studio-crop-modal__image"
+                    style={{ objectPosition: `${localCropX}% ${localCropY}%` }}
+                  />
+                  <span className="studio-crop-modal__handle studio-crop-modal__handle--tl" />
+                  <span className="studio-crop-modal__handle studio-crop-modal__handle--tr" />
+                  <span className="studio-crop-modal__handle studio-crop-modal__handle--bl" />
+                  <span className="studio-crop-modal__handle studio-crop-modal__handle--br" />
+                  <span className="studio-crop-modal__crosshair studio-crop-modal__crosshair--x" />
+                  <span className="studio-crop-modal__crosshair studio-crop-modal__crosshair--y" />
+                </>
+              ) : (
+                <div className="studio-crop-modal__empty">
+                  {'\u0627\u062E\u062A\u0631 \u0635\u0648\u0631\u0629 \u0644\u0628\u062F\u0621 \u0627\u0644\u0642\u0635'}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="studio-crop-modal__controls">
+            <label className="studio-crop-modal__slider">
+              <span>{'\u0642\u0635 \u0623\u0641\u0642\u064A'}</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(localCropX)}
+                onChange={(event) => setLocalCropX(toFiniteNumber(event.target.value, 50))}
+              />
+              <strong>{Math.round(localCropX)}%</strong>
+            </label>
+            <label className="studio-crop-modal__slider">
+              <span>{'\u0642\u0635 \u0631\u0623\u0633\u064A'}</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(localCropY)}
+                onChange={(event) => setLocalCropY(toFiniteNumber(event.target.value, 50))}
+              />
+              <strong>{Math.round(localCropY)}%</strong>
+            </label>
+          </div>
+
+          <p className="studio-crop-modal__hint">
+            {'\u0627\u0633\u062D\u0628 \u0627\u0644\u0635\u0648\u0631\u0629 \u062F\u0627\u062E\u0644 \u0627\u0644\u0625\u0637\u0627\u0631 \u0623\u0648 \u0627\u0633\u062A\u062E\u062F\u0645 \u0627\u0644\u0645\u0632\u0644\u0642\u064A\u0646 \u0644\u0636\u0628\u0637 \u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u0642\u0635 \u0628\u062F\u0642\u0629.'}
+          </p>
+
+          <div className="studio-crop-modal__footer">
+            <button type="button" className="mini-btn" onClick={onClose}>
+              {'\u0625\u0644\u063A\u0627\u0621'}
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onApply({ src: localSrc, cropX: localCropX, cropY: localCropY })}
+            >
+              {'\u062A\u0637\u0628\u064A\u0642 \u0627\u0644\u0642\u0635'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .studio-crop-modal {
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          background: rgba(15, 23, 42, 0.54);
+          display: grid;
+          place-items: center;
+          padding: 20px;
+        }
+        .studio-crop-modal__dialog {
+          width: min(960px, 100%);
+          max-height: calc(100vh - 40px);
+          overflow: auto;
+          background: #fffefb;
+          border-radius: 28px;
+          padding: 22px;
+          display: grid;
+          gap: 18px;
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+        }
+        .studio-crop-modal__header,
+        .studio-crop-modal__footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .studio-crop-modal__header strong {
+          display: block;
+          color: #172554;
+          font-size: 1.15rem;
+        }
+        .studio-crop-modal__header small {
+          color: #6b7280;
+        }
+        .studio-crop-modal__toolbar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .studio-crop-modal__canvas {
+          display: grid;
+          place-items: center;
+        }
+        .studio-crop-modal__frame {
+          position: relative;
+          width: min(100%, 540px);
+          min-height: 260px;
+          overflow: hidden;
+          border-radius: 28px;
+          border: 2px solid rgba(127, 42, 31, 0.18);
+          background:
+            linear-gradient(135deg, rgba(205, 169, 95, 0.08), rgba(255, 255, 255, 0.96)),
+            repeating-linear-gradient(
+              0deg,
+              rgba(127, 42, 31, 0.04) 0,
+              rgba(127, 42, 31, 0.04) 1px,
+              transparent 1px,
+              transparent 32px
+            ),
+            repeating-linear-gradient(
+              90deg,
+              rgba(127, 42, 31, 0.04) 0,
+              rgba(127, 42, 31, 0.04) 1px,
+              transparent 1px,
+              transparent 32px
+            );
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,.72), 0 18px 48px rgba(205, 169, 95, 0.16);
+          touch-action: none;
+          cursor: grab;
+        }
+        .studio-crop-modal__frame:active {
+          cursor: grabbing;
+        }
+        .studio-crop-modal__image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          user-select: none;
+          pointer-events: none;
+          display: block;
+        }
+        .studio-crop-modal__handle {
+          position: absolute;
+          width: 22px;
+          height: 22px;
+          border-radius: 999px;
+          background: #fff;
+          border: 3px solid #7f2a1f;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+        }
+        .studio-crop-modal__handle--tl { top: 12px; left: 12px; }
+        .studio-crop-modal__handle--tr { top: 12px; right: 12px; }
+        .studio-crop-modal__handle--bl { bottom: 12px; left: 12px; }
+        .studio-crop-modal__handle--br { bottom: 12px; right: 12px; }
+        .studio-crop-modal__crosshair {
+          position: absolute;
+          background: rgba(255,255,255,.72);
+          box-shadow: 0 0 0 1px rgba(127, 42, 31, 0.12);
+        }
+        .studio-crop-modal__crosshair--x {
+          top: 50%;
+          left: 18px;
+          right: 18px;
+          height: 1px;
+          transform: translateY(-50%);
+        }
+        .studio-crop-modal__crosshair--y {
+          left: 50%;
+          top: 18px;
+          bottom: 18px;
+          width: 1px;
+          transform: translateX(-50%);
+        }
+        .studio-crop-modal__empty {
+          height: 100%;
+          display: grid;
+          place-items: center;
+          color: #7f2a1f;
+          padding: 24px;
+          text-align: center;
+          font-weight: 700;
+        }
+        .studio-crop-modal__controls {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .studio-crop-modal__slider {
+          display: grid;
+          gap: 8px;
+          padding: 14px;
+          border-radius: 18px;
+          border: 1px solid rgba(127, 42, 31, 0.12);
+          background: #fff;
+        }
+        .studio-crop-modal__slider span {
+          color: #7f2a1f;
+          font-weight: 700;
+        }
+        .studio-crop-modal__slider input {
+          width: 100%;
+        }
+        .studio-crop-modal__slider strong {
+          color: #172554;
+        }
+        .studio-crop-modal__hint {
+          margin: 0;
+          color: #6b7280;
+          font-size: .95rem;
+          text-align: center;
+        }
+        @media (max-width: 720px) {
+          .studio-crop-modal {
+            padding: 12px;
+          }
+          .studio-crop-modal__dialog {
+            padding: 16px;
+            border-radius: 22px;
+          }
+          .studio-crop-modal__controls {
+            grid-template-columns: 1fr;
+          }
+          .studio-crop-modal__frame {
+            width: 100%;
+            min-height: 220px;
+          }
+        }
+      `}</style>
+    </>
+  );
+}
+
 const QUICK_MEDIA_KEYS = new Set([
   'venueImage',
   'images.hero',
@@ -625,9 +988,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [selectedNativeElementId, setSelectedNativeElementId] = useState(null);
   const [selectedNativeElementLabel, setSelectedNativeElementLabel] = useState('');
+  const [selectedNativeElementPreviewUrl, setSelectedNativeElementPreviewUrl] = useState('');
+  const [selectedNativeElementBasePreviewUrl, setSelectedNativeElementBasePreviewUrl] = useState('');
+  const [selectedNativeElementAspectRatio, setSelectedNativeElementAspectRatio] = useState(390 / 844);
   const [selectedTemplateTextPath, setSelectedTemplateTextPath] = useState(null);
   const [selectedTemplateTextLabel, setSelectedTemplateTextLabel] = useState('');
   const [replaceMediaRequest, setReplaceMediaRequest] = useState(null);
+  const [cropMediaRequest, setCropMediaRequest] = useState(null);
   const [styleClipboard, setStyleClipboard] = useState(null);
   const [historyMeta, setHistoryMeta] = useState({ canUndo: false, canRedo: false, pastCount: 0, futureCount: 0 });
   const [activityLog, setActivityLog] = useState([]);
@@ -1089,6 +1456,65 @@ export default function StudioClient({ session, manifests, openings, inventory }
     });
   }
 
+  function openCropEditor(request) {
+    if (!request?.id) {
+      return;
+    }
+
+    setCropMediaRequest({
+      ...request,
+      initialSrc: request.initialSrc || request.previewUrl || '',
+      previewUrl: request.previewUrl || request.initialSrc || '',
+      basePreviewUrl: request.basePreviewUrl || request.previewUrl || request.initialSrc || '',
+      cropX: toFiniteNumber(request.cropX, 50),
+      cropY: toFiniteNumber(request.cropY, 50),
+      aspectRatio: toFiniteNumber(request.aspectRatio, 390 / 844),
+      token: Date.now(),
+    });
+    setEditorOpen(true);
+  }
+
+  function openSelectedCustomCropEditor() {
+    if (!selectedCustomElement || selectedCustomElement.type !== 'image') {
+      return;
+    }
+
+    openCropEditor({
+      scope: 'custom',
+      id: selectedCustomElement.id,
+      label: selectedCustomElement.name || '\u0635\u0648\u0631\u0629 \u062D\u0631\u0629',
+      initialSrc: selectedCustomElement.content || '',
+      previewUrl: selectedCustomElement.content || '',
+      basePreviewUrl: selectedCustomElement.content || '',
+      cropX: toFiniteNumber(selectedCustomElement.cropX, 50),
+      cropY: toFiniteNumber(selectedCustomElement.cropY, 50),
+      aspectRatio: Math.max(0.35, parseFloat(selectedCustomElement.width || '150') / Math.max(parseFloat(selectedCustomElement.height || '150'), 1)),
+    });
+  }
+
+  function openSelectedNativeCropEditor() {
+    if (!selectedNativeElementId || !selectedNativeElement) {
+      return;
+    }
+
+    const persistedUrl = selectedNativeElement.mediaUrl ? String(selectedNativeElement.mediaUrl).trim() : '';
+    const basePreviewUrl = selectedNativeElementBasePreviewUrl || selectedNativeElementPreviewUrl || persistedUrl;
+    const previewUrl = persistedUrl || selectedNativeElementPreviewUrl || basePreviewUrl;
+
+    openCropEditor({
+      scope: 'native',
+      id: selectedNativeElementId,
+      label: selectedNativeElement.label || selectedNativeElementLabel || selectedNativeElementId,
+      initialSrc: previewUrl,
+      previewUrl,
+      basePreviewUrl,
+      persistedUrl,
+      cropX: toFiniteNumber(selectedNativeElement.cropX, 50),
+      cropY: toFiniteNumber(selectedNativeElement.cropY, 50),
+      aspectRatio: toFiniteNumber(selectedNativeElementAspectRatio, 390 / 844),
+    });
+  }
+
   function applyMediaReplacement(url) {
     if (!url || !replaceMediaRequest?.id) {
       setReplaceMediaRequest(null);
@@ -1107,6 +1533,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
       patchNativeElement(replaceMediaRequest.id, { mediaUrl: url, hidden: false });
       setSelectedNativeElementId(replaceMediaRequest.id);
       setSelectedNativeElementLabel(replaceMediaRequest.label || '');
+      setSelectedNativeElementPreviewUrl(url);
       setSelectedElementId(null);
       setNotice(`تم استبدال صورة العنصر الأصلي: ${replaceMediaRequest.label || 'عنصر صوري'}`);
       recordActivity('استبدال صورة عنصر قالب', replaceMediaRequest.label || replaceMediaRequest.id);
@@ -1114,6 +1541,53 @@ export default function StudioClient({ session, manifests, openings, inventory }
     }
 
     setReplaceMediaRequest(null);
+  }
+
+  function applyMediaCropChanges(payload) {
+    if (!cropMediaRequest?.id) {
+      setCropMediaRequest(null);
+      return;
+    }
+
+    const nextCropX = toFiniteNumber(payload?.cropX, 50);
+    const nextCropY = toFiniteNumber(payload?.cropY, 50);
+    const nextSrc = String(payload?.src || '').trim();
+
+    if (cropMediaRequest.scope === 'custom') {
+      patchCustomElement(cropMediaRequest.id, {
+        content: nextSrc,
+        cropX: nextCropX,
+        cropY: nextCropY,
+      });
+      setSelectedElementId(cropMediaRequest.id);
+      setSelectedNativeElementId(null);
+      setSelectedNativeElementLabel('');
+      setNotice(`\u062A\u0645 \u062A\u062D\u062F\u064A\u062B \u0642\u0635 \u0627\u0644\u0635\u0648\u0631\u0629: ${cropMediaRequest.label || '\u0635\u0648\u0631\u0629 \u062D\u0631\u0629'}`);
+      recordActivity('\u062A\u062D\u062F\u064A\u062B \u0642\u0635 \u0635\u0648\u0631\u0629 \u062D\u0631\u0629', cropMediaRequest.label || cropMediaRequest.id);
+      setOpenSection('layers');
+    } else {
+      const basePreviewUrl = String(cropMediaRequest.basePreviewUrl || '').trim();
+      const nextMediaUrl = basePreviewUrl && nextSrc === basePreviewUrl ? '' : nextSrc;
+
+      patchNativeElement(cropMediaRequest.id, {
+        mediaUrl: nextMediaUrl,
+        cropX: nextCropX,
+        cropY: nextCropY,
+        hidden: false,
+      });
+      setSelectedNativeElementId(cropMediaRequest.id);
+      setSelectedNativeElementLabel(cropMediaRequest.label || '');
+      setSelectedElementId(null);
+      setSelectedNativeElementPreviewUrl(nextSrc || basePreviewUrl);
+      if (basePreviewUrl) {
+        setSelectedNativeElementBasePreviewUrl(basePreviewUrl);
+      }
+      setNotice(`\u062A\u0645 \u062A\u062D\u062F\u064A\u062B \u0642\u0635 \u0639\u0646\u0635\u0631 \u0627\u0644\u0642\u0627\u0644\u0628: ${cropMediaRequest.label || '\u0639\u0646\u0635\u0631 \u0635\u0648\u0631\u064A'}`);
+      recordActivity('\u062A\u062D\u062F\u064A\u062B \u0642\u0635 \u0639\u0646\u0635\u0631 \u0642\u0627\u0644\u0628', cropMediaRequest.label || cropMediaRequest.id);
+      setOpenSection('template-elements');
+    }
+
+    setCropMediaRequest(null);
   }
 
   function resetSelectedNativeElement() {
@@ -1131,6 +1605,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         nativeElementOverrides: nextOverrides,
       };
     });
+    setSelectedNativeElementPreviewUrl(selectedNativeElementBasePreviewUrl || '');
     setNotice(`تمت إعادة ضبط عنصر القالب: ${selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId}`);
     recordActivity('إعادة ضبط عنصر قالب', selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId);
   }
@@ -1150,6 +1625,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
         nativeElementOverrides: nextOverrides,
       };
     });
+    if (id === selectedNativeElementId) {
+      setSelectedNativeElementPreviewUrl(selectedNativeElementBasePreviewUrl || '');
+    }
     const resolvedLabel =
       label
       || (id === selectedNativeElementId ? selectedNativeElement?.label || selectedNativeElementLabel || id : id);
@@ -1412,6 +1890,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedElementId(event.data.payload?.id || null);
         setSelectedNativeElementId(null);
         setSelectedNativeElementLabel('');
+        setSelectedNativeElementPreviewUrl('');
+        setSelectedNativeElementBasePreviewUrl('');
+        setSelectedNativeElementAspectRatio(390 / 844);
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
         setOpenSection('layers');
@@ -1419,6 +1900,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
         const nextId = event.data.payload?.id || null;
         setSelectedNativeElementId(nextId);
         setSelectedNativeElementLabel(event.data.payload?.label || '');
+        setSelectedNativeElementPreviewUrl(event.data.payload?.previewUrl || '');
+        setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '');
+        setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
         setSelectedElementId(null);
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
@@ -1462,6 +1946,43 @@ export default function StudioClient({ session, manifests, openings, inventory }
           label: nextLabel,
           token: Date.now(),
         });
+      } else if (event.data?.type === 'FARHA_MEDIA_CROP_REQUEST') {
+        const scope = event.data.payload?.scope;
+        const nextId = event.data.payload?.id || null;
+        if (!nextId || (scope !== 'custom' && scope !== 'native')) {
+          return;
+        }
+
+        if (scope === 'custom') {
+          setSelectedElementId(nextId);
+          setSelectedNativeElementId(null);
+          setSelectedNativeElementLabel('');
+          setSelectedNativeElementPreviewUrl('');
+          setSelectedNativeElementBasePreviewUrl('');
+          setSelectedNativeElementAspectRatio(390 / 844);
+          setOpenSection('layers');
+        } else {
+          setSelectedNativeElementId(nextId);
+          setSelectedNativeElementLabel(event.data.payload?.label || '');
+          setSelectedNativeElementPreviewUrl(event.data.payload?.previewUrl || '');
+          setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '');
+          setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
+          setSelectedElementId(null);
+          setOpenSection('template-elements');
+        }
+
+        openCropEditor({
+          scope,
+          id: nextId,
+          label: event.data.payload?.label || '',
+          initialSrc: event.data.payload?.previewUrl || '',
+          previewUrl: event.data.payload?.previewUrl || '',
+          basePreviewUrl: event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '',
+          persistedUrl: event.data.payload?.persistedUrl || '',
+          cropX: toFiniteNumber(event.data.payload?.cropX, 50),
+          cropY: toFiniteNumber(event.data.payload?.cropY, 50),
+          aspectRatio: toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844),
+        });
       } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
         const nextId = event.data.payload?.id || null;
         if (!nextId) {
@@ -1469,6 +1990,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
         }
         setSelectedNativeElementId(nextId);
         setSelectedNativeElementLabel(event.data.payload?.label || '');
+        setSelectedNativeElementPreviewUrl(event.data.payload?.previewUrl || '');
+        setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '');
+        setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
         patchNativeElement(nextId, {
           label: event.data.payload?.label || '',
           selector: event.data.payload?.selector || '',
@@ -1484,6 +2008,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
         }
         setSelectedNativeElementId(nextId);
         setSelectedNativeElementLabel(event.data.payload?.label || '');
+        setSelectedNativeElementPreviewUrl(event.data.payload?.basePreviewUrl || '');
+        setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || '');
+        setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
         resetNativeElementById(nextId, event.data.payload?.label || nextId);
         setOpenSection('template-elements');
       } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
@@ -2348,6 +2875,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
                               onChange={(event) => setCustomElementNumber(selectedCustomElement.id, 'cropY', event.target.value, 50)}
                             />
                           </label>
+                          <div className="studio-field studio-field--full">
+                            <button type="button" className="mini-btn" onClick={openSelectedCustomCropEditor}>
+                              {'\u0641\u062A\u062D \u0646\u0627\u0641\u0630\u0629 \u0627\u0644\u0642\u0635 \u0627\u0644\u0628\u0635\u0631\u064A'}
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
@@ -2487,10 +3019,56 @@ export default function StudioClient({ session, manifests, openings, inventory }
                         <span>المعرّف/المسار</span>
                         <input type="text" dir="ltr" value={selectedNativeElement.selector || selectedNativeElementId || ''} readOnly />
                       </label>
+                      {selectedNativeElement.kind === 'media' ? (
+                        <>
+                          <label className="studio-field studio-field--full">
+                            <span>{'\u0627\u0633\u062A\u0628\u062F\u0627\u0644 \u0627\u0644\u0635\u0648\u0631\u0629 \u0627\u0644\u0623\u0635\u0644\u064A\u0629'}</span>
+                            <MediaPicker
+                              label={'\u0627\u062E\u062A\u064A\u0627\u0631 \u0635\u0648\u0631\u0629'}
+                              value={selectedNativeElement.mediaUrl || selectedNativeElementPreviewUrl || ''}
+                              accept="image"
+                              folder="studio-native-elements"
+                              onChange={(url) => {
+                                if (!url) {
+                                  return;
+                                }
+                                patchNativeElement(selectedNativeElementId, { mediaUrl: url, hidden: false });
+                                setNotice(`\u062A\u0645 \u0627\u0633\u062A\u0628\u062F\u0627\u0644 \u0635\u0648\u0631\u0629 \u0627\u0644\u0639\u0646\u0635\u0631 \u0627\u0644\u0623\u0635\u0644\u064A: ${selectedNativeElement.label || '\u0639\u0646\u0635\u0631 \u0635\u0648\u0631\u064A'}`);
+                                recordActivity('\u0627\u0633\u062A\u0628\u062F\u0627\u0644 \u0635\u0648\u0631\u0629 \u0639\u0646\u0635\u0631 \u0642\u0627\u0644\u0628', selectedNativeElement.label || selectedNativeElementId);
+                              }}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>{'\u0642\u0635 \u0623\u0641\u0642\u064A'}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={Math.round(toFiniteNumber(selectedNativeElement.cropX, 50))}
+                              onChange={(event) => setNativeElementNumber(selectedNativeElementId, 'cropX', event.target.value, 50)}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>{'\u0642\u0635 \u0631\u0623\u0633\u064A'}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={Math.round(toFiniteNumber(selectedNativeElement.cropY, 50))}
+                              onChange={(event) => setNativeElementNumber(selectedNativeElementId, 'cropY', event.target.value, 50)}
+                            />
+                          </label>
+                          <div className="studio-field studio-field--full">
+                            <button type="button" className="mini-btn" onClick={openSelectedNativeCropEditor}>
+                              {'\u0641\u062A\u062D \u0646\u0627\u0641\u0630\u0629 \u0627\u0644\u0642\u0635 \u0627\u0644\u0628\u0635\u0631\u064A'}
+                            </button>
+                          </div>
+                        </>
+                      ) : null}
                     </div>
 
                     <p className="studio-help-text">
-                      اضغط على العنصر الزخرفي أو الصورة الأصلية داخل المحاكي لتحديدها، ثم اسحبها مباشرة. بعد التحديد يمكنك أيضًا ضبط موضعها وتكبيرها من هنا بدون التأثير على بنية القالب الأصلية.
+                      اضغط على العنصر الزخرفي أو الصورة الأصلية داخل المحاكي لتحديدها، ثم اسحبها مباشرة. ويمكنك أيضًا فتح نافذة القص البصري لضبط الصورة داخل إطار مخصص بدل الاعتماد على السحب داخل المعاينة فقط.
                     </p>
                   </>
                 ) : (
@@ -3006,6 +3584,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
           trigger={<button type="button" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1}>open</button>}
         />
       ) : null}
+      <MediaCropModal
+        request={cropMediaRequest}
+        onClose={() => setCropMediaRequest(null)}
+        onApply={applyMediaCropChanges}
+      />
     </div>
   );
 }

@@ -1106,6 +1106,8 @@ export const invitationRenderConfigSchema = z.object({
     scale: z.number().optional(),
     rotation: z.number().optional(),
     opacity: z.number().optional(),
+    cropX: z.number().optional(),
+    cropY: z.number().optional(),
     hidden: z.boolean().optional(),
     locked: z.boolean().optional(),
   })).default({}),

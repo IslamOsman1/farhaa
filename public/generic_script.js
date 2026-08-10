@@ -555,6 +555,10 @@
         background: #7f2a1f;
         color: #fff;
       }
+      .farha-native-overlay__btn[data-active="true"] {
+        background: #7f2a1f;
+        color: #fff;
+      }
       .farha-native-overlay__btn--wide {
         width: auto;
         min-width: 56px;
@@ -815,9 +819,22 @@
       const computedBackgroundImage = window.getComputedStyle(node).backgroundImage;
       node.dataset.farhaNativeBaseBackgroundImage = node.style.backgroundImage || (computedBackgroundImage !== 'none' ? computedBackgroundImage : '');
     }
+    if (node.dataset.farhaNativeBaseBackgroundPosition === undefined) {
+      node.dataset.farhaNativeBaseBackgroundPosition = node.style.backgroundPosition || '';
+    }
+    if (node.dataset.farhaNativeBaseBackgroundSize === undefined) {
+      node.dataset.farhaNativeBaseBackgroundSize = node.style.backgroundSize || '';
+    }
     if (node.dataset.farhaNativeBaseSrc === undefined) {
       const mediaNode = ((node.tagName || '').toLowerCase() === 'picture' ? node.querySelector('img') : node);
       node.dataset.farhaNativeBaseSrc = mediaNode?.getAttribute?.('src') || '';
+    }
+    const imageNode = getNativeImageTarget(node);
+    if (imageNode?.dataset?.farhaNativeBaseObjectPosition === undefined) {
+      imageNode.dataset.farhaNativeBaseObjectPosition = imageNode.style.objectPosition || '';
+    }
+    if (imageNode?.dataset?.farhaNativeBaseObjectFit === undefined) {
+      imageNode.dataset.farhaNativeBaseObjectFit = imageNode.style.objectFit || '';
     }
 
     node.classList.add('farha-native-editable-target');
@@ -836,6 +853,60 @@
     }
 
     return node;
+  }
+
+  function extractCssUrl(value) {
+    if (!value || value === 'none') {
+      return '';
+    }
+
+    const match = String(value).match(/url\((['"]?)(.*?)\1\)/i);
+    return match?.[2] || '';
+  }
+
+  function getNodeAspectRatio(node) {
+    const rect = node?.getBoundingClientRect?.();
+    if (!rect || rect.height <= 0 || rect.width <= 0) {
+      return 390 / 844;
+    }
+
+    return rect.width / rect.height;
+  }
+
+  function getNativeElementPreviewUrl(node) {
+    if (!node) {
+      return '';
+    }
+
+    ensureNativeElementBaseState(node);
+    const targetNode = getNativeImageTarget(node);
+    const tagName = (targetNode?.tagName || '').toLowerCase();
+
+    if (tagName === 'img') {
+      return targetNode.currentSrc || targetNode.getAttribute('src') || node.dataset.farhaNativeBaseSrc || '';
+    }
+
+    const inlineBackground = node.style.backgroundImage && node.style.backgroundImage !== 'none'
+      ? node.style.backgroundImage
+      : '';
+    const computedBackground = window.getComputedStyle(node).backgroundImage;
+    return extractCssUrl(inlineBackground) || extractCssUrl(computedBackground) || extractCssUrl(node.dataset.farhaNativeBaseBackgroundImage || '');
+  }
+
+  function getNativeElementBasePreviewUrl(node) {
+    if (!node) {
+      return '';
+    }
+
+    ensureNativeElementBaseState(node);
+    const targetNode = getNativeImageTarget(node);
+    const tagName = (targetNode?.tagName || '').toLowerCase();
+
+    if (tagName === 'img') {
+      return node.dataset.farhaNativeBaseSrc || targetNode.getAttribute('src') || '';
+    }
+
+    return extractCssUrl(node.dataset.farhaNativeBaseBackgroundImage || '') || node.dataset.farhaNativeBaseSrc || '';
   }
 
   function isNativeReplaceableImageNode(node) {
@@ -874,6 +945,30 @@
     }
   }
 
+  function applyNativeCropToNode(node, override = {}) {
+    if (!node || !isNativeReplaceableImageNode(node)) {
+      return;
+    }
+
+    ensureNativeElementBaseState(node);
+    const cropX = clamp(Number.isFinite(Number(override?.cropX)) ? Number(override.cropX) : 50, 0, 100);
+    const cropY = clamp(Number.isFinite(Number(override?.cropY)) ? Number(override.cropY) : 50, 0, 100);
+    const imageNode = getNativeImageTarget(node);
+    const imageTagName = (imageNode?.tagName || '').toLowerCase();
+
+    if (imageTagName === 'img') {
+      const baseFit = imageNode.dataset.farhaNativeBaseObjectFit || '';
+      imageNode.style.objectFit = baseFit && baseFit !== 'fill' ? baseFit : 'cover';
+      imageNode.style.objectPosition = `${cropX}% ${cropY}%`;
+    }
+
+    if (window.getComputedStyle(node).backgroundImage !== 'none' || node.dataset.farhaNativeBaseBackgroundImage) {
+      const baseSize = node.dataset.farhaNativeBaseBackgroundSize || '';
+      node.style.backgroundSize = baseSize && baseSize !== 'auto' && baseSize !== 'auto auto' ? baseSize : 'cover';
+      node.style.backgroundPosition = `${cropX}% ${cropY}%`;
+    }
+  }
+
   function resetNativeElementNode(node) {
     if (!node) {
       return;
@@ -885,10 +980,18 @@
     node.style.display = node.dataset.farhaNativeBaseDisplay || '';
     node.style.pointerEvents = node.dataset.farhaNativeBasePointerEvents || '';
     node.style.touchAction = node.dataset.farhaNativeBaseTouchAction || '';
+    node.style.backgroundPosition = node.dataset.farhaNativeBaseBackgroundPosition || '';
+    node.style.backgroundSize = node.dataset.farhaNativeBaseBackgroundSize || '';
     applyNativeMediaToNode(node, '');
+    const imageNode = getNativeImageTarget(node);
+    if (imageNode) {
+      imageNode.style.objectPosition = imageNode.dataset.farhaNativeBaseObjectPosition || '';
+      imageNode.style.objectFit = imageNode.dataset.farhaNativeBaseObjectFit || '';
+    }
     node.dataset.farhaSelected = 'false';
     node.dataset.farhaLocked = 'false';
     node.dataset.farhaHidden = 'false';
+    node.dataset.farhaCropMode = 'false';
   }
 
   function applyNativeOverrideToNode(node, override = {}) {
@@ -924,6 +1027,7 @@
     node.dataset.farhaHidden = hidden ? 'true' : 'false';
     node.dataset.farhaSelected = String(runtimeState.selectedNativeElementId || '') === String(node.dataset.farhaNativeId || '') ? 'true' : 'false';
     applyNativeMediaToNode(node, mediaUrl);
+    applyNativeCropToNode(node, override);
   }
 
   function getNativeElementCandidatesRoot() {
@@ -991,6 +1095,7 @@
           <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="Move element">MOVE</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="Replace image">REPLACE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="Crop image">CROP</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="Delete element">X</button>
@@ -1050,6 +1155,7 @@
     const label = overlay.querySelector('[data-farha-native-role="label"]');
     const lockButton = overlay.querySelector('[data-farha-native-action="lock"]');
     const replaceButton = overlay.querySelector('[data-farha-native-action="replace"]');
+    const cropButton = overlay.querySelector('[data-farha-native-action="crop-toggle"]');
 
     overlay.dataset.visible = 'true';
     overlay.style.pointerEvents = 'none';
@@ -1071,6 +1177,11 @@
     }
     if (replaceButton) {
       replaceButton.style.display = isNativeReplaceableImageNode(selectedNode) ? 'inline-flex' : 'none';
+    }
+    if (cropButton) {
+      const canCrop = isNativeReplaceableImageNode(selectedNode);
+      cropButton.style.display = canCrop ? 'inline-flex' : 'none';
+      cropButton.dataset.active = canCrop && selectedNode.dataset.farhaCropMode === 'true' ? 'true' : 'false';
     }
   }
 
@@ -1099,6 +1210,9 @@
             label: options.label || getNativeElementLabel(node),
             selector: options.selector || getNativeElementSelectorHint(node) || nativeId,
             kind: options.kind || getNativeElementKind(node),
+            previewUrl: getNativeElementPreviewUrl(node),
+            basePreviewUrl: getNativeElementBasePreviewUrl(node),
+            aspectRatio: getNodeAspectRatio(node),
           }
         : { id: null },
     }, '*');
@@ -3604,6 +3718,9 @@
           label: getNativeElementLabel(node),
           selector: getNativeElementSelectorHint(node) || id,
           kind: getNativeElementKind(node),
+          previewUrl: getNativeElementPreviewUrl(node),
+          basePreviewUrl: getNativeElementBasePreviewUrl(node),
+          aspectRatio: getNodeAspectRatio(node),
         },
       }, '*');
     };
@@ -3692,6 +3809,33 @@
         startRect: node.getBoundingClientRect(),
       };
       node.style.cursor = 'grabbing';
+      selectNativeElement(node, {
+        label: activeTransform.label,
+        selector: activeTransform.selector,
+        kind: activeTransform.nativeKind,
+        silent: true,
+      });
+    };
+
+    const startNativeCropTransform = (node, point) => {
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      ensureNativeElementBaseState(node);
+      activeTransform = {
+        scope: 'native',
+        kind: 'crop',
+        node,
+        id,
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        nativeKind: currentOverride.kind || getNativeElementKind(node),
+        startX: point.x,
+        startY: point.y,
+        startCropX: toPxNumber(currentOverride.cropX, 50),
+        startCropY: toPxNumber(currentOverride.cropY, 50),
+        startRect: node.getBoundingClientRect(),
+      };
+      node.style.cursor = 'move';
       selectNativeElement(node, {
         label: activeTransform.label,
         selector: activeTransform.selector,
@@ -3863,6 +4007,28 @@
           return;
         }
 
+        if (action === 'crop-toggle') {
+          if (!isNativeReplaceableImageNode(selectedNode)) {
+            return;
+          }
+
+          window.parent.postMessage({
+            type: 'FARHA_MEDIA_CROP_REQUEST',
+            payload: {
+              scope: 'native',
+              id: selectedId,
+              label: baseOverride.label,
+              previewUrl: getNativeElementPreviewUrl(selectedNode),
+              basePreviewUrl: getNativeElementBasePreviewUrl(selectedNode),
+              persistedUrl: baseOverride.mediaUrl == null ? '' : String(baseOverride.mediaUrl).trim(),
+              cropX: Number.isFinite(Number(baseOverride.cropX)) ? Number(baseOverride.cropX) : 50,
+              cropY: Number.isFinite(Number(baseOverride.cropY)) ? Number(baseOverride.cropY) : 50,
+              aspectRatio: getNodeAspectRatio(selectedNode),
+            },
+          }, '*');
+          return;
+        }
+
         if (action === 'reset') {
           const nextOverrides = {
             ...(runtimeState.nativeElementOverrides || {}),
@@ -3875,6 +4041,8 @@
             payload: {
               id: selectedId,
               label: baseOverride.label,
+              basePreviewUrl: getNativeElementBasePreviewUrl(selectedNode),
+              aspectRatio: getNodeAspectRatio(selectedNode),
             },
           }, '*');
           return;
@@ -3932,6 +4100,10 @@
 
           event.preventDefault();
           event.stopPropagation();
+          if (nativeTarget.dataset.farhaCropMode === 'true' && isNativeReplaceableImageNode(nativeTarget)) {
+            startNativeCropTransform(nativeTarget, point);
+            return;
+          }
           startNativeTransform(nativeTarget, point);
           return;
         }
@@ -3982,13 +4154,20 @@
       if (action === 'crop-toggle') {
         event.preventDefault();
         event.stopPropagation();
-        const nextCropMode = wrapper.dataset.cropMode === 'true' ? 'false' : 'true';
-        wrapper.dataset.cropMode = nextCropMode;
-        const cropButton = wrapper.querySelector('[data-farha-action="crop-toggle"]');
-        if (cropButton) {
-          cropButton.style.background = nextCropMode === 'true' ? '#7f2a1f' : 'rgba(255,255,255,0.96)';
-          cropButton.style.color = nextCropMode === 'true' ? '#fff' : '#7f2a1f';
-        }
+        const customImageNode = wrapper.querySelector('.farha-custom-element__image');
+        window.parent.postMessage({
+          type: 'FARHA_MEDIA_CROP_REQUEST',
+          payload: {
+            scope: 'custom',
+            id: wrapper.dataset.id,
+            label: wrapper.dataset.name || 'صورة حرة',
+            previewUrl: customImageNode?.currentSrc || customImageNode?.src || '',
+            basePreviewUrl: customImageNode?.currentSrc || customImageNode?.src || '',
+            cropX: toPxNumber(wrapper.dataset.cropX, 50),
+            cropY: toPxNumber(wrapper.dataset.cropY, 50),
+            aspectRatio: Math.max((wrapper.offsetWidth || 150) / Math.max(wrapper.offsetHeight || 150, 1), 0.35),
+          },
+        }, '*');
         return;
       }
 
@@ -4073,6 +4252,26 @@
           };
           applyLocalNativeOverride(activeTransform.id, activeTransform.node, nextOverride);
           showSnapGuides(snap.guides, targetRect);
+          return;
+        }
+
+        if (activeTransform.kind === 'crop') {
+          hideSnapGuides();
+          const dx = point.x - activeTransform.startX;
+          const dy = point.y - activeTransform.startY;
+          const width = Math.max(activeTransform.startRect.width, 1);
+          const height = Math.max(activeTransform.startRect.height, 1);
+          const nextCropX = clamp(activeTransform.startCropX - ((dx / width) * 100), 0, 100);
+          const nextCropY = clamp(activeTransform.startCropY - ((dy / height) * 100), 0, 100);
+          const nextOverride = {
+            ...(runtimeState.nativeElementOverrides?.[activeTransform.id] || {}),
+            label: activeTransform.label,
+            selector: activeTransform.selector,
+            kind: activeTransform.nativeKind,
+            cropX: nextCropX,
+            cropY: nextCropY,
+          };
+          applyLocalNativeOverride(activeTransform.id, activeTransform.node, nextOverride);
           return;
         }
 
@@ -4186,6 +4385,9 @@
         persistNativeUpdate(id, node, {
           x: toPxNumber(currentOverride.x, 0),
           y: toPxNumber(currentOverride.y, 0),
+          mediaUrl: currentOverride.mediaUrl == null ? '' : String(currentOverride.mediaUrl).trim(),
+          cropX: Number.isFinite(Number(currentOverride.cropX)) ? Number(currentOverride.cropX) : 50,
+          cropY: Number.isFinite(Number(currentOverride.cropY)) ? Number(currentOverride.cropY) : 50,
           scale: Number.isFinite(Number(currentOverride.scale)) ? Number(currentOverride.scale) : 1,
           rotation: Number.isFinite(Number(currentOverride.rotation)) ? Number(currentOverride.rotation) : 0,
           opacity: Number.isFinite(Number(currentOverride.opacity)) ? Number(currentOverride.opacity) : 1,
@@ -4506,11 +4708,10 @@
           replaceButton.style.fontSize = '10px';
           replaceButton.style.fontWeight = '800';
           controlsRoot.appendChild(replaceButton);
-          const cropButton = makeActionButton('✂', 'crop-toggle');
-          if (wrapper.dataset.cropMode === 'true') {
-            cropButton.style.background = '#7f2a1f';
-            cropButton.style.color = '#fff';
-          }
+          const cropButton = makeActionButton('CROP', 'crop-toggle');
+          cropButton.style.width = '64px';
+          cropButton.style.fontSize = '10px';
+          cropButton.style.fontWeight = '800';
           controlsRoot.appendChild(cropButton);
         }
         const deleteButton = makeActionButton('X', 'delete');
