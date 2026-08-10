@@ -6,6 +6,29 @@ import {
 } from '@/lib/template-system';
 
 const studioRecordSchema = z.record(z.any());
+const customElementDeviceOverrideSchema = z.object({
+  x: z.number().optional(),
+  y: z.number().optional(),
+  fontSize: z.string().optional(),
+  width: z.string().optional(),
+  height: z.string().optional(),
+  opacity: z.number().optional(),
+  rotation: z.number().optional(),
+  cropX: z.number().optional(),
+  cropY: z.number().optional(),
+});
+const nativeElementOverrideSchema = z.object({
+  label: z.string().optional(),
+  selector: z.string().optional(),
+  kind: z.string().optional(),
+  x: z.number().optional(),
+  y: z.number().optional(),
+  scale: z.number().optional(),
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
+  hidden: z.boolean().optional(),
+  locked: z.boolean().optional(),
+});
 
 export const studioDraftSchema = z.object({
   templateSlug: z.string().min(1),
@@ -33,7 +56,13 @@ export const studioDraftSchema = z.object({
     cropY: z.number().optional(),
     hidden: z.boolean().optional(),
     locked: z.boolean().optional(),
+    deviceOverrides: z.object({
+      mobile: customElementDeviceOverrideSchema.optional(),
+      tablet: customElementDeviceOverrideSchema.optional(),
+      desktop: customElementDeviceOverrideSchema.optional(),
+    }).optional(),
   })).default([]),
+  nativeElementOverrides: z.record(nativeElementOverrideSchema).default({}),
   textOverrides: z.record(z.string()).default({}),
   uiConfig: studioRecordSchema.default({ bilingualEnabled: false, defaultLocale: 'ar' }),
   devicePreview: studioRecordSchema.default({ mode: 'mobile', width: 390, height: 844 }),
@@ -115,6 +144,10 @@ export function createStudioDraftFromManifest(manifest, seed = {}) {
       ...seed.openingConfig,
     },
     customElements: Array.isArray(seed.customElements) ? seed.customElements : [],
+    nativeElementOverrides:
+      seed.nativeElementOverrides && typeof seed.nativeElementOverrides === 'object' && !Array.isArray(seed.nativeElementOverrides)
+        ? seed.nativeElementOverrides
+        : {},
     textOverrides: seed.textOverrides && typeof seed.textOverrides === 'object' ? seed.textOverrides : {},
     uiConfig: {
       bilingualEnabled: false,
@@ -143,6 +176,12 @@ export function createStudioDraftFromInvitation({ invitation, manifest }) {
     sectionConfig: normalized.sectionConfig,
     openingConfig: normalized.openingConfig,
     customElements: Array.isArray(invitation?.contentConfig?.__customElements) ? invitation.contentConfig.__customElements : [],
+    nativeElementOverrides:
+      invitation?.contentConfig?.__nativeElementOverrides
+      && typeof invitation.contentConfig.__nativeElementOverrides === 'object'
+      && !Array.isArray(invitation.contentConfig.__nativeElementOverrides)
+        ? invitation.contentConfig.__nativeElementOverrides
+        : {},
     textOverrides: invitation?.contentConfig?.__textOverrides && typeof invitation.contentConfig.__textOverrides === 'object'
       ? invitation.contentConfig.__textOverrides
       : {},
@@ -176,6 +215,12 @@ export function buildStudioDraftFromSession({ session, manifest }) {
     sectionConfig: session.config?.sectionConfig || {},
     openingConfig: session.selectedOpeningConfig || session.config?.openingConfig || {},
     customElements: Array.isArray(session.config?.customElements) ? session.config.customElements : [],
+    nativeElementOverrides:
+      session.config?.nativeElementOverrides
+      && typeof session.config.nativeElementOverrides === 'object'
+      && !Array.isArray(session.config.nativeElementOverrides)
+        ? session.config.nativeElementOverrides
+        : {},
     textOverrides: session.config?.textOverrides && typeof session.config.textOverrides === 'object' ? session.config.textOverrides : {},
     uiConfig: session.config?.uiConfig || {},
     devicePreview: session.devicePreview || {},
@@ -200,6 +245,7 @@ export function buildStudioSessionUpdateData({ manifest, draft, openingId = null
       sectionConfig: parsed.sectionConfig,
       openingConfig: parsed.openingConfig,
       customElements: parsed.customElements,
+      nativeElementOverrides: parsed.nativeElementOverrides,
       textOverrides: parsed.textOverrides,
       uiConfig: parsed.uiConfig,
     },
@@ -234,8 +280,12 @@ export function buildStudioRenderPayload({ session, manifest, opening }) {
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
     customElements: draft.customElements,
+    nativeElementOverrides: draft.nativeElementOverrides,
     textOverrides: draft.textOverrides,
-    uiConfig: draft.uiConfig,
+    uiConfig: {
+      ...(draft.uiConfig || {}),
+      deviceMode: draft.devicePreview?.mode || 'mobile',
+    },
   };
 
   return {

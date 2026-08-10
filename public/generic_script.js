@@ -167,7 +167,11 @@
     activeLocale: 'ar',
     languageToggle: null,
     selectedCustomElementId: null,
+    selectedNativeElementId: null,
+    nativeElementOverrides: {},
     selectedTemplateTextPath: null,
+    activeDeviceMode: 'mobile',
+    deviceResizeHandler: null,
     activeTextEditor: null,
     entryPassUi: null,
   };
@@ -387,6 +391,9 @@
 
   function selectTemplateText(path, options = {}) {
     runtimeState.selectedTemplateTextPath = path || null;
+    if (path) {
+      selectNativeElement(null, { silent: true });
+    }
     syncTemplateTextSelection();
 
     window.parent.postMessage({
@@ -400,6 +407,415 @@
           }
         : { path: null },
     }, '*');
+  }
+
+  function detectViewportDeviceMode() {
+    const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 390;
+    if (viewportWidth <= 520) {
+      return 'mobile';
+    }
+    if (viewportWidth <= 980) {
+      return 'tablet';
+    }
+    return 'desktop';
+  }
+
+  function resolveRenderDeviceMode(renderConfig) {
+    return renderConfig?.ui?.deviceMode || detectViewportDeviceMode();
+  }
+
+  function resolveCustomElementForDevice(element, deviceMode) {
+    if (!element || !deviceMode) {
+      return element;
+    }
+
+    const deviceOverrides = element.deviceOverrides && typeof element.deviceOverrides === 'object'
+      ? element.deviceOverrides[deviceMode]
+      : null;
+
+    if (!deviceOverrides || typeof deviceOverrides !== 'object') {
+      return element;
+    }
+
+    return {
+      ...element,
+      ...deviceOverrides,
+      deviceOverrides: element.deviceOverrides,
+    };
+  }
+
+  function normalizeNativeElementOverrides(rawOverrides) {
+    if (Array.isArray(rawOverrides)) {
+      return rawOverrides.reduce((accumulator, item) => {
+        if (!item || typeof item !== 'object' || !item.id) {
+          return accumulator;
+        }
+
+        accumulator[item.id] = item;
+        return accumulator;
+      }, {});
+    }
+
+    if (!rawOverrides || typeof rawOverrides !== 'object') {
+      return {};
+    }
+
+    return rawOverrides;
+  }
+
+  function ensureNativeElementStyleTag() {
+    if (document.getElementById('farha-native-editable-style')) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = 'farha-native-editable-style';
+    style.textContent = `
+      .farha-native-editable-target {
+        transition: box-shadow 0.18s ease, outline-color 0.18s ease, opacity 0.18s ease;
+      }
+      .farha-native-editable-target[data-farha-selected="true"] {
+        outline: 2px solid rgba(127, 42, 31, 0.82) !important;
+        outline-offset: 4px !important;
+        box-shadow: 0 0 0 3px rgba(255,255,255,0.88), 0 0 0 6px rgba(127, 42, 31, 0.18) !important;
+        cursor: move !important;
+      }
+      .farha-native-editable-target[data-farha-selected="true"][data-farha-locked="true"] {
+        outline-style: dashed !important;
+        cursor: not-allowed !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function getNativeElementSelectorHint(node) {
+    if (!node || !node.tagName) {
+      return '';
+    }
+
+    if (node.id) {
+      return `#${node.id}`;
+    }
+
+    if (node.dataset?.farhaSlot) {
+      return `[data-farha-slot="${node.dataset.farhaSlot}"]`;
+    }
+
+    const stableClasses = Array.from(node.classList || [])
+      .filter((className) => className && !className.startsWith('farha-'))
+      .slice(0, 2);
+
+    if (stableClasses.length) {
+      return `${node.tagName.toLowerCase()}.${stableClasses.join('.')}`;
+    }
+
+    return node.tagName.toLowerCase();
+  }
+
+  function getNativeElementKind(node) {
+    const tagName = (node?.tagName || '').toLowerCase();
+    if (['img', 'video', 'svg', 'canvas', 'picture'].includes(tagName)) {
+      return 'media';
+    }
+    if (window.getComputedStyle(node).backgroundImage !== 'none') {
+      return 'media';
+    }
+    return 'native';
+  }
+
+  function getNativeElementLabel(node) {
+    if (!node) {
+      return 'عنصر من القالب';
+    }
+
+    const textLabel = (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('alt') || '').trim();
+    if (textLabel) {
+      return textLabel;
+    }
+
+    const contentLabel = (node.textContent || '').replace(/\s+/g, ' ').trim();
+    if (contentLabel) {
+      return contentLabel.slice(0, 42);
+    }
+
+    if (node.id) {
+      return node.id;
+    }
+
+    if (node.dataset?.farhaSlot) {
+      return node.dataset.farhaSlot;
+    }
+
+    const className = Array.from(node.classList || [])
+      .filter((item) => item && !item.startsWith('farha-'))[0];
+    return className || node.tagName.toLowerCase();
+  }
+
+  function buildNativeElementId(node) {
+    if (!node) {
+      return '';
+    }
+
+    if (node.dataset?.farhaNativeId) {
+      return node.dataset.farhaNativeId;
+    }
+
+    const parts = [];
+    let current = node;
+    while (current && current !== document.body && current !== document.documentElement) {
+      if (current.id) {
+        parts.unshift(`${current.tagName.toLowerCase()}#${current.id}`);
+        break;
+      }
+
+      if (current.dataset?.farhaSlot) {
+        parts.unshift(`${current.tagName.toLowerCase()}[slot=${current.dataset.farhaSlot}]`);
+        break;
+      }
+
+      const parent = current.parentElement;
+      if (!parent) {
+        break;
+      }
+
+      const siblings = Array.from(parent.children).filter(
+        (child) => (child.tagName || '').toLowerCase() === (current.tagName || '').toLowerCase(),
+      );
+      const index = Math.max(0, siblings.indexOf(current));
+      const classHint = Array.from(current.classList || [])
+        .filter((className) => className && !className.startsWith('farha-'))
+        .slice(0, 1)
+        .join('.');
+      const classSuffix = classHint ? `.${classHint}` : '';
+      parts.unshift(`${current.tagName.toLowerCase()}${classSuffix}:nth-of-type(${index + 1})`);
+      current = parent;
+    }
+
+    const nativeId = parts.join('>');
+    node.dataset.farhaNativeId = nativeId;
+    return nativeId;
+  }
+
+  function isNativeElementCandidate(node) {
+    if (!node || node.nodeType !== 1) {
+      return false;
+    }
+
+    if (node.closest('#farha-custom-elements, .farha-floating-text-editor, #farha-template-bar')) {
+      return false;
+    }
+
+    if (node.matches('html, body, iframe, form, input, textarea, select, option, button, label, a')) {
+      return false;
+    }
+
+    if (node.closest('form, input, textarea, select, button, label, a')) {
+      return false;
+    }
+
+    if (node.classList?.contains('farha-studio-editable') || node.closest('.farha-studio-editable')) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(node);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') {
+      return false;
+    }
+
+    const rect = node.getBoundingClientRect();
+    if (rect.width < 24 || rect.height < 24) {
+      return false;
+    }
+
+    const tagName = (node.tagName || '').toLowerCase();
+    const hasVisualMedia = ['img', 'video', 'svg', 'canvas', 'picture'].includes(tagName) || style.backgroundImage !== 'none';
+    const isDecorativeLayer = ['absolute', 'fixed', 'sticky'].includes(style.position) || style.transform !== 'none' || Boolean(node.dataset?.farhaSlot);
+    const coversWholeViewport = rect.width > (window.innerWidth * 0.98) && rect.height > (window.innerHeight * 0.86);
+
+    if (hasVisualMedia) {
+      return !coversWholeViewport || isDecorativeLayer;
+    }
+
+    return isDecorativeLayer && !coversWholeViewport;
+  }
+
+  function resolveNativeElementTarget(startNode) {
+    let current = startNode?.nodeType === 1 ? startNode : startNode?.parentElement;
+    while (current && current !== document.body && current !== document.documentElement) {
+      if (current.closest('.farha-custom-element')) {
+        return null;
+      }
+
+      if (isNativeElementCandidate(current)) {
+        return current;
+      }
+
+      current = current.parentElement;
+    }
+
+    return null;
+  }
+
+  function ensureNativeElementBaseState(node) {
+    if (!node) {
+      return;
+    }
+
+    if (node.dataset.farhaNativeBaseTransform === undefined) {
+      const inlineTransform = node.style.transform;
+      const computedTransform = window.getComputedStyle(node).transform;
+      node.dataset.farhaNativeBaseTransform = inlineTransform || (computedTransform !== 'none' ? computedTransform : '');
+    }
+    if (node.dataset.farhaNativeBaseOpacity === undefined) {
+      node.dataset.farhaNativeBaseOpacity = node.style.opacity || '';
+    }
+    if (node.dataset.farhaNativeBaseDisplay === undefined) {
+      node.dataset.farhaNativeBaseDisplay = node.style.display || '';
+    }
+    if (node.dataset.farhaNativeBasePointerEvents === undefined) {
+      node.dataset.farhaNativeBasePointerEvents = node.style.pointerEvents || '';
+    }
+    if (node.dataset.farhaNativeBaseTouchAction === undefined) {
+      node.dataset.farhaNativeBaseTouchAction = node.style.touchAction || '';
+    }
+
+    node.classList.add('farha-native-editable-target');
+    node.dataset.farhaNativeManaged = 'true';
+    buildNativeElementId(node);
+  }
+
+  function resetNativeElementNode(node) {
+    if (!node) {
+      return;
+    }
+
+    ensureNativeElementBaseState(node);
+    node.style.transform = node.dataset.farhaNativeBaseTransform || '';
+    node.style.opacity = node.dataset.farhaNativeBaseOpacity || '';
+    node.style.display = node.dataset.farhaNativeBaseDisplay || '';
+    node.style.pointerEvents = node.dataset.farhaNativeBasePointerEvents || '';
+    node.style.touchAction = node.dataset.farhaNativeBaseTouchAction || '';
+    node.dataset.farhaSelected = 'false';
+    node.dataset.farhaLocked = 'false';
+    node.dataset.farhaHidden = 'false';
+  }
+
+  function applyNativeOverrideToNode(node, override = {}) {
+    if (!node) {
+      return;
+    }
+
+    ensureNativeElementBaseState(node);
+    const baseTransform = node.dataset.farhaNativeBaseTransform || '';
+    const x = Number.isFinite(Number(override?.x)) ? Number(override.x) : 0;
+    const y = Number.isFinite(Number(override?.y)) ? Number(override.y) : 0;
+    const scale = Math.max(0.1, Number.isFinite(Number(override?.scale)) ? Number(override.scale) : 1);
+    const rotation = Number.isFinite(Number(override?.rotation)) ? Number(override.rotation) : 0;
+    const opacity = Math.min(1, Math.max(0.05, Number.isFinite(Number(override?.opacity)) ? Number(override.opacity) : 1));
+    const hidden = Boolean(override?.hidden);
+    const locked = Boolean(override?.locked);
+    const nextTransform = [
+      baseTransform,
+      `translate3d(${x}px, ${y}px, 0)`,
+      `rotate(${rotation}deg)`,
+      `scale(${scale})`,
+    ].filter(Boolean).join(' ');
+
+    node.style.transform = nextTransform.trim();
+    node.style.opacity = String(opacity);
+    node.style.display = hidden ? 'none' : (node.dataset.farhaNativeBaseDisplay || '');
+    node.style.pointerEvents = hidden ? 'none' : (node.dataset.farhaNativeBasePointerEvents || '');
+    node.style.touchAction = runtimeState.preview && runtimeState.selectedNativeElementId === node.dataset.farhaNativeId && !locked
+      ? 'none'
+      : (node.dataset.farhaNativeBaseTouchAction || '');
+    node.dataset.farhaLocked = locked ? 'true' : 'false';
+    node.dataset.farhaHidden = hidden ? 'true' : 'false';
+    node.dataset.farhaSelected = String(runtimeState.selectedNativeElementId || '') === String(node.dataset.farhaNativeId || '') ? 'true' : 'false';
+  }
+
+  function getNativeElementCandidatesRoot() {
+    return document.getElementById('allrecords')
+      || document.getElementById('invitation-container')
+      || document.getElementById('main-content')
+      || document.getElementById('invite')
+      || document.getElementById('site')
+      || document.body;
+  }
+
+  function getAllNativeElementCandidates() {
+    return Array.from(getNativeElementCandidatesRoot().querySelectorAll('*')).filter(isNativeElementCandidate);
+  }
+
+  function findNativeElementById(id) {
+    if (!id) {
+      return null;
+    }
+
+    return getAllNativeElementCandidates().find((node) => buildNativeElementId(node) === id) || null;
+  }
+
+  function selectNativeElement(nodeOrId, options = {}) {
+    const node = typeof nodeOrId === 'string' ? findNativeElementById(nodeOrId) : nodeOrId;
+    const nativeId = node ? buildNativeElementId(node) : (typeof nodeOrId === 'string' ? nodeOrId : null);
+    runtimeState.selectedNativeElementId = nativeId || null;
+
+    queryAll('[data-farha-native-managed="true"]').forEach((candidate) => {
+      candidate.dataset.farhaSelected = String(candidate.dataset.farhaNativeId || '') === String(runtimeState.selectedNativeElementId || '') ? 'true' : 'false';
+      const override = runtimeState.nativeElementOverrides?.[candidate.dataset.farhaNativeId] || {};
+      applyNativeOverrideToNode(candidate, override);
+    });
+
+    if (options.silent) {
+      return;
+    }
+
+    window.parent.postMessage({
+      type: 'FARHA_NATIVE_ELEMENT_SELECT',
+      payload: nativeId
+        ? {
+            id: nativeId,
+            label: options.label || getNativeElementLabel(node),
+            selector: options.selector || getNativeElementSelectorHint(node) || nativeId,
+            kind: options.kind || getNativeElementKind(node),
+          }
+        : { id: null },
+    }, '*');
+  }
+
+  function applyNativeElementOverrides(rawOverrides) {
+    ensureNativeElementStyleTag();
+    const overrides = normalizeNativeElementOverrides(rawOverrides);
+    runtimeState.nativeElementOverrides = overrides;
+
+    queryAll('[data-farha-native-managed="true"]').forEach((node) => resetNativeElementNode(node));
+
+    const candidates = getAllNativeElementCandidates();
+    candidates.forEach((node) => {
+      const nativeId = buildNativeElementId(node);
+      const override = overrides[nativeId];
+      if (override) {
+        applyNativeOverrideToNode(node, override);
+      } else {
+        ensureNativeElementBaseState(node);
+        node.dataset.farhaSelected = String(runtimeState.selectedNativeElementId || '') === String(nativeId) ? 'true' : 'false';
+        node.dataset.farhaLocked = 'false';
+        node.dataset.farhaHidden = 'false';
+      }
+    });
+
+    if (runtimeState.selectedNativeElementId) {
+      const selectedNode = findNativeElementById(runtimeState.selectedNativeElementId);
+      if (selectedNode) {
+        selectNativeElement(selectedNode, {
+          label: overrides[runtimeState.selectedNativeElementId]?.label || getNativeElementLabel(selectedNode),
+          selector: overrides[runtimeState.selectedNativeElementId]?.selector || getNativeElementSelectorHint(selectedNode),
+          kind: overrides[runtimeState.selectedNativeElementId]?.kind || getNativeElementKind(selectedNode),
+          silent: true,
+        });
+      } else {
+        runtimeState.selectedNativeElementId = null;
+      }
+    }
   }
 
   function initUniversalTextEditor() {
@@ -611,6 +1027,10 @@
         calendar: true,
       },
       theme: {},
+      nativeElementOverrides:
+        cfg.__nativeElementOverrides && typeof cfg.__nativeElementOverrides === 'object'
+          ? cfg.__nativeElementOverrides
+          : {},
       preview: false,
       ui: {
         showPromoBar: true,
@@ -632,6 +1052,7 @@
 
     runtimeState.baseFields = fields;
     runtimeState.activeLocale = renderConfig.ui?.defaultLocale || renderConfig.locale || 'ar';
+    runtimeState.activeDeviceMode = resolveRenderDeviceMode(renderConfig);
 
     window.__INVITE__ = {
       ...(window.__INVITE__ || {}),
@@ -656,7 +1077,24 @@
     
     // NEW: apply universal text overrides
     applyTextOverrides(renderConfig.textOverrides || []);
+    applyNativeElementOverrides(renderConfig.nativeElementOverrides || {});
     initUniversalTextEditor();
+
+    if (runtimeState.deviceResizeHandler) {
+      window.removeEventListener('resize', runtimeState.deviceResizeHandler);
+    }
+
+    runtimeState.deviceResizeHandler = () => {
+      const nextMode = resolveRenderDeviceMode(runtimeState.renderConfig);
+      if (nextMode === runtimeState.activeDeviceMode) {
+        return;
+      }
+
+      runtimeState.activeDeviceMode = nextMode;
+      applyCustomElements(runtimeState.renderConfig?.customElements || []);
+      applyNativeElementOverrides(runtimeState.renderConfig?.nativeElementOverrides || {});
+    };
+    window.addEventListener('resize', runtimeState.deviceResizeHandler);
   }
 
   function assignNestedValue(target, dottedKey, value) {
@@ -2441,7 +2879,19 @@
     const persistUpdate = (id, updates) => {
       window.parent.postMessage({
         type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-        payload: { id, updates },
+        payload: { id, updates, deviceMode: runtimeState.activeDeviceMode || resolveRenderDeviceMode(runtimeState.renderConfig) },
+      }, '*');
+    };
+    const persistNativeUpdate = (id, node, updates) => {
+      window.parent.postMessage({
+        type: 'FARHA_NATIVE_ELEMENT_UPDATE',
+        payload: {
+          id,
+          updates,
+          label: getNativeElementLabel(node),
+          selector: getNativeElementSelectorHint(node) || id,
+          kind: getNativeElementKind(node),
+        },
       }, '*');
     };
 
@@ -2451,6 +2901,7 @@
       runtimeState.selectedCustomElementId = id || null;
       if (id) {
         selectTemplateText(null);
+        selectNativeElement(null, { silent: true });
       }
       const container = document.getElementById('farha-custom-elements');
       if (!container) return;
@@ -2497,21 +2948,78 @@
       selectElement(activeTransform.id);
     };
 
+    const startNativeTransform = (node, point) => {
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      ensureNativeElementBaseState(node);
+      activeTransform = {
+        scope: 'native',
+        kind: 'move',
+        node,
+        id,
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        nativeKind: currentOverride.kind || getNativeElementKind(node),
+        startX: point.x,
+        startY: point.y,
+        startOffsetX: toPxNumber(currentOverride.x, 0),
+        startOffsetY: toPxNumber(currentOverride.y, 0),
+      };
+      node.style.cursor = 'grabbing';
+      selectNativeElement(node, {
+        label: activeTransform.label,
+        selector: activeTransform.selector,
+        kind: activeTransform.nativeKind,
+        silent: true,
+      });
+    };
+
     const handleStart = (event) => {
       if (!runtimeState.preview) return;
       const target = event.target;
       const actionNode = target.closest('[data-farha-action]');
       const wrapper = target.closest('.farha-custom-element');
+      const point = getPoint(event);
 
       if (!wrapper) {
+        const nativeTarget = resolveNativeElementTarget(target);
+        if (nativeTarget && point) {
+          const nativeId = buildNativeElementId(nativeTarget);
+          const nativeOverride = runtimeState.nativeElementOverrides?.[nativeId] || {};
+          const nativeMeta = {
+            label: nativeOverride.label || getNativeElementLabel(nativeTarget),
+            selector: nativeOverride.selector || getNativeElementSelectorHint(nativeTarget) || nativeId,
+            kind: nativeOverride.kind || getNativeElementKind(nativeTarget),
+          };
+
+          selectElement(null);
+          selectTemplateText(null);
+
+          if (String(runtimeState.selectedNativeElementId || '') !== String(nativeId)) {
+            selectNativeElement(nativeTarget, nativeMeta);
+            return;
+          }
+
+          if (nativeOverride.locked) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+          startNativeTransform(nativeTarget, point);
+          return;
+        }
+
         if (!target.closest('.farha-studio-editable')) {
           selectElement(null);
           selectTemplateText(null);
+          selectNativeElement(null, { silent: true });
         }
         return;
       }
 
-      const point = getPoint(event);
       if (!point) return;
 
       selectElement(wrapper.dataset.id);
@@ -2570,6 +3078,26 @@
       if (!point) return;
       event.preventDefault();
 
+      if (activeTransform.scope === 'native') {
+        const dx = point.x - activeTransform.startX;
+        const dy = point.y - activeTransform.startY;
+        const nextOverride = {
+          ...(runtimeState.nativeElementOverrides?.[activeTransform.id] || {}),
+          label: activeTransform.label,
+          selector: activeTransform.selector,
+          kind: activeTransform.nativeKind,
+          x: activeTransform.startOffsetX + dx,
+          y: activeTransform.startOffsetY + dy,
+        };
+
+        runtimeState.nativeElementOverrides = {
+          ...(runtimeState.nativeElementOverrides || {}),
+          [activeTransform.id]: nextOverride,
+        };
+        applyNativeOverrideToNode(activeTransform.node, nextOverride);
+        return;
+      }
+
       const dx = point.x - activeTransform.startX;
       const dy = point.y - activeTransform.startY;
       const { wrapper, kind, imageNode, contentNode } = activeTransform;
@@ -2609,6 +3137,24 @@
 
     const handleEnd = () => {
       if (!activeTransform) return;
+
+      if (activeTransform.scope === 'native') {
+        const { id, node } = activeTransform;
+        const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+        node.style.cursor = '';
+        persistNativeUpdate(id, node, {
+          x: toPxNumber(currentOverride.x, 0),
+          y: toPxNumber(currentOverride.y, 0),
+          scale: Number.isFinite(Number(currentOverride.scale)) ? Number(currentOverride.scale) : 1,
+          rotation: Number.isFinite(Number(currentOverride.rotation)) ? Number(currentOverride.rotation) : 0,
+          opacity: Number.isFinite(Number(currentOverride.opacity)) ? Number(currentOverride.opacity) : 1,
+          hidden: Boolean(currentOverride.hidden),
+          locked: Boolean(currentOverride.locked),
+        });
+        activeTransform = null;
+        return;
+      }
+
       const { wrapper, id, kind, imageNode, contentNode } = activeTransform;
       wrapper.style.opacity = '1';
       wrapper.style.zIndex = '';
@@ -2696,7 +3242,9 @@
     container.style.width = `${Math.max(target.scrollWidth || 0, target.clientWidth || 0, target.offsetWidth || 0)}px`;
     container.style.height = `${Math.max(target.scrollHeight || 0, target.clientHeight || 0, target.offsetHeight || 0)}px`;
 
-    const sortedElements = [...elements].sort((left, right) => toPxNumber(left?.zIndex, 0) - toPxNumber(right?.zIndex, 0));
+    runtimeState.activeDeviceMode = resolveRenderDeviceMode(runtimeState.renderConfig);
+    const resolvedElements = elements.map((element) => resolveCustomElementForDevice(element, runtimeState.activeDeviceMode));
+    const sortedElements = [...resolvedElements].sort((left, right) => toPxNumber(left?.zIndex, 0) - toPxNumber(right?.zIndex, 0));
     const existingWrappers = Array.from(container.children);
     const newIds = sortedElements.map((el) => String(el.id));
 
@@ -2712,9 +3260,17 @@
 
     if (runtimeState.preview) {
       runtimeState.canvasClickHandler = (e) => {
-        if (e.target.closest('.farha-studio-editable') || e.target.closest('.farha-custom-element') || e.target.closest('button') || e.target.closest('a')) return;
+        if (
+          e.target.closest('.farha-studio-editable')
+          || e.target.closest('.farha-custom-element')
+          || e.target.closest('[data-farha-native-managed="true"]')
+          || resolveNativeElementTarget(e.target)
+          || e.target.closest('button')
+          || e.target.closest('a')
+        ) return;
 
         runtimeState.selectedCustomElementId = null;
+        selectNativeElement(null, { silent: true });
         const rect = target.getBoundingClientRect();
         const pageX = e.clientX + window.scrollX;
         const pageY = e.clientY + window.scrollY;

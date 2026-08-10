@@ -57,6 +57,12 @@ export async function POST(request, { params }) {
       ...contentConfig,
       __uiConfig: uiConfig,
       __customElements: Array.isArray(session.config?.customElements) ? session.config.customElements : [],
+      __nativeElementOverrides:
+        session.config?.nativeElementOverrides
+        && typeof session.config.nativeElementOverrides === 'object'
+        && !Array.isArray(session.config.nativeElementOverrides)
+          ? session.config.nativeElementOverrides
+          : {},
       __textOverrides: session.config?.textOverrides && typeof session.config.textOverrides === 'object'
         ? session.config.textOverrides
         : {},

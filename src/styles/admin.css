@@ -1359,6 +1359,47 @@ body {
   gap: 10px;
 }
 
+.studio-version-list {
+  display: grid;
+  gap: 8px;
+}
+
+.studio-version-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: #fff;
+}
+
+.studio-version-item.current {
+  background: #f8fafc;
+  border-color: rgba(127, 42, 31, 0.18);
+}
+
+.studio-version-item__meta {
+  min-width: 0;
+}
+
+.studio-version-item__meta strong,
+.studio-version-item__meta small {
+  display: block;
+}
+
+.studio-version-item__meta strong {
+  font-size: 12px;
+  color: #16233f;
+}
+
+.studio-version-item__meta small {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--admin-text-secondary);
+}
+
 .studio-history-item {
   display: flex;
   align-items: flex-start;

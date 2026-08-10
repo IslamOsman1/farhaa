@@ -12,10 +12,14 @@ const DEVICE_PRESETS = {
   tablet: { label: 'تابلت', width: 768, height: 1024 },
   desktop: { label: 'سطح مكتب', width: 1280, height: 860 },
 };
+const RESPONSIVE_ELEMENT_KEYS = new Set(['x', 'y', 'width', 'height', 'fontSize', 'opacity', 'rotation', 'cropX', 'cropY']);
+const RESPONSIVE_NUMERIC_KEYS = new Set(['x', 'y', 'opacity', 'rotation', 'cropX', 'cropY']);
+const DEVICE_MODES = ['mobile', 'tablet', 'desktop'];
 
 const SECTION_META = {
   'custom-elements': { icon: '✚', label: 'العناصر الحرة', description: 'إضافة نصوص وصور متحركة فوق القالب' },
   layers: { icon: '🗂', label: 'الطبقات', description: 'إدارة العناصر الحرة وترتيبها والتحكم بها' },
+  'template-elements': { icon: '🪄', label: 'عناصر القالب', description: 'تحريك وتثبيت العناصر الأصلية والزخارف داخل القالب نفسه' },
   'template-text': { icon: '🔤', label: 'نص القالب', description: 'العنصر النصي المحدد من داخل المعاينة المباشرة' },
   history: { icon: '🕘', label: 'السجل', description: 'ملخص مرئي لآخر التعديلات والإصدارات المصغرة' },
   basic: { icon: '👤', label: 'الأساسيات', description: 'أسماء العروسين وبيانات المناسبة' },
@@ -50,6 +54,63 @@ function getCustomElementLabel(element, index) {
   return `${baseLabel} ${index + 1}`;
 }
 
+function normalizeDeviceOverrideValue(key, value) {
+  if (value == null || value === '') {
+    return undefined;
+  }
+
+  if (RESPONSIVE_NUMERIC_KEYS.has(key)) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return String(value);
+}
+
+function normalizeCustomElementDeviceOverrides(deviceOverrides = {}) {
+  return DEVICE_MODES.reduce((accumulator, mode) => {
+    const rawModeOverrides = deviceOverrides?.[mode];
+    if (!rawModeOverrides || typeof rawModeOverrides !== 'object' || Array.isArray(rawModeOverrides)) {
+      return accumulator;
+    }
+
+    const normalizedModeOverrides = Object.entries(rawModeOverrides).reduce((nextOverrides, [key, value]) => {
+      if (!RESPONSIVE_ELEMENT_KEYS.has(key)) {
+        return nextOverrides;
+      }
+
+      const normalizedValue = normalizeDeviceOverrideValue(key, value);
+      if (normalizedValue !== undefined) {
+        nextOverrides[key] = normalizedValue;
+      }
+      return nextOverrides;
+    }, {});
+
+    if (Object.keys(normalizedModeOverrides).length) {
+      accumulator[mode] = normalizedModeOverrides;
+    }
+
+    return accumulator;
+  }, {});
+}
+
+function resolveCustomElementForDevice(element, deviceMode) {
+  if (!element || !deviceMode) {
+    return element;
+  }
+
+  const modeOverrides = element.deviceOverrides?.[deviceMode];
+  if (!modeOverrides) {
+    return element;
+  }
+
+  return {
+    ...element,
+    ...modeOverrides,
+    deviceOverrides: element.deviceOverrides,
+  };
+}
+
 function normalizeCustomElements(elements) {
   return arrayValue(elements).map((element, index) => ({
     ...element,
@@ -61,7 +122,48 @@ function normalizeCustomElements(elements) {
     cropY: toFiniteNumber(element?.cropY, 50),
     hidden: Boolean(element?.hidden),
     locked: Boolean(element?.locked),
+    deviceOverrides: normalizeCustomElementDeviceOverrides(element?.deviceOverrides),
   }));
+}
+
+function buildDefaultNativeElementOverride(seed = {}) {
+  return {
+    label: '',
+    selector: '',
+    kind: 'native',
+    x: 0,
+    y: 0,
+    scale: 1,
+    rotation: 0,
+    opacity: 1,
+    hidden: false,
+    locked: false,
+    ...seed,
+  };
+}
+
+function normalizeNativeElementOverrides(overrides) {
+  if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) {
+    return {};
+  }
+
+  return Object.entries(overrides).reduce((accumulator, [key, value]) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return accumulator;
+    }
+
+    accumulator[key] = buildDefaultNativeElementOverride({
+      ...value,
+      x: toFiniteNumber(value.x, 0),
+      y: toFiniteNumber(value.y, 0),
+      scale: Math.max(0.1, toFiniteNumber(value.scale, 1)),
+      rotation: toFiniteNumber(value.rotation, 0),
+      opacity: Math.min(1, Math.max(0.05, toFiniteNumber(value.opacity, 1))),
+      hidden: Boolean(value.hidden),
+      locked: Boolean(value.locked),
+    });
+    return accumulator;
+  }, {});
 }
 
 function cloneValue(value) {
@@ -97,6 +199,7 @@ function buildDefaultCustomElement(type, seed = {}) {
     locked: false,
     cropX: 50,
     cropY: 50,
+    deviceOverrides: {},
   };
 
   if (type === 'text') {
@@ -177,6 +280,7 @@ function normalizeDraftState(input) {
       ...(safe.devicePreview || {}),
     },
     customElements: normalizeCustomElements(safe.customElements || []),
+    nativeElementOverrides: normalizeNativeElementOverrides(safe.nativeElementOverrides),
   };
 }
 
@@ -196,8 +300,12 @@ function buildPreviewInvitation(session, draft) {
     themeConfig: draft.themeConfig,
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
-    uiConfig: draft.uiConfig,
+    uiConfig: {
+      ...(draft.uiConfig || {}),
+      deviceMode: draft.devicePreview?.mode || 'mobile',
+    },
     customElements: draft.customElements || [],
+    nativeElementOverrides: draft.nativeElementOverrides || {},
     textOverrides: draft.textOverrides || {},
     opening: { slug: draft.openingSlug },
     template: { slug: draft.templateSlug },
@@ -514,21 +622,26 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [editorOpen, setEditorOpen] = useState(false);
   const [canvasClickMenu, setCanvasClickMenu] = useState(null);
   const [selectedElementId, setSelectedElementId] = useState(null);
+  const [selectedNativeElementId, setSelectedNativeElementId] = useState(null);
+  const [selectedNativeElementLabel, setSelectedNativeElementLabel] = useState('');
   const [selectedTemplateTextPath, setSelectedTemplateTextPath] = useState(null);
   const [selectedTemplateTextLabel, setSelectedTemplateTextLabel] = useState('');
   const [styleClipboard, setStyleClipboard] = useState(null);
   const [historyMeta, setHistoryMeta] = useState({ canUndo: false, canRedo: false, pastCount: 0, futureCount: 0 });
   const [activityLog, setActivityLog] = useState([]);
+  const [versionTrail, setVersionTrail] = useState([]);
   const autosaveRef = useRef(null);
   const lastSavedRef = useRef(JSON.stringify(initialDraft));
   const historyRef = useRef({ current: null, past: [], future: [] });
   const suppressHistoryRef = useRef(false);
   const activityCounterRef = useRef(0);
+  const versionCounterRef = useRef(0);
 
   const currentManifest = useMemo(
     () => manifests.find((item) => item.slug === draft.templateSlug) || manifests[0],
     [draft.templateSlug, manifests],
   );
+  const currentDeviceMode = draft.devicePreview?.mode || 'mobile';
   const availableOpenings = useMemo(() => {
     const activeOpenings = openings.filter((opening) => opening.isActive !== false);
     return activeOpenings.sort((left, right) => (left.sortOrder || 0) - (right.sortOrder || 0));
@@ -571,18 +684,45 @@ export default function StudioClient({ session, manifests, openings, inventory }
     () => normalizeCustomElements(draft.customElements || []),
     [draft.customElements],
   );
+  const responsiveCustomElements = useMemo(
+    () => normalizedCustomElements.map((element) => resolveCustomElementForDevice(element, currentDeviceMode)),
+    [currentDeviceMode, normalizedCustomElements],
+  );
   const orderedLayerElements = useMemo(
-    () => [...normalizedCustomElements].sort((left, right) => (left.zIndex || 0) - (right.zIndex || 0)),
-    [normalizedCustomElements],
+    () => [...responsiveCustomElements].sort((left, right) => (left.zIndex || 0) - (right.zIndex || 0)),
+    [responsiveCustomElements],
   );
   const layerElementsForPanel = useMemo(
     () => [...orderedLayerElements].reverse(),
     [orderedLayerElements],
   );
+  const selectedCustomElementBase = useMemo(
+    () => normalizedCustomElements.find((item) => item.id === selectedElementId) || null,
+    [normalizedCustomElements, selectedElementId],
+  );
   const selectedCustomElement = useMemo(
     () => orderedLayerElements.find((item) => item.id === selectedElementId) || null,
     [orderedLayerElements, selectedElementId],
   );
+  const selectedCustomElementDeviceOverride = useMemo(() => {
+    const overrides = selectedCustomElementBase?.deviceOverrides;
+    return overrides && typeof overrides === 'object' ? (overrides[currentDeviceMode] || null) : null;
+  }, [currentDeviceMode, selectedCustomElementBase]);
+  const nativeElementOverrides = useMemo(
+    () => normalizeNativeElementOverrides(draft.nativeElementOverrides),
+    [draft.nativeElementOverrides],
+  );
+  const selectedNativeElement = useMemo(() => {
+    if (!selectedNativeElementId) {
+      return null;
+    }
+
+    const currentOverride = nativeElementOverrides[selectedNativeElementId] || {};
+    return buildDefaultNativeElementOverride({
+      ...currentOverride,
+      label: currentOverride.label || selectedNativeElementLabel || selectedNativeElementId,
+    });
+  }, [nativeElementOverrides, selectedNativeElementId, selectedNativeElementLabel]);
   const templateTextLocks = useMemo(() => {
     const value = draft.uiConfig?.textLocks;
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -619,6 +759,31 @@ export default function StudioClient({ session, manifests, openings, inventory }
     };
     activityCounterRef.current += 1;
     setActivityLog((current) => [entry, ...current].slice(0, 18));
+  }
+
+  function appendVersionSnapshot(snapshot, label = 'نسخة تلقائية') {
+    const entry = {
+      id: `version-${Date.now()}-${versionCounterRef.current}`,
+      snapshot,
+      label,
+      time: new Date().toLocaleTimeString('ar-EG', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      version: versionCounterRef.current + 1,
+      isCurrent: true,
+    };
+    versionCounterRef.current += 1;
+    setVersionTrail((current) => {
+      if (current[0]?.snapshot === snapshot) {
+        return current;
+      }
+
+      return [
+        entry,
+        ...current.map((item) => ({ ...item, isCurrent: false })),
+      ].slice(0, 12);
+    });
   }
 
   function syncHistoryMeta() {
@@ -687,6 +852,24 @@ export default function StudioClient({ session, manifests, openings, inventory }
     recordActivity('إعادة ضبط نص من القالب', getTextFieldLabel(path));
   }
 
+  function restoreVersionSnapshot(snapshot, label) {
+    const currentSerialized = historyRef.current.current;
+    if (!snapshot || !currentSerialized || snapshot === currentSerialized) {
+      return;
+    }
+
+    suppressHistoryRef.current = true;
+    historyRef.current.past.push(currentSerialized);
+    historyRef.current.past = historyRef.current.past.slice(-50);
+    historyRef.current.future = [];
+    historyRef.current.current = snapshot;
+    syncHistoryMeta();
+    setDraft(normalizeDraftState(JSON.parse(snapshot)));
+    setNotice(`تمت استعادة النسخة: ${label}`);
+    recordActivity('استعادة نسخة', label);
+    appendVersionSnapshot(snapshot, `استعادة ${label}`);
+  }
+
   function updateTemplateTextOverride(path, value) {
     if (!path) {
       return;
@@ -699,6 +882,61 @@ export default function StudioClient({ session, manifests, openings, inventory }
         [path]: value,
       },
     }));
+  }
+
+  function resetTemplate() {
+    const preferredOpening =
+      availableOpenings.find(
+        (opening) =>
+          opening.slug === 'native-template'
+          && currentManifest.openingCompatibility?.includes(opening.slug),
+      )
+      || availableOpenings.find((opening) => currentManifest.openingCompatibility?.includes(opening.slug))
+      || availableOpenings[0]
+      || currentOpening;
+
+    const defaults = cloneValue(currentManifest.defaultValues || {});
+    const nextContentConfig = {
+      ...defaults,
+      galleryImages: arrayValue(defaults.galleryImages),
+      program: arrayValue(defaults.program),
+      notes: arrayValue(defaults.notes),
+    };
+
+    currentManifest.editableFields.forEach((field) => {
+      nextContentConfig[field.key] = defaultFieldValueFromManifest(currentManifest, field.key, field.type);
+      if (isTranslatableField(field)) {
+        const englishKey = getEnglishKey(field.key);
+        nextContentConfig[englishKey] = defaultFieldValueFromManifest(currentManifest, englishKey, field.type);
+      }
+    });
+
+    setDraft((current) => ({
+      ...current,
+      openingSlug: preferredOpening?.slug || 'native-template',
+      contentConfig: nextContentConfig,
+      themeConfig: cloneValue(currentManifest.defaultValues?.theme || {}),
+      sectionConfig: cloneValue(currentManifest.defaultValues?.sections || {}),
+      openingConfig: {
+        allowSkip: true,
+        ...(preferredOpening?.defaultConfig || {}),
+      },
+      customElements: [],
+      nativeElementOverrides: {},
+      textOverrides: {},
+      uiConfig: {
+        ...(current.uiConfig || {}),
+        textLocks: {},
+      },
+    }));
+    setSelectedElementId(null);
+    setSelectedNativeElementId(null);
+    setSelectedNativeElementLabel('');
+    setSelectedTemplateTextPath(null);
+    setSelectedTemplateTextLabel('');
+    setPreviewReloadToken((value) => value + 1);
+    setNotice('تمت إعادة القالب بالكامل إلى حالته الأصلية.');
+    recordActivity('Reset Template', currentManifest.nameAr);
   }
 
   function applySnapshotFromHistory(serializedSnapshot, direction) {
@@ -722,6 +960,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     setDraft(normalizeDraftState(JSON.parse(serializedSnapshot)));
     setNotice(direction === 'undo' ? 'تم التراجع عن آخر تعديل.' : 'تمت إعادة التعديل.');
     recordActivity(direction === 'undo' ? 'Undo' : 'Redo', direction === 'undo' ? 'الرجوع إلى النسخة السابقة' : 'استعادة النسخة التالية');
+    appendVersionSnapshot(serializedSnapshot, direction === 'undo' ? 'نسخة بعد التراجع' : 'نسخة بعد الإعادة');
   }
 
   function handleUndo() {
@@ -744,8 +983,49 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
   const activeSections = useMemo(() => {
     const fieldSections = Object.keys(groupedFields).filter((key) => SECTION_META[key]);
-    return [...fieldSections, 'custom-elements', 'layers', 'template-text', 'history', 'opening', 'design', 'sections', 'advanced'];
+    return [...fieldSections, 'custom-elements', 'layers', 'template-elements', 'template-text', 'history', 'opening', 'design', 'sections', 'advanced'];
   }, [groupedFields]);
+
+  function buildElementPatchWithResponsiveSupport(element, updates, options = {}) {
+    const nextUpdates = typeof updates === 'function' ? updates(element) : updates;
+    if (!nextUpdates || typeof nextUpdates !== 'object') {
+      return element;
+    }
+
+    const nextElement = { ...element };
+    const nextDeviceMode = options.deviceMode || currentDeviceMode;
+    const nextModeOverrides = {
+      ...((element.deviceOverrides && typeof element.deviceOverrides === 'object') ? element.deviceOverrides : {}),
+    };
+    const scopedOverrides = {
+      ...((nextModeOverrides[nextDeviceMode] && typeof nextModeOverrides[nextDeviceMode] === 'object') ? nextModeOverrides[nextDeviceMode] : {}),
+    };
+
+    Object.entries(nextUpdates).forEach(([key, rawValue]) => {
+      if (RESPONSIVE_ELEMENT_KEYS.has(key) && !options.forceGlobal) {
+        const normalizedValue = normalizeDeviceOverrideValue(key, rawValue);
+        const baseValue = normalizeDeviceOverrideValue(key, nextElement[key]);
+
+        if (normalizedValue === undefined || normalizedValue === baseValue) {
+          delete scopedOverrides[key];
+        } else {
+          scopedOverrides[key] = normalizedValue;
+        }
+        return;
+      }
+
+      nextElement[key] = rawValue;
+    });
+
+    if (Object.keys(scopedOverrides).length) {
+      nextModeOverrides[nextDeviceMode] = scopedOverrides;
+    } else {
+      delete nextModeOverrides[nextDeviceMode];
+    }
+
+    nextElement.deviceOverrides = normalizeCustomElementDeviceOverrides(nextModeOverrides);
+    return nextElement;
+  }
 
   function updateCustomElements(updater) {
     setDraft((current) => ({
@@ -754,17 +1034,98 @@ export default function StudioClient({ session, manifests, openings, inventory }
     }));
   }
 
-  function patchCustomElement(id, updates) {
+  function patchCustomElement(id, updates, options = {}) {
     updateCustomElements((elements) =>
       elements.map((element) =>
         element.id === id
-          ? {
-              ...element,
-              ...(typeof updates === 'function' ? updates(element) : updates),
-            }
+          ? buildElementPatchWithResponsiveSupport(element, updates, options)
           : element,
       ),
     );
+  }
+
+  function patchNativeElement(id, updates) {
+    if (!id) {
+      return;
+    }
+
+    setDraft((current) => {
+      const currentOverrides = normalizeNativeElementOverrides(current.nativeElementOverrides);
+      const fallbackMeta = id === selectedNativeElementId
+        ? {
+            label: selectedNativeElementLabel || selectedNativeElement?.label || '',
+            selector: selectedNativeElement?.selector || '',
+            kind: selectedNativeElement?.kind || 'native',
+          }
+        : {};
+      const currentValue = buildDefaultNativeElementOverride({
+        ...fallbackMeta,
+        ...(currentOverrides[id] || {}),
+      });
+      const nextUpdates = typeof updates === 'function' ? updates(currentValue) : updates;
+      if (!nextUpdates || typeof nextUpdates !== 'object') {
+        return current;
+      }
+
+      return {
+        ...current,
+        nativeElementOverrides: {
+          ...currentOverrides,
+          [id]: buildDefaultNativeElementOverride({
+            ...currentValue,
+            ...nextUpdates,
+          }),
+        },
+      };
+    });
+  }
+
+  function setNativeElementNumber(id, key, value, fallback = 0) {
+    const numeric = Number(value);
+    patchNativeElement(id, {
+      [key]: Number.isFinite(numeric) ? numeric : fallback,
+    });
+  }
+
+  function resetSelectedNativeElement() {
+    if (!selectedNativeElementId) {
+      return;
+    }
+
+    setDraft((current) => {
+      const nextOverrides = {
+        ...normalizeNativeElementOverrides(current.nativeElementOverrides),
+      };
+      delete nextOverrides[selectedNativeElementId];
+      return {
+        ...current,
+        nativeElementOverrides: nextOverrides,
+      };
+    });
+    setNotice(`تمت إعادة ضبط عنصر القالب: ${selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId}`);
+    recordActivity('إعادة ضبط عنصر قالب', selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId);
+  }
+
+  function clearDeviceOverride(id, deviceMode = currentDeviceMode) {
+    const label = DEVICE_PRESETS[deviceMode]?.label || deviceMode;
+    updateCustomElements((elements) =>
+      elements.map((element) => {
+        if (element.id !== id) {
+          return element;
+        }
+
+        const nextDeviceOverrides = {
+          ...((element.deviceOverrides && typeof element.deviceOverrides === 'object') ? element.deviceOverrides : {}),
+        };
+        delete nextDeviceOverrides[deviceMode];
+        return {
+          ...element,
+          deviceOverrides: normalizeCustomElementDeviceOverrides(nextDeviceOverrides),
+        };
+      }),
+    );
+    setNotice(`تم حذف تخصيص ${label} من العنصر المحدد.`);
+    recordActivity('حذف تخصيص جهاز', label);
   }
 
   function removeCustomElement(id) {
@@ -800,7 +1161,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   }
 
   function duplicateCustomElement(id) {
-    const source = orderedLayerElements.find((element) => element.id === id);
+    const source = normalizedCustomElements.find((element) => element.id === id);
     if (!source) {
       return;
     }
@@ -819,6 +1180,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
       },
     ]);
     setSelectedElementId(duplicateId);
+    setSelectedNativeElementId(null);
+    setSelectedNativeElementLabel('');
     setOpenSection('layers');
     setSelectedTemplateTextPath(null);
     setSelectedTemplateTextLabel('');
@@ -852,6 +1215,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
       };
     });
     setSelectedElementId(nextId);
+    setSelectedNativeElementId(null);
+    setSelectedNativeElementLabel('');
     setOpenSection('layers');
     setSelectedTemplateTextPath(null);
     setSelectedTemplateTextLabel('');
@@ -907,6 +1272,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     if (historyRef.current.current == null) {
       historyRef.current.current = serialized;
       syncHistoryMeta();
+      appendVersionSnapshot(serialized, 'بداية الجلسة');
       return;
     }
 
@@ -926,6 +1292,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     historyRef.current.future = [];
     historyRef.current.current = serialized;
     syncHistoryMeta();
+    appendVersionSnapshot(serialized, 'تحديث داخل الاستوديو');
   }, [draft]);
 
   useEffect(() => {
@@ -983,22 +1350,55 @@ export default function StudioClient({ session, manifests, openings, inventory }
   useEffect(() => {
     function handleMessage(event) {
       if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
-        patchCustomElement(event.data.payload.id, event.data.payload.updates);
+        patchCustomElement(
+          event.data.payload.id,
+          event.data.payload.updates,
+          { deviceMode: event.data.payload.deviceMode || currentDeviceMode },
+        );
       } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
         removeCustomElement(event.data.payload.id);
       } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
         setSelectedElementId(event.data.payload?.id || null);
+        setSelectedNativeElementId(null);
+        setSelectedNativeElementLabel('');
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
         setOpenSection('layers');
+      } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_SELECT') {
+        const nextId = event.data.payload?.id || null;
+        setSelectedNativeElementId(nextId);
+        setSelectedNativeElementLabel(event.data.payload?.label || '');
+        setSelectedElementId(null);
+        setSelectedTemplateTextPath(null);
+        setSelectedTemplateTextLabel('');
+        if (nextId) {
+          setOpenSection('template-elements');
+        }
       } else if (event.data?.type === 'FARHA_TEMPLATE_TEXT_SELECT') {
         const nextPath = event.data.payload?.path || null;
         setSelectedTemplateTextPath(nextPath);
         setSelectedTemplateTextLabel(event.data.payload?.label || '');
         if (nextPath) {
           setSelectedElementId(null);
+          setSelectedNativeElementId(null);
+          setSelectedNativeElementLabel('');
           setOpenSection('template-text');
         }
+      } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
+        const nextId = event.data.payload?.id || null;
+        if (!nextId) {
+          return;
+        }
+        setSelectedNativeElementId(nextId);
+        setSelectedNativeElementLabel(event.data.payload?.label || '');
+        patchNativeElement(nextId, {
+          label: event.data.payload?.label || '',
+          selector: event.data.payload?.selector || '',
+          kind: event.data.payload?.kind || 'native',
+          ...(event.data.payload?.updates || {}),
+        });
+        setOpenSection('template-elements');
+        recordActivity('تحريك عنصر من القالب', event.data.payload?.label || nextId);
       } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
         const { path, text, label } = event.data.payload;
         setDraft(current => ({
@@ -1011,6 +1411,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
         if (path) {
           setSelectedTemplateTextPath(path);
           setSelectedTemplateTextLabel(label || '');
+          setSelectedNativeElementId(null);
+          setSelectedNativeElementLabel('');
           setOpenSection('template-text');
           recordActivity('تعديل نص من المعاينة', label || path);
         }
@@ -1025,6 +1427,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setCanvasClickMenu({ x, y, forceImage: true });
           return;
         }
+        setSelectedNativeElementId(null);
+        setSelectedNativeElementLabel('');
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
         setCanvasClickMenu({ x, y });
@@ -1032,7 +1436,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [draft.ui?.addCustomElementMode]);
+  }, [currentDeviceMode, draft.ui?.addCustomElementMode]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -1255,6 +1659,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
       return;
     }
 
+    if (sectionKey === 'template-elements') {
+      resetSelectedNativeElement();
+      return;
+    }
+
     if (sectionKey === 'template-text') {
       if (selectedTemplateText) {
         resetTemplateText(selectedTemplateText.path);
@@ -1391,11 +1800,14 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   onClick={() => resetSection(sectionKey)}
                   disabled={
                     (sectionKey === 'layers' && !selectedCustomElement)
+                    || (sectionKey === 'template-elements' && !selectedNativeElement)
                     || (sectionKey === 'template-text' && !selectedTemplateText)
                   }
                 >
                   {sectionKey === 'layers'
                     ? 'Reset Element'
+                    : sectionKey === 'template-elements'
+                      ? 'Reset Native'
                     : sectionKey === 'template-text'
                       ? 'Reset Text'
                       : 'Reset Section'}
@@ -1576,6 +1988,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
                           className={`studio-layer-row__select ${isSelected ? 'active' : ''}`}
                           onClick={() => {
                             setSelectedElementId(element.id);
+                            setSelectedNativeElementId(null);
+                            setSelectedNativeElementLabel('');
                             setSelectedTemplateTextPath(null);
                             setSelectedTemplateTextLabel('');
                             setOpenSection('layers');
@@ -1654,6 +2068,28 @@ export default function StudioClient({ session, manifests, openings, inventory }
                           حذف
                         </button>
                       </div>
+                    </div>
+
+                    <div className="studio-element-summary-grid">
+                      <div className="studio-element-summary-card">
+                        <span>الجهاز الحالي</span>
+                        <strong>{DEVICE_PRESETS[currentDeviceMode]?.label || currentDeviceMode}</strong>
+                      </div>
+                      <div className="studio-element-summary-card">
+                        <span>تخصيص هذا الجهاز</span>
+                        <strong>{selectedCustomElementDeviceOverride ? 'مفعل' : 'يستخدم الإعداد العام'}</strong>
+                      </div>
+                    </div>
+
+                    <div className="studio-inline-actions">
+                      <button
+                        type="button"
+                        className="mini-btn"
+                        disabled={!selectedCustomElementDeviceOverride}
+                        onClick={() => clearDeviceOverride(selectedCustomElement.id, currentDeviceMode)}
+                      >
+                        إزالة تخصيص {DEVICE_PRESETS[currentDeviceMode]?.label || currentDeviceMode}
+                      </button>
                     </div>
 
                     <div className="studio-form-grid">
@@ -1833,6 +2269,152 @@ export default function StudioClient({ session, manifests, openings, inventory }
               </div>
             ) : null}
 
+            {sectionKey === 'template-elements' ? (
+              <div className="studio-stack">
+                {selectedNativeElement ? (
+                  <>
+                    <div className="studio-text-inspector">
+                      <div className="studio-text-inspector__meta">
+                        <strong>{selectedNativeElement.label}</strong>
+                        <small>{selectedNativeElement.kind === 'media' ? 'عنصر وسائط أصلي' : 'عنصر أصلي من القالب'}</small>
+                      </div>
+                      <div className="studio-inline-actions">
+                        <button
+                          type="button"
+                          className={`mini-btn ${selectedNativeElement.locked ? 'active' : ''}`}
+                          onClick={() =>
+                            patchNativeElement(selectedNativeElementId, {
+                              locked: !selectedNativeElement.locked,
+                            })
+                          }
+                        >
+                          {selectedNativeElement.locked ? 'فتح الحركة' : 'قفل الحركة'}
+                        </button>
+                        <button
+                          type="button"
+                          className={`mini-btn ${selectedNativeElement.hidden ? 'active' : ''}`}
+                          onClick={() =>
+                            patchNativeElement(selectedNativeElementId, {
+                              hidden: !selectedNativeElement.hidden,
+                            })
+                          }
+                        >
+                          {selectedNativeElement.hidden ? 'إظهار' : 'إخفاء'}
+                        </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={resetSelectedNativeElement}
+                        >
+                          إعادة الأصل
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="studio-element-summary-grid">
+                      <div className="studio-element-summary-card">
+                        <span>الموضع</span>
+                        <strong>{Math.round(selectedNativeElement.x)} / {Math.round(selectedNativeElement.y)}</strong>
+                      </div>
+                      <div className="studio-element-summary-card">
+                        <span>الحالة</span>
+                        <strong>{selectedNativeElement.locked ? 'مقفول' : 'قابل للتحريك'}</strong>
+                      </div>
+                    </div>
+
+                    <div className="studio-form-grid">
+                      <label className="studio-field">
+                        <span>العنوان</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.label || ''}
+                          onChange={(event) => {
+                            setSelectedNativeElementLabel(event.target.value);
+                            patchNativeElement(selectedNativeElementId, { label: event.target.value });
+                          }}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>النوع</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.kind === 'media' ? 'وسائط/زخرفة' : 'عنصر أصلي'}
+                          readOnly
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الموضع الأفقي X</span>
+                        <input
+                          type="number"
+                          value={Math.round(toFiniteNumber(selectedNativeElement.x, 0))}
+                          onChange={(event) => setNativeElementNumber(selectedNativeElementId, 'x', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الموضع الرأسي Y</span>
+                        <input
+                          type="number"
+                          value={Math.round(toFiniteNumber(selectedNativeElement.y, 0))}
+                          onChange={(event) => setNativeElementNumber(selectedNativeElementId, 'y', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>التكبير %</span>
+                        <input
+                          type="number"
+                          min="10"
+                          max="400"
+                          value={Math.round(toFiniteNumber(selectedNativeElement.scale, 1) * 100)}
+                          onChange={(event) =>
+                            patchNativeElement(selectedNativeElementId, {
+                              scale: Math.max(0.1, toFiniteNumber(event.target.value, 100) / 100),
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الدوران</span>
+                        <input
+                          type="number"
+                          min="-180"
+                          max="180"
+                          value={Math.round(toFiniteNumber(selectedNativeElement.rotation, 0))}
+                          onChange={(event) => setNativeElementNumber(selectedNativeElementId, 'rotation', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الشفافية %</span>
+                        <input
+                          type="number"
+                          min="5"
+                          max="100"
+                          value={Math.round(toFiniteNumber(selectedNativeElement.opacity, 1) * 100)}
+                          onChange={(event) =>
+                            patchNativeElement(selectedNativeElementId, {
+                              opacity: Math.min(1, Math.max(0.05, toFiniteNumber(event.target.value, 100) / 100)),
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="studio-field studio-field--full">
+                        <span>المعرّف/المسار</span>
+                        <input type="text" dir="ltr" value={selectedNativeElement.selector || selectedNativeElementId || ''} readOnly />
+                      </label>
+                    </div>
+
+                    <p className="studio-help-text">
+                      اضغط على العنصر الزخرفي أو الصورة الأصلية داخل المحاكي لتحديدها، ثم اسحبها مباشرة. بعد التحديد يمكنك أيضًا ضبط موضعها وتكبيرها من هنا بدون التأثير على بنية القالب الأصلية.
+                    </p>
+                  </>
+                ) : (
+                  <div className="studio-empty-panel">
+                    <strong>لا يوجد عنصر قالب محدد بعد</strong>
+                    <p>اضغط على أي صورة أصلية أو زخرفة أو عنصر بصري داخل المعاينة المباشرة، ثم اسحبه أو عدّل خصائصه من هذا القسم.</p>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
             {sectionKey === 'template-text' ? (
               <div className="studio-stack">
                 {selectedTemplateText ? (
@@ -1916,6 +2498,33 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   <div className="studio-version-card">
                     <span>الحفظ الحالي</span>
                     <strong>{saveState === 'saved' ? 'محفوظ' : saveState === 'saving' ? 'يحفظ الآن' : saveState === 'error' ? 'خطأ' : 'بانتظار الحفظ'}</strong>
+                  </div>
+                </div>
+
+                <div className="studio-text-inspector">
+                  <div className="studio-text-inspector__meta">
+                    <strong>نسخ قابلة للاستعادة</strong>
+                    <small>آخر اللقطات المحفوظة داخل الجلسة الحالية. يمكنك العودة لأي نسخة مصغرة مباشرة.</small>
+                  </div>
+                  <div className="studio-version-list">
+                    {versionTrail.length ? versionTrail.map((item) => (
+                      <div key={item.id} className={`studio-version-item ${item.isCurrent ? 'current' : ''}`}>
+                        <div className="studio-version-item__meta">
+                          <strong>{item.label}</strong>
+                          <small>{item.time} · V{item.version}</small>
+                        </div>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          disabled={item.isCurrent}
+                          onClick={() => restoreVersionSnapshot(item.snapshot, item.label)}
+                        >
+                          {item.isCurrent ? 'الحالية' : 'استعادة'}
+                        </button>
+                      </div>
+                    )) : (
+                      <p className="studio-layer-empty">لا توجد نسخ مرئية بعد.</p>
+                    )}
                   </div>
                 </div>
 
@@ -2106,12 +2715,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   key={key}
                   type="button"
                   className={`mini-btn ${draft.devicePreview.mode === key ? 'active' : ''}`}
-                  onClick={() =>
+                  onClick={() => {
                     setDraft((current) => ({
                       ...current,
                       devicePreview: { mode: key, ...preset },
-                    }))
-                  }
+                    }));
+                    recordActivity('تبديل جهاز المعاينة', preset.label);
+                  }}
                 >
                   {preset.label}
                 </button>
@@ -2135,6 +2745,14 @@ export default function StudioClient({ session, manifests, openings, inventory }
                 title="Ctrl/Cmd + Y"
               >
                 إعادة
+              </button>
+              <button
+                type="button"
+                className="mini-btn"
+                onClick={resetTemplate}
+                title="إعادة كل إعدادات الدعوة إلى الأصل"
+              >
+                Reset Template
               </button>
             </div>
             <div className="studio-toolbar-group studio-toolbar-group--ghost">

@@ -1060,7 +1060,54 @@ export const invitationRenderConfigSchema = z.object({
     cropY: z.number().optional(),
     hidden: z.boolean().optional(),
     locked: z.boolean().optional(),
+    deviceOverrides: z.object({
+      mobile: z.object({
+        x: z.number().optional(),
+        y: z.number().optional(),
+        fontSize: z.string().optional(),
+        width: z.string().optional(),
+        height: z.string().optional(),
+        opacity: z.number().optional(),
+        rotation: z.number().optional(),
+        cropX: z.number().optional(),
+        cropY: z.number().optional(),
+      }).optional(),
+      tablet: z.object({
+        x: z.number().optional(),
+        y: z.number().optional(),
+        fontSize: z.string().optional(),
+        width: z.string().optional(),
+        height: z.string().optional(),
+        opacity: z.number().optional(),
+        rotation: z.number().optional(),
+        cropX: z.number().optional(),
+        cropY: z.number().optional(),
+      }).optional(),
+      desktop: z.object({
+        x: z.number().optional(),
+        y: z.number().optional(),
+        fontSize: z.string().optional(),
+        width: z.string().optional(),
+        height: z.string().optional(),
+        opacity: z.number().optional(),
+        rotation: z.number().optional(),
+        cropX: z.number().optional(),
+        cropY: z.number().optional(),
+      }).optional(),
+    }).optional(),
   })).default([]),
+  nativeElementOverrides: z.record(z.object({
+    label: z.string().optional(),
+    selector: z.string().optional(),
+    kind: z.string().optional(),
+    x: z.number().optional(),
+    y: z.number().optional(),
+    scale: z.number().optional(),
+    rotation: z.number().optional(),
+    opacity: z.number().optional(),
+    hidden: z.boolean().optional(),
+    locked: z.boolean().optional(),
+  })).default({}),
   textOverrides: z.array(z.object({
     id: z.string(),
     path: z.string().optional(),
@@ -1405,6 +1452,16 @@ export function buildInvitationRenderConfig({ invitation, manifest, opening, pre
       : Array.isArray(invitation?.contentConfig?.__customElements)
         ? invitation.contentConfig.__customElements
         : [],
+    nativeElementOverrides:
+      invitation?.nativeElementOverrides
+      && typeof invitation.nativeElementOverrides === 'object'
+      && !Array.isArray(invitation.nativeElementOverrides)
+        ? invitation.nativeElementOverrides
+        : invitation?.contentConfig?.__nativeElementOverrides
+          && typeof invitation.contentConfig.__nativeElementOverrides === 'object'
+          && !Array.isArray(invitation.contentConfig.__nativeElementOverrides)
+          ? invitation.contentConfig.__nativeElementOverrides
+          : {},
     textOverrides: invitation?.textOverrides && typeof invitation.textOverrides === 'object' && !Array.isArray(invitation.textOverrides)
       ? Object.entries(invitation.textOverrides).map(([path, text]) => ({
           id: path,
@@ -1427,6 +1484,10 @@ export function buildInvitationRenderConfig({ invitation, manifest, opening, pre
         invitation?.uiConfig?.bilingualEnabled
         || invitation?.contentConfig?.__uiConfig?.bilingualEnabled,
       ),
+      deviceMode:
+        invitation?.uiConfig?.deviceMode
+        || invitation?.contentConfig?.__uiConfig?.deviceMode
+        || undefined,
       textLocks:
         invitation?.uiConfig?.textLocks && typeof invitation.uiConfig.textLocks === 'object' && !Array.isArray(invitation.uiConfig.textLocks)
           ? invitation.uiConfig.textLocks
