@@ -176,6 +176,8 @@
     entryPassUi: null,
     nativeOverlaySyncHandler: null,
     nativeOverlayRaf: 0,
+    editorDock: null,
+    editorDockHandler: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -738,15 +740,15 @@
       return false;
     }
 
-    if (node.closest('#farha-custom-elements, .farha-floating-text-editor, #farha-template-bar, #farha-native-overlay')) {
+    if (node.closest('#farha-custom-elements, .farha-floating-text-editor, #farha-template-bar, #farha-native-overlay, #farha-editor-dock')) {
       return false;
     }
 
-    if (node.matches('html, body, iframe, form, input, textarea, select, option, button, label, a')) {
+    if (node.matches('html, body, iframe, form, input, textarea, select, option, button')) {
       return false;
     }
 
-    if (node.closest('form, input, textarea, select, button, label, a')) {
+    if (node.closest('form, input, textarea, select, button')) {
       return false;
     }
 
@@ -765,15 +767,32 @@
     }
 
     const tagName = (node.tagName || '').toLowerCase();
+    const normalizedText = (node.textContent || '').replace(/\s+/g, ' ').trim();
     const hasVisualMedia = ['img', 'video', 'svg', 'canvas', 'picture'].includes(tagName) || style.backgroundImage !== 'none';
     const isDecorativeLayer = ['absolute', 'fixed', 'sticky'].includes(style.position) || style.transform !== 'none' || Boolean(node.dataset?.farhaSlot);
+    const hasSurfaceStyle =
+      (style.backgroundColor && style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent')
+      || style.boxShadow !== 'none'
+      || style.borderTopWidth !== '0px'
+      || style.borderRightWidth !== '0px'
+      || style.borderBottomWidth !== '0px'
+      || style.borderLeftWidth !== '0px';
+    const isTextCandidate =
+      normalizedText.length > 0
+      && normalizedText.length <= 180
+      && rect.width <= (window.innerWidth * 0.96)
+      && rect.height <= (window.innerHeight * 0.72);
     const coversWholeViewport = rect.width > (window.innerWidth * 0.98) && rect.height > (window.innerHeight * 0.86);
 
     if (hasVisualMedia) {
       return !coversWholeViewport || isDecorativeLayer;
     }
 
-    return isDecorativeLayer && !coversWholeViewport;
+    if (isTextCandidate) {
+      return !coversWholeViewport;
+    }
+
+    return (isDecorativeLayer || hasSurfaceStyle) && !coversWholeViewport;
   }
 
   function resolveNativeElementTarget(startNode) {
@@ -1113,6 +1132,107 @@
     }
 
     return overlay;
+  }
+
+  function ensureEditorDock() {
+    if (!document.getElementById('farha-editor-dock-style')) {
+      const style = document.createElement('style');
+      style.id = 'farha-editor-dock-style';
+      style.textContent = `
+        #farha-editor-dock {
+          position: fixed;
+          left: 14px;
+          bottom: 14px;
+          z-index: 2147482800;
+          display: none;
+          align-items: center;
+          gap: 8px;
+          padding: 10px;
+          border-radius: 22px;
+          background: rgba(255, 255, 255, 0.96);
+          border: 1px solid rgba(127, 42, 31, 0.14);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+          backdrop-filter: blur(14px);
+          direction: ltr;
+        }
+        #farha-editor-dock[data-visible="true"] {
+          display: flex;
+        }
+        #farha-editor-dock button {
+          border: none;
+          border-radius: 999px;
+          background: #fff7f4;
+          color: #7f2a1f;
+          height: 42px;
+          min-width: 42px;
+          padding: 0 14px;
+          font: 800 11px/1 Tajawal, sans-serif;
+          letter-spacing: .02em;
+          box-shadow: inset 0 0 0 1px rgba(127, 42, 31, 0.12);
+          cursor: pointer;
+        }
+        #farha-editor-dock button[data-kind="primary"] {
+          background: #7f2a1f;
+          color: #fff;
+          box-shadow: none;
+        }
+        @media (max-width: 640px) {
+          #farha-editor-dock {
+            left: 10px;
+            right: 10px;
+            bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            justify-content: center;
+            flex-wrap: wrap;
+          }
+          #farha-editor-dock button {
+            flex: 1 1 auto;
+            min-width: 72px;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    let dock = document.getElementById('farha-editor-dock');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.id = 'farha-editor-dock';
+      dock.dataset.visible = 'false';
+      dock.innerHTML = `
+        <button type="button" data-farha-editor-action="add-text" data-kind="primary">TEXT</button>
+        <button type="button" data-farha-editor-action="add-image">IMAGE</button>
+        <button type="button" data-farha-editor-action="open-layers">LAYERS</button>
+        <button type="button" data-farha-editor-action="cancel-add">ESC</button>
+      `;
+      dock.addEventListener('click', (event) => {
+        const actionButton = event.target.closest('[data-farha-editor-action]');
+        if (!actionButton) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_EMULATOR_TOOL_ACTION',
+          payload: {
+            action: actionButton.dataset.farhaEditorAction || '',
+          },
+        }, '*');
+      });
+      document.body.appendChild(dock);
+    }
+
+    runtimeState.editorDock = dock;
+    return dock;
+  }
+
+  function syncEditorDockState() {
+    const dock = runtimeState.editorDock || document.getElementById('farha-editor-dock');
+    if (!dock) {
+      return;
+    }
+
+    dock.dataset.visible = runtimeState.preview ? 'true' : 'false';
   }
 
   function syncNativeElementOverlay() {
@@ -1512,6 +1632,10 @@
     ensureMusicControls(fields.musicUrl || '');
     applyOpening(renderConfig.opening || { slug: 'native-template', type: 'native-template', config: {} });
     mountEntryPassLauncher(renderConfig.ui?.entryPass || null);
+    if (runtimeState.preview) {
+      ensureEditorDock();
+    }
+    syncEditorDockState();
     
     attachStudioInlineEditors(bindings);
     applyCustomElements(renderConfig.customElements || []);

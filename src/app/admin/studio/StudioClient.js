@@ -1878,6 +1878,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
   useEffect(() => {
     function handleMessage(event) {
+      const shouldRevealEditor = typeof window !== 'undefined' && window.innerWidth <= 1180;
       if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
         patchCustomElement(
           event.data.payload.id,
@@ -1896,6 +1897,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
         setOpenSection('layers');
+        if (shouldRevealEditor) {
+          setEditorOpen(true);
+        }
       } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_SELECT') {
         const nextId = event.data.payload?.id || null;
         setSelectedNativeElementId(nextId);
@@ -1908,6 +1912,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedTemplateTextLabel('');
         if (nextId) {
           setOpenSection('template-elements');
+          if (shouldRevealEditor) {
+            setEditorOpen(true);
+          }
         }
       } else if (event.data?.type === 'FARHA_TEMPLATE_TEXT_SELECT') {
         const nextPath = event.data.payload?.path || null;
@@ -1918,6 +1925,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setSelectedNativeElementId(null);
           setSelectedNativeElementLabel('');
           setOpenSection('template-text');
+          if (shouldRevealEditor) {
+            setEditorOpen(true);
+          }
         }
       } else if (event.data?.type === 'FARHA_MEDIA_REPLACE_REQUEST') {
         const scope = event.data.payload?.scope;
@@ -1983,6 +1993,9 @@ export default function StudioClient({ session, manifests, openings, inventory }
           cropY: toFiniteNumber(event.data.payload?.cropY, 50),
           aspectRatio: toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844),
         });
+        if (shouldRevealEditor) {
+          setEditorOpen(true);
+        }
       } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
         const nextId = event.data.payload?.id || null;
         if (!nextId) {
@@ -2030,6 +2043,53 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setOpenSection('template-text');
           recordActivity('تعديل نص من المعاينة', label || path);
         }
+      } else if (event.data?.type === 'FARHA_EMULATOR_TOOL_ACTION') {
+        const action = event.data.payload?.action || '';
+        if (action === 'add-text') {
+          setDraft((current) => ({
+            ...current,
+            ui: {
+              ...(current.ui || {}),
+              addCustomElementMode: 'text',
+            },
+          }));
+          setCanvasClickMenu(null);
+          setOpenSection('custom-elements');
+          setNotice('وضع إضافة النص مفعل. اضغط داخل المحاكي لتثبيت النص الجديد.');
+          setEditorOpen(true);
+          return;
+        }
+        if (action === 'add-image') {
+          setDraft((current) => ({
+            ...current,
+            ui: {
+              ...(current.ui || {}),
+              addCustomElementMode: 'image',
+            },
+          }));
+          setCanvasClickMenu(null);
+          setOpenSection('custom-elements');
+          setNotice('وضع إضافة الصورة مفعل. اضغط داخل المحاكي لاختيار الصورة وموضعها.');
+          setEditorOpen(true);
+          return;
+        }
+        if (action === 'cancel-add') {
+          setDraft((current) => ({
+            ...current,
+            ui: {
+              ...(current.ui || {}),
+              addCustomElementMode: '',
+            },
+          }));
+          setCanvasClickMenu(null);
+          setNotice('تم إلغاء وضع الإضافة من المحاكي.');
+          return;
+        }
+        if (action === 'open-layers') {
+          setOpenSection(selectedElementId ? 'layers' : 'custom-elements');
+          setEditorOpen(true);
+          return;
+        }
       } else if (event.data?.type === 'FARHA_CANVAS_CLICK') {
         const { x, y } = event.data.payload;
         if (draft.ui?.addCustomElementMode === 'text') {
@@ -2038,19 +2098,19 @@ export default function StudioClient({ session, manifests, openings, inventory }
           return;
         }
         if (draft.ui?.addCustomElementMode === 'image') {
-          setCanvasClickMenu({ x, y, forceImage: true });
+          setCanvasClickMenu({ x, y, forceImage: true, token: Date.now() });
           return;
         }
         setSelectedNativeElementId(null);
         setSelectedNativeElementLabel('');
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
-        setCanvasClickMenu({ x, y });
+        setCanvasClickMenu({ x, y, token: Date.now() });
       }
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [currentDeviceMode, draft.ui?.addCustomElementMode]);
+  });
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -3472,6 +3532,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
                     value=""
                     accept="image"
                     folder="studio-free-elements"
+                    autoOpenToken={canvasClickMenu.forceImage ? canvasClickMenu.token : undefined}
+                    onOpenChange={(open) => {
+                      if (!open && canvasClickMenu.forceImage) {
+                        setCanvasClickMenu(null);
+                      }
+                    }}
                     onChange={(url) => {
                       if (url) {
                         addCustomElement('image', { x: canvasClickMenu.x, y: canvasClickMenu.y }, url);
