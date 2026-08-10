@@ -131,6 +131,7 @@ function buildDefaultNativeElementOverride(seed = {}) {
     label: '',
     selector: '',
     kind: 'native',
+    textContent: '',
     mediaUrl: '',
     cropX: 50,
     cropY: 50,
@@ -157,6 +158,7 @@ function normalizeNativeElementOverrides(overrides) {
 
     accumulator[key] = buildDefaultNativeElementOverride({
       ...value,
+      textContent: value.textContent == null ? '' : String(value.textContent),
       mediaUrl: value.mediaUrl ? String(value.mediaUrl) : '',
       cropX: toFiniteNumber(value.cropX, 50),
       cropY: toFiniteNumber(value.cropY, 50),
@@ -1918,12 +1920,15 @@ export default function StudioClient({ session, manifests, openings, inventory }
         }
       } else if (event.data?.type === 'FARHA_TEMPLATE_TEXT_SELECT') {
         const nextPath = event.data.payload?.path || null;
+        const preserveNativeSelection = Boolean(event.data.payload?.preserveNativeSelection);
         setSelectedTemplateTextPath(nextPath);
         setSelectedTemplateTextLabel(event.data.payload?.label || '');
         if (nextPath) {
           setSelectedElementId(null);
-          setSelectedNativeElementId(null);
-          setSelectedNativeElementLabel('');
+          if (!preserveNativeSelection) {
+            setSelectedNativeElementId(null);
+            setSelectedNativeElementLabel('');
+          }
           setOpenSection('template-text');
           if (shouldRevealEditor) {
             setEditorOpen(true);

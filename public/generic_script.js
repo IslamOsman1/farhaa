@@ -395,7 +395,7 @@
 
   function selectTemplateText(path, options = {}) {
     runtimeState.selectedTemplateTextPath = path || null;
-    if (path) {
+    if (path && !options.preserveNativeSelection) {
       selectNativeElement(null, { silent: true });
     }
     syncTemplateTextSelection();
@@ -408,6 +408,7 @@
             text: options.text ?? '',
             label: options.label || getStudioFieldLabel(path),
             locked: isTextPathLocked(path),
+            preserveNativeSelection: Boolean(options.preserveNativeSelection),
           }
         : { path: null },
     }, '*');
@@ -752,10 +753,6 @@
       return false;
     }
 
-    if (node.classList?.contains('farha-studio-editable') || node.closest('.farha-studio-editable')) {
-      return false;
-    }
-
     const style = window.getComputedStyle(node);
     if (style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') {
       return false;
@@ -855,6 +852,10 @@
     if (imageNode?.dataset?.farhaNativeBaseObjectFit === undefined) {
       imageNode.dataset.farhaNativeBaseObjectFit = imageNode.style.objectFit || '';
     }
+    const textTarget = getNativeTextEditTarget(node);
+    if (textTarget?.dataset?.farhaNativeBaseText === undefined) {
+      textTarget.dataset.farhaNativeBaseText = textTarget.innerText || textTarget.textContent || '';
+    }
 
     node.classList.add('farha-native-editable-target');
     node.dataset.farhaNativeManaged = 'true';
@@ -942,6 +943,45 @@
     return window.getComputedStyle(node).backgroundImage !== 'none';
   }
 
+  function getNativeTextEditTarget(node) {
+    if (!node || isNativeReplaceableImageNode(node)) {
+      return null;
+    }
+
+    if (
+      node.classList?.contains('farha-studio-editable')
+      || node.dataset?.farhaStudioField
+      || node.dataset?.farhaTextPath
+    ) {
+      return node;
+    }
+
+    const explicitTarget = node.querySelector?.('.farha-studio-editable, [data-farha-studio-field], [data-farha-text-path]');
+    if (explicitTarget && explicitTarget.children.length <= 2) {
+      return explicitTarget;
+    }
+
+    const normalizedText = (node.textContent || '').replace(/\s+/g, ' ').trim();
+    if (normalizedText && node.children.length === 0) {
+      return node;
+    }
+
+    return null;
+  }
+
+  function getNativeTextPathForNode(node) {
+    const target = getNativeTextEditTarget(node);
+    if (!target) {
+      return '';
+    }
+
+    return target.dataset?.farhaStudioField || target.dataset?.farhaTextPath || '';
+  }
+
+  function isNativeTextEditableNode(node) {
+    return Boolean(getNativeTextEditTarget(node));
+  }
+
   function applyNativeMediaToNode(node, mediaUrl = '') {
     if (!node) {
       return;
@@ -988,6 +1028,28 @@
     }
   }
 
+  function applyNativeTextToNode(node, override = {}) {
+    const textTarget = getNativeTextEditTarget(node);
+    if (!textTarget) {
+      return;
+    }
+
+    const textPath = getNativeTextPathForNode(node);
+    const nextText = override?.textContent;
+    if (typeof nextText === 'string') {
+      textTarget.textContent = nextText;
+      return;
+    }
+
+    if (textPath) {
+      return;
+    }
+
+    if (textTarget.dataset?.farhaNativeBaseText !== undefined) {
+      textTarget.textContent = textTarget.dataset.farhaNativeBaseText;
+    }
+  }
+
   function resetNativeElementNode(node) {
     if (!node) {
       return;
@@ -1007,6 +1069,7 @@
       imageNode.style.objectPosition = imageNode.dataset.farhaNativeBaseObjectPosition || '';
       imageNode.style.objectFit = imageNode.dataset.farhaNativeBaseObjectFit || '';
     }
+    applyNativeTextToNode(node, {});
     node.dataset.farhaSelected = 'false';
     node.dataset.farhaLocked = 'false';
     node.dataset.farhaHidden = 'false';
@@ -1047,6 +1110,7 @@
     node.dataset.farhaSelected = String(runtimeState.selectedNativeElementId || '') === String(node.dataset.farhaNativeId || '') ? 'true' : 'false';
     applyNativeMediaToNode(node, mediaUrl);
     applyNativeCropToNode(node, override);
+    applyNativeTextToNode(node, override);
   }
 
   function getNativeElementCandidatesRoot() {
@@ -1113,6 +1177,7 @@
         <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
           <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="Move element">MOVE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="Edit text">EDIT</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="Replace image">REPLACE</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="Crop image">CROP</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
@@ -1274,6 +1339,7 @@
     const toolbar = overlay.querySelector('[data-farha-native-role="toolbar"]');
     const label = overlay.querySelector('[data-farha-native-role="label"]');
     const lockButton = overlay.querySelector('[data-farha-native-action="lock"]');
+    const editButton = overlay.querySelector('[data-farha-native-action="edit"]');
     const replaceButton = overlay.querySelector('[data-farha-native-action="replace"]');
     const cropButton = overlay.querySelector('[data-farha-native-action="crop-toggle"]');
 
@@ -1294,6 +1360,9 @@
     if (lockButton) {
       lockButton.dataset.locked = currentOverride.locked ? 'true' : 'false';
       lockButton.textContent = currentOverride.locked ? 'فتح' : 'قفل';
+    }
+    if (editButton) {
+      editButton.style.display = isNativeTextEditableNode(selectedNode) ? 'inline-flex' : 'none';
     }
     if (replaceButton) {
       replaceButton.style.display = isNativeReplaceableImageNode(selectedNode) ? 'inline-flex' : 'none';
@@ -3398,9 +3467,20 @@
           }, { passive: true });
           el.addEventListener('click', (event) => {
             event.stopPropagation();
+            const nativeId = buildNativeElementId(el);
+            const alreadySelected = String(runtimeState.selectedNativeElementId || '') === String(nativeId);
+            selectNativeElement(el, {
+              label: getStudioFieldLabel(fieldKey),
+              selector: binding.selector || nativeId,
+              kind: 'text',
+            });
+            if (!alreadySelected) {
+              return;
+            }
             selectTemplateText(fieldKey, {
               text: el.innerText || '',
               label: getStudioFieldLabel(fieldKey),
+              preserveNativeSelection: true,
             });
             if (isTextPathLocked(fieldKey)) {
               return;
@@ -3415,6 +3495,7 @@
                     path: fieldKey,
                     text: nextValue.trim(),
                     label: getStudioFieldLabel(fieldKey),
+                    preserveNativeSelection: true,
                   },
                 }, '*');
               },
@@ -3856,6 +3937,48 @@
       applyNativeOverrideToNode(node, nextOverride);
       queueNativeOverlaySync();
     };
+    const openNativeTextEditor = (node, overrideMeta = {}) => {
+      const textTarget = getNativeTextEditTarget(node);
+      if (!textTarget) {
+        return;
+      }
+
+      const textPath = getNativeTextPathForNode(node);
+      openFloatingTextEditor({
+        target: textTarget,
+        initialValue: textTarget.innerText || textTarget.textContent || '',
+        onCommit: (nextValue) => {
+          const normalizedValue = nextValue.trim();
+          if (textPath) {
+            selectTemplateText(textPath, {
+              text: normalizedValue,
+              label: getStudioFieldLabel(textPath),
+              preserveNativeSelection: true,
+            });
+            window.parent.postMessage({
+              type: 'FARHA_TEXT_OVERRIDE',
+              payload: {
+                path: textPath,
+                text: normalizedValue,
+                label: getStudioFieldLabel(textPath),
+                preserveNativeSelection: true,
+              },
+            }, '*');
+            return;
+          }
+
+          const id = buildNativeElementId(node);
+          const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+          const nextOverride = {
+            ...currentOverride,
+            ...overrideMeta,
+            textContent: normalizedValue,
+          };
+          applyLocalNativeOverride(id, node, nextOverride);
+          persistNativeUpdate(id, node, nextOverride);
+        },
+      });
+    };
 
     let activeTransform = null;
 
@@ -4105,6 +4228,14 @@
           return;
         }
 
+        if (action === 'edit') {
+          if (!isNativeTextEditableNode(selectedNode) || baseOverride.locked) {
+            return;
+          }
+          openNativeTextEditor(selectedNode, baseOverride);
+          return;
+        }
+
         if (action === 'lock') {
           const nextOverride = {
             ...baseOverride,
@@ -4212,6 +4343,8 @@
           }
 
           if (String(runtimeState.selectedNativeElementId || '') !== String(nativeId)) {
+            event.preventDefault();
+            event.stopPropagation();
             selectNativeElement(nativeTarget, nativeMeta);
             return;
           }
@@ -4228,7 +4361,6 @@
             startNativeCropTransform(nativeTarget, point);
             return;
           }
-          startNativeTransform(nativeTarget, point);
           return;
         }
 
@@ -4243,7 +4375,14 @@
 
       if (!point) return;
 
-      selectElement(wrapper.dataset.id);
+      const wrapperId = wrapper.dataset.id;
+      const isWrapperSelected = String(runtimeState.selectedCustomElementId || '') === String(wrapperId);
+      selectElement(wrapperId);
+      if (!actionNode && !isWrapperSelected) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (wrapper.dataset.locked === 'true' && actionNode?.dataset?.farhaAction !== 'delete') {
         event.preventDefault();
         event.stopPropagation();
@@ -4299,6 +4438,12 @@
         target?.isContentEditable ||
         target?.closest?.('[contenteditable="true"], input, textarea, select');
       if (isEditableTarget && !action) {
+        return;
+      }
+
+      if (!action) {
+        event.preventDefault();
+        event.stopPropagation();
         return;
       }
 
@@ -4736,26 +4881,33 @@
         if (runtimeState.preview) {
           inner.contentEditable = 'false';
           inner.setAttribute('tabindex', '0');
-          inner.addEventListener('mousedown', (e) => e.stopPropagation());
-          inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
-          inner.addEventListener('click', (e) => {
-            e.stopPropagation();
-            selectElement(el.id);
-            if (el.locked) {
-              return;
-            }
-            openFloatingTextEditor({
-              target: inner,
-              initialValue: inner.innerText || '',
-              onCommit: (nextValue) => {
-                inner.style.boxShadow = 'none';
-                window.parent.postMessage({
-                  type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-                  payload: { id: el.id, updates: { content: nextValue } }
-                }, '*');
-              },
+          if (!inner.dataset.farhaInlineBound) {
+            inner.addEventListener('mousedown', (e) => e.stopPropagation());
+            inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+            inner.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const alreadySelected = String(runtimeState.selectedCustomElementId || '') === String(el.id);
+              selectElement(el.id);
+              if (!alreadySelected) {
+                return;
+              }
+              if (el.locked) {
+                return;
+              }
+              openFloatingTextEditor({
+                target: inner,
+                initialValue: inner.innerText || '',
+                onCommit: (nextValue) => {
+                  inner.style.boxShadow = 'none';
+                  window.parent.postMessage({
+                    type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+                    payload: { id: el.id, updates: { content: nextValue } }
+                  }, '*');
+                },
+              });
             });
-          });
+            inner.dataset.farhaInlineBound = 'true';
+          }
         } else {
           inner.removeAttribute('contenteditable');
         }
