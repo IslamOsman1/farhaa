@@ -514,7 +514,7 @@
         border: 1px solid rgba(127, 42, 31, 0.12);
         pointer-events: auto;
         transform: translateY(calc(-100% - 10px));
-        max-width: min(78vw, 320px);
+        max-width: min(86vw, 460px);
       }
       .farha-native-overlay__toolbar[data-inside="true"] {
         transform: translateY(10px);
@@ -554,6 +554,16 @@
       .farha-native-overlay__btn[data-locked="true"] {
         background: #7f2a1f;
         color: #fff;
+      }
+      .farha-native-overlay__btn--wide {
+        width: auto;
+        min-width: 56px;
+        padding: 0 12px;
+        font-size: 11px;
+        letter-spacing: .02em;
+      }
+      .farha-native-overlay__btn--danger {
+        color: #b42318;
       }
       .farha-native-overlay__handle {
         position: absolute;
@@ -801,10 +811,67 @@
     if (node.dataset.farhaNativeBaseTouchAction === undefined) {
       node.dataset.farhaNativeBaseTouchAction = node.style.touchAction || '';
     }
+    if (node.dataset.farhaNativeBaseBackgroundImage === undefined) {
+      const computedBackgroundImage = window.getComputedStyle(node).backgroundImage;
+      node.dataset.farhaNativeBaseBackgroundImage = node.style.backgroundImage || (computedBackgroundImage !== 'none' ? computedBackgroundImage : '');
+    }
+    if (node.dataset.farhaNativeBaseSrc === undefined) {
+      const mediaNode = ((node.tagName || '').toLowerCase() === 'picture' ? node.querySelector('img') : node);
+      node.dataset.farhaNativeBaseSrc = mediaNode?.getAttribute?.('src') || '';
+    }
 
     node.classList.add('farha-native-editable-target');
     node.dataset.farhaNativeManaged = 'true';
     buildNativeElementId(node);
+  }
+
+  function getNativeImageTarget(node) {
+    if (!node) {
+      return null;
+    }
+
+    const tagName = (node.tagName || '').toLowerCase();
+    if (tagName === 'picture') {
+      return node.querySelector('img');
+    }
+
+    return node;
+  }
+
+  function isNativeReplaceableImageNode(node) {
+    if (!node) {
+      return false;
+    }
+
+    const targetNode = getNativeImageTarget(node);
+    const tagName = (targetNode?.tagName || '').toLowerCase();
+    if (tagName === 'img') {
+      return true;
+    }
+
+    return window.getComputedStyle(node).backgroundImage !== 'none';
+  }
+
+  function applyNativeMediaToNode(node, mediaUrl = '') {
+    if (!node) {
+      return;
+    }
+
+    ensureNativeElementBaseState(node);
+    const targetNode = getNativeImageTarget(node);
+    const targetTagName = (targetNode?.tagName || '').toLowerCase();
+    const safeUrl = mediaUrl == null ? '' : String(mediaUrl).trim();
+
+    if (targetTagName === 'img') {
+      const nextSrc = safeUrl || node.dataset.farhaNativeBaseSrc || '';
+      if (nextSrc) {
+        targetNode.setAttribute('src', nextSrc);
+      }
+    }
+
+    if (window.getComputedStyle(node).backgroundImage !== 'none' || node.dataset.farhaNativeBaseBackgroundImage) {
+      node.style.backgroundImage = safeUrl ? `url("${safeUrl}")` : (node.dataset.farhaNativeBaseBackgroundImage || '');
+    }
   }
 
   function resetNativeElementNode(node) {
@@ -818,6 +885,7 @@
     node.style.display = node.dataset.farhaNativeBaseDisplay || '';
     node.style.pointerEvents = node.dataset.farhaNativeBasePointerEvents || '';
     node.style.touchAction = node.dataset.farhaNativeBaseTouchAction || '';
+    applyNativeMediaToNode(node, '');
     node.dataset.farhaSelected = 'false';
     node.dataset.farhaLocked = 'false';
     node.dataset.farhaHidden = 'false';
@@ -837,6 +905,7 @@
     const opacity = Math.min(1, Math.max(0.05, Number.isFinite(Number(override?.opacity)) ? Number(override.opacity) : 1));
     const hidden = Boolean(override?.hidden);
     const locked = Boolean(override?.locked);
+    const mediaUrl = override?.mediaUrl == null ? '' : String(override.mediaUrl).trim();
     const nextTransform = [
       baseTransform,
       `translate3d(${x}px, ${y}px, 0)`,
@@ -854,6 +923,7 @@
     node.dataset.farhaLocked = locked ? 'true' : 'false';
     node.dataset.farhaHidden = hidden ? 'true' : 'false';
     node.dataset.farhaSelected = String(runtimeState.selectedNativeElementId || '') === String(node.dataset.farhaNativeId || '') ? 'true' : 'false';
+    applyNativeMediaToNode(node, mediaUrl);
   }
 
   function getNativeElementCandidatesRoot() {
@@ -919,8 +989,11 @@
       overlay.innerHTML = `
         <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
           <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="Move element">MOVE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="Replace image">REPLACE</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="Delete element">X</button>
         </div>
         <button type="button" class="farha-native-overlay__handle farha-native-overlay__handle--rotate" data-farha-native-action="rotate" aria-label="تدوير العنصر">↻</button>
         <button type="button" class="farha-native-overlay__handle" data-farha-native-action="scale" aria-label="تكبير أو تصغير العنصر">+</button>
@@ -976,6 +1049,7 @@
     const toolbar = overlay.querySelector('[data-farha-native-role="toolbar"]');
     const label = overlay.querySelector('[data-farha-native-role="label"]');
     const lockButton = overlay.querySelector('[data-farha-native-action="lock"]');
+    const replaceButton = overlay.querySelector('[data-farha-native-action="replace"]');
 
     overlay.dataset.visible = 'true';
     overlay.style.pointerEvents = 'none';
@@ -994,6 +1068,9 @@
     if (lockButton) {
       lockButton.dataset.locked = currentOverride.locked ? 'true' : 'false';
       lockButton.textContent = currentOverride.locked ? 'فتح' : 'قفل';
+    }
+    if (replaceButton) {
+      replaceButton.style.display = isNativeReplaceableImageNode(selectedNode) ? 'inline-flex' : 'none';
     }
   }
 
@@ -3749,11 +3826,13 @@
         event.preventDefault();
         event.stopPropagation();
 
-        if ((action === 'scale' || action === 'rotate') && point && !baseOverride.locked) {
+        if ((action === 'scale' || action === 'rotate' || action === 'move') && point && !baseOverride.locked) {
           if (action === 'scale') {
             startNativeScaleTransform(selectedNode, point);
-          } else {
+          } else if (action === 'rotate') {
             startNativeRotateTransform(selectedNode, point);
+          } else {
+            startNativeTransform(selectedNode, point);
           }
           return;
         }
@@ -3765,6 +3844,22 @@
           };
           applyLocalNativeOverride(selectedId, selectedNode, nextOverride);
           persistNativeUpdate(selectedId, selectedNode, nextOverride);
+          return;
+        }
+
+        if (action === 'replace') {
+          if (!isNativeReplaceableImageNode(selectedNode)) {
+            return;
+          }
+
+          window.parent.postMessage({
+            type: 'FARHA_MEDIA_REPLACE_REQUEST',
+            payload: {
+              scope: 'native',
+              id: selectedId,
+              label: baseOverride.label,
+            },
+          }, '*');
           return;
         }
 
@@ -3782,6 +3877,17 @@
               label: baseOverride.label,
             },
           }, '*');
+          return;
+        }
+
+        if (action === 'delete') {
+          const nextOverride = {
+            ...baseOverride,
+            hidden: true,
+          };
+          applyLocalNativeOverride(selectedId, selectedNode, nextOverride);
+          persistNativeUpdate(selectedId, selectedNode, nextOverride);
+          selectNativeElement(null);
         }
         return;
       }
@@ -3855,6 +3961,20 @@
         window.parent.postMessage({
           type: 'FARHA_CUSTOM_ELEMENT_DELETE',
           payload: { id: wrapper.dataset.id },
+        }, '*');
+        return;
+      }
+
+      if (action === 'replace' && wrapper.dataset.type === 'image') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_MEDIA_REPLACE_REQUEST',
+          payload: {
+            scope: 'custom',
+            id: wrapper.dataset.id,
+            label: wrapper.dataset.name || 'صورة حرة',
+          },
         }, '*');
         return;
       }
@@ -4200,6 +4320,7 @@
       container.appendChild(wrapper);
 
       wrapper.dataset.type = el.type;
+      wrapper.dataset.name = el.name || '';
       wrapper.dataset.cropX = String(Number.isFinite(parseFloat(el.cropX)) ? parseFloat(el.cropX) : 50);
       wrapper.dataset.cropY = String(Number.isFinite(parseFloat(el.cropY)) ? parseFloat(el.cropY) : 50);
       wrapper.dataset.cropMode = wrapper.dataset.cropMode || 'false';
@@ -4374,8 +4495,17 @@
 
         controlsRoot.style.alignItems = 'center';
         controlsRoot.style.justifyContent = 'flex-end';
-        controlsRoot.appendChild(makeActionButton('✥', 'move'));
+        const moveButton = makeActionButton('MOVE', 'move');
+        moveButton.style.width = '56px';
+        moveButton.style.fontSize = '11px';
+        moveButton.style.fontWeight = '800';
+        controlsRoot.appendChild(moveButton);
         if (el.type === 'image') {
+          const replaceButton = makeActionButton('REPLACE', 'replace');
+          replaceButton.style.width = '74px';
+          replaceButton.style.fontSize = '10px';
+          replaceButton.style.fontWeight = '800';
+          controlsRoot.appendChild(replaceButton);
           const cropButton = makeActionButton('✂', 'crop-toggle');
           if (wrapper.dataset.cropMode === 'true') {
             cropButton.style.background = '#7f2a1f';
@@ -4383,9 +4513,9 @@
           }
           controlsRoot.appendChild(cropButton);
         }
-        const deleteButton = makeActionButton('×', 'delete');
+        const deleteButton = makeActionButton('X', 'delete');
         deleteButton.style.color = '#b42318';
-        deleteButton.style.fontSize = '22px';
+        deleteButton.style.fontSize = '18px';
         deleteButton.style.fontWeight = '700';
         controlsRoot.appendChild(deleteButton);
 

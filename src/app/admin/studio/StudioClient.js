@@ -131,6 +131,7 @@ function buildDefaultNativeElementOverride(seed = {}) {
     label: '',
     selector: '',
     kind: 'native',
+    mediaUrl: '',
     x: 0,
     y: 0,
     scale: 1,
@@ -626,6 +627,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [selectedNativeElementLabel, setSelectedNativeElementLabel] = useState('');
   const [selectedTemplateTextPath, setSelectedTemplateTextPath] = useState(null);
   const [selectedTemplateTextLabel, setSelectedTemplateTextLabel] = useState('');
+  const [replaceMediaRequest, setReplaceMediaRequest] = useState(null);
   const [styleClipboard, setStyleClipboard] = useState(null);
   const [historyMeta, setHistoryMeta] = useState({ canUndo: false, canRedo: false, pastCount: 0, futureCount: 0 });
   const [activityLog, setActivityLog] = useState([]);
@@ -1087,6 +1089,33 @@ export default function StudioClient({ session, manifests, openings, inventory }
     });
   }
 
+  function applyMediaReplacement(url) {
+    if (!url || !replaceMediaRequest?.id) {
+      setReplaceMediaRequest(null);
+      return;
+    }
+
+    if (replaceMediaRequest.scope === 'custom') {
+      patchCustomElement(replaceMediaRequest.id, { content: url });
+      setSelectedElementId(replaceMediaRequest.id);
+      setSelectedNativeElementId(null);
+      setSelectedNativeElementLabel('');
+      setNotice(`تم استبدال صورة العنصر: ${replaceMediaRequest.label || 'صورة حرة'}`);
+      recordActivity('استبدال صورة عنصر حر', replaceMediaRequest.label || replaceMediaRequest.id);
+      setOpenSection('layers');
+    } else if (replaceMediaRequest.scope === 'native') {
+      patchNativeElement(replaceMediaRequest.id, { mediaUrl: url, hidden: false });
+      setSelectedNativeElementId(replaceMediaRequest.id);
+      setSelectedNativeElementLabel(replaceMediaRequest.label || '');
+      setSelectedElementId(null);
+      setNotice(`تم استبدال صورة العنصر الأصلي: ${replaceMediaRequest.label || 'عنصر صوري'}`);
+      recordActivity('استبدال صورة عنصر قالب', replaceMediaRequest.label || replaceMediaRequest.id);
+      setOpenSection('template-elements');
+    }
+
+    setReplaceMediaRequest(null);
+  }
+
   function resetSelectedNativeElement() {
     if (!selectedNativeElementId) {
       return;
@@ -1406,6 +1435,33 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setSelectedNativeElementLabel('');
           setOpenSection('template-text');
         }
+      } else if (event.data?.type === 'FARHA_MEDIA_REPLACE_REQUEST') {
+        const scope = event.data.payload?.scope;
+        const nextId = event.data.payload?.id || null;
+        const nextLabel = event.data.payload?.label || '';
+        if (!nextId || (scope !== 'custom' && scope !== 'native')) {
+          return;
+        }
+
+        if (scope === 'custom') {
+          setSelectedElementId(nextId);
+          setSelectedNativeElementId(null);
+          setSelectedNativeElementLabel('');
+          setOpenSection('layers');
+        } else {
+          setSelectedNativeElementId(nextId);
+          setSelectedNativeElementLabel(nextLabel);
+          setSelectedElementId(null);
+          setOpenSection('template-elements');
+        }
+
+        setEditorOpen(true);
+        setReplaceMediaRequest({
+          scope,
+          id: nextId,
+          label: nextLabel,
+          token: Date.now(),
+        });
       } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
         const nextId = event.data.payload?.id || null;
         if (!nextId) {
@@ -2904,6 +2960,20 @@ export default function StudioClient({ session, manifests, openings, inventory }
           </div>
 
           {notice ? <div className="admin-alert info">{notice}</div> : null}
+          {replaceMediaRequest ? (
+            <div className="admin-alert info">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <span>
+                  استبدال صورة:
+                  {' '}
+                  <strong>{replaceMediaRequest.label || (replaceMediaRequest.scope === 'custom' ? 'صورة حرة' : 'عنصر صوري')}</strong>
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <button type="button" className="mini-btn" onClick={() => setReplaceMediaRequest(null)}>إلغاء</button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="studio-editor__sections">
             {activeSections.map((sectionKey) => renderAccordionSection(sectionKey))}
@@ -2919,6 +2989,23 @@ export default function StudioClient({ session, manifests, openings, inventory }
           </div>
         </div>
       </aside>
+      {replaceMediaRequest ? (
+        <MediaPicker
+          key={`${replaceMediaRequest.scope}-${replaceMediaRequest.id}-${replaceMediaRequest.token}`}
+          label="اختيار صورة جديدة"
+          value=""
+          accept="image"
+          folder={replaceMediaRequest.scope === 'custom' ? 'studio-free-elements' : 'studio-native-elements'}
+          autoOpenToken={replaceMediaRequest.token}
+          onOpenChange={(open) => {
+            if (!open) {
+              setReplaceMediaRequest((current) => (current?.token === replaceMediaRequest.token ? null : current));
+            }
+          }}
+          onChange={(url) => applyMediaReplacement(url)}
+          trigger={<button type="button" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1}>open</button>}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1100,6 +1100,7 @@ export const invitationRenderConfigSchema = z.object({
     label: z.string().optional(),
     selector: z.string().optional(),
     kind: z.string().optional(),
+    mediaUrl: z.string().optional(),
     x: z.number().optional(),
     y: z.number().optional(),
     scale: z.number().optional(),

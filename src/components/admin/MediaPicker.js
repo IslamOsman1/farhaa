@@ -21,6 +21,8 @@ export default function MediaPicker({
   folder = 'picker',
   onChange,
   trigger,
+  autoOpenToken,
+  onOpenChange,
 }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -28,6 +30,18 @@ export default function MediaPicker({
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (autoOpenToken == null) {
+      return;
+    }
+
+    setOpen(true);
+  }, [autoOpenToken]);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;
