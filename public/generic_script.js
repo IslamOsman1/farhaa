@@ -382,6 +382,106 @@
     return runtimeState.manifest?.editableFields?.find((field) => field.key === path)?.labelAr || path;
   }
 
+  function findTemplateTextNode(path, bindingsOverride = null) {
+    if (!path) {
+      return null;
+    }
+
+    const directNode = queryAll(`[data-farha-studio-field="${path}"], [data-farha-text-path="${path}"]`)
+      .find((node) => node && typeof node.textContent === 'string');
+    if (directNode) {
+      return directNode;
+    }
+
+    const bindings =
+      bindingsOverride
+      || (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+      || fallbackBindings
+      || {};
+    const binding = bindings[path];
+    if (!binding || binding.method !== 'text' || !binding.selector) {
+      return null;
+    }
+
+    return queryAll(binding.selector).find((node) => node && typeof node.textContent === 'string') || null;
+  }
+
+  function buildTemplateTextCatalog(bindingsOverride = null) {
+    const bindings =
+      bindingsOverride
+      || (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+      || fallbackBindings
+      || {};
+
+    return Object.entries(bindings)
+      .filter(([, binding]) => binding && binding.method === 'text')
+      .map(([path, binding]) => {
+        const node = findTemplateTextNode(path, bindings);
+        const rawText = node?.innerText || node?.textContent || '';
+        return {
+          path,
+          label: getStudioFieldLabel(path),
+          selector: binding.selector || path,
+          locked: isTextPathLocked(path),
+          text: String(rawText || '').trim(),
+        };
+      })
+      .filter((item) => item.path);
+  }
+
+  function postTemplateTextCatalog(bindingsOverride = null) {
+    window.parent.postMessage({
+      type: 'FARHA_TEMPLATE_TEXT_CATALOG',
+      payload: {
+        items: buildTemplateTextCatalog(bindingsOverride),
+      },
+    }, '*');
+  }
+
+  function buildNativeElementCatalog() {
+    const catalogMap = new Map();
+
+    getAllNativeElementCandidates().forEach((node) => {
+      const id = buildNativeElementId(node);
+      if (!id || catalogMap.has(id)) {
+        return;
+      }
+
+      const override = runtimeState.nativeElementOverrides?.[id] || {};
+      catalogMap.set(id, {
+        id,
+        label: override.label || getNativeElementLabel(node),
+        selector: override.selector || getNativeElementSelectorHint(node) || id,
+        kind: override.kind || getNativeElementKind(node),
+        previewUrl: getNativeElementPreviewUrl(node),
+        basePreviewUrl: getNativeElementBasePreviewUrl(node),
+        aspectRatio: getNodeAspectRatio(node),
+        locked: Boolean(override.locked),
+        hidden: Boolean(override.hidden),
+      });
+    });
+
+    return Array.from(catalogMap.values());
+  }
+
+  function postNativeElementCatalog() {
+    window.parent.postMessage({
+      type: 'FARHA_NATIVE_ELEMENT_CATALOG',
+      payload: {
+        items: buildNativeElementCatalog(),
+      },
+    }, '*');
+  }
+
+  function postStudioCatalogs(bindingsOverride = null) {
+    if (!runtimeState.preview) {
+      return;
+    }
+
+    postTemplateTextCatalog(bindingsOverride);
+    postNativeElementCatalog();
+  }
+
   function syncTemplateTextSelection() {
     queryAll('.farha-studio-editable').forEach((node) => {
       const path = node.dataset.farhaStudioField || '';
@@ -1570,7 +1670,64 @@
   function installMessageBridge() {
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin) return;
-      if (!event.data || event.data.type !== 'FARHA_RENDER_CONFIG' || event.data.version !== '1.0.0') {
+      if (!event.data) {
+        return;
+      }
+
+      if (event.data.type === 'FARHA_REQUEST_STUDIO_CATALOGS') {
+        const bindings =
+          (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+          || fallbackBindings
+          || {};
+        postStudioCatalogs(bindings);
+        return;
+      }
+
+      if (event.data.type === 'FARHA_SELECT_NATIVE_ELEMENT') {
+        const nextId = event.data.payload?.id;
+        if (!nextId) {
+          return;
+        }
+
+        const node = findNativeElementById(nextId);
+        if (node) {
+          node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
+          selectNativeElement(node);
+        }
+        return;
+      }
+
+      if (event.data.type === 'FARHA_SELECT_TEMPLATE_TEXT') {
+        const path = event.data.payload?.path;
+        if (!path) {
+          return;
+        }
+
+        const bindings =
+          (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+          || fallbackBindings
+          || {};
+        const binding = bindings[path];
+        const node = findTemplateTextNode(path, bindings);
+
+        if (node) {
+          node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
+          selectNativeElement(node, {
+            label: getStudioFieldLabel(path),
+            selector: binding?.selector || path,
+            kind: 'text',
+          });
+        }
+
+        selectTemplateText(path, {
+          text: node?.innerText || node?.textContent || '',
+          label: getStudioFieldLabel(path),
+          preserveNativeSelection: true,
+        });
+        return;
+      }
+
+      if (event.data.type !== 'FARHA_RENDER_CONFIG' || event.data.version !== '1.0.0') {
         return;
       }
 
@@ -1712,6 +1869,7 @@
     // NEW: apply universal text overrides
     applyTextOverrides(renderConfig.textOverrides || []);
     applyNativeElementOverrides(renderConfig.nativeElementOverrides || {});
+    postStudioCatalogs(bindings);
     initUniversalTextEditor();
 
     if (runtimeState.deviceResizeHandler) {

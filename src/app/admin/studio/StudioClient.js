@@ -981,11 +981,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const initialDraft = useMemo(() => normalizeDraftState(session.draft), [session.draft]);
   const [draft, setDraft] = useState(initialDraft);
   const [openSection, setOpenSection] = useState('basic');
+  const [showAllSections, setShowAllSections] = useState(true);
   const [saveState, setSaveState] = useState('saved');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewReloadToken, setPreviewReloadToken] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [previewBridgeMessage, setPreviewBridgeMessage] = useState(null);
   const [canvasClickMenu, setCanvasClickMenu] = useState(null);
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [selectedNativeElementId, setSelectedNativeElementId] = useState(null);
@@ -993,8 +995,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [selectedNativeElementPreviewUrl, setSelectedNativeElementPreviewUrl] = useState('');
   const [selectedNativeElementBasePreviewUrl, setSelectedNativeElementBasePreviewUrl] = useState('');
   const [selectedNativeElementAspectRatio, setSelectedNativeElementAspectRatio] = useState(390 / 844);
+  const [nativeElementCatalog, setNativeElementCatalog] = useState([]);
   const [selectedTemplateTextPath, setSelectedTemplateTextPath] = useState(null);
   const [selectedTemplateTextLabel, setSelectedTemplateTextLabel] = useState('');
+  const [selectedTemplateTextValue, setSelectedTemplateTextValue] = useState('');
+  const [templateTextCatalog, setTemplateTextCatalog] = useState([]);
   const [replaceMediaRequest, setReplaceMediaRequest] = useState(null);
   const [cropMediaRequest, setCropMediaRequest] = useState(null);
   const [styleClipboard, setStyleClipboard] = useState(null);
@@ -1024,6 +1029,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
       || getOpeningBySlug(draft.openingSlug),
     [draft.openingSlug, availableOpenings, openings],
   );
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth > 1180) {
+      setEditorOpen(true);
+    }
+  }, []);
   const previewInvitation = useMemo(() => buildPreviewInvitation(session, draft), [session, draft]);
   const renderConfig = useMemo(
     () =>
@@ -1098,6 +1109,26 @@ export default function StudioClient({ session, manifests, openings, inventory }
     const value = draft.uiConfig?.textLocks;
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   }, [draft.uiConfig?.textLocks]);
+  const fallbackTemplateTextCatalog = useMemo(() => {
+    const bindings = currentManifest.runtimeBindings?.fieldBindings || {};
+    return Object.entries(bindings)
+      .filter(([, binding]) => binding?.method === 'text')
+      .map(([path, binding]) => ({
+        path,
+        label: editableFieldMap.get(path)?.labelAr || path,
+        selector: binding?.selector || path,
+        locked: Boolean(templateTextLocks[path]),
+        text: draft.contentConfig?.[path] == null ? '' : String(draft.contentConfig[path]),
+      }));
+  }, [currentManifest, draft.contentConfig, editableFieldMap, templateTextLocks]);
+  const availableTemplateTexts = useMemo(
+    () => (templateTextCatalog.length ? templateTextCatalog : fallbackTemplateTextCatalog),
+    [fallbackTemplateTextCatalog, templateTextCatalog],
+  );
+  const availableNativeElements = useMemo(
+    () => nativeElementCatalog.filter((item) => item && item.id),
+    [nativeElementCatalog],
+  );
   const selectedTemplateText = useMemo(() => {
     if (!selectedTemplateTextPath) {
       return null;
@@ -1107,7 +1138,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     const textOverrides = draft.textOverrides || {};
     const resolvedText = Object.prototype.hasOwnProperty.call(textOverrides, selectedTemplateTextPath)
       ? textOverrides[selectedTemplateTextPath]
-      : (draft.contentConfig?.[selectedTemplateTextPath] ?? '');
+      : (draft.contentConfig?.[selectedTemplateTextPath] ?? selectedTemplateTextValue ?? '');
 
     return {
       path: selectedTemplateTextPath,
@@ -1115,7 +1146,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
       text: resolvedText == null ? '' : String(resolvedText),
       locked: Boolean(templateTextLocks[selectedTemplateTextPath]),
     };
-  }, [draft.contentConfig, draft.textOverrides, editableFieldMap, selectedTemplateTextLabel, selectedTemplateTextPath, templateTextLocks]);
+  }, [draft.contentConfig, draft.textOverrides, editableFieldMap, selectedTemplateTextLabel, selectedTemplateTextPath, selectedTemplateTextValue, templateTextLocks]);
 
   function recordActivity(title, detail = '') {
     const entry = {
@@ -1246,6 +1277,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
       return;
     }
 
+    setSelectedTemplateTextValue(value);
     setDraft((current) => ({
       ...current,
       textOverrides: {
@@ -1352,9 +1384,88 @@ export default function StudioClient({ session, manifests, openings, inventory }
     applySnapshotFromHistory(nextSnapshot, 'redo');
   }
 
+  function sendPreviewBridgeMessage(message) {
+    if (!message || typeof message !== 'object') {
+      return;
+    }
+
+    setPreviewBridgeMessage({
+      ...message,
+      token: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    });
+  }
+
+  function requestStudioCatalogs() {
+    sendPreviewBridgeMessage({
+      type: 'FARHA_REQUEST_STUDIO_CATALOGS',
+      payload: {
+        requestedAt: Date.now(),
+      },
+    });
+  }
+
+  function requestNativeElementSelection(item) {
+    if (!item?.id) {
+      return;
+    }
+
+    setSelectedElementId(null);
+    setSelectedTemplateTextPath(null);
+    setSelectedTemplateTextLabel('');
+    setSelectedTemplateTextValue('');
+    setSelectedNativeElementId(item.id);
+    setSelectedNativeElementLabel(item.label || '');
+    setSelectedNativeElementPreviewUrl(item.previewUrl || '');
+    setSelectedNativeElementBasePreviewUrl(item.basePreviewUrl || item.previewUrl || '');
+    setSelectedNativeElementAspectRatio(toFiniteNumber(item.aspectRatio, 390 / 844));
+    setOpenSection('template-elements');
+    setEditorOpen(true);
+    sendPreviewBridgeMessage({
+      type: 'FARHA_SELECT_NATIVE_ELEMENT',
+      payload: {
+        id: item.id,
+      },
+    });
+  }
+
+  function requestTemplateTextSelection(item) {
+    if (!item?.path) {
+      return;
+    }
+
+    setSelectedElementId(null);
+    setSelectedNativeElementId(null);
+    setSelectedNativeElementLabel('');
+    setSelectedNativeElementPreviewUrl('');
+    setSelectedNativeElementBasePreviewUrl('');
+    setSelectedNativeElementAspectRatio(390 / 844);
+    setSelectedTemplateTextPath(item.path);
+    setSelectedTemplateTextLabel(item.label || item.path);
+    setSelectedTemplateTextValue(item.text || '');
+    setOpenSection('template-text');
+    setEditorOpen(true);
+    sendPreviewBridgeMessage({
+      type: 'FARHA_SELECT_TEMPLATE_TEXT',
+      payload: {
+        path: item.path,
+      },
+    });
+  }
+
   const activeSections = useMemo(() => {
     const fieldSections = Object.keys(groupedFields).filter((key) => SECTION_META[key]);
-    return [...fieldSections, 'custom-elements', 'layers', 'template-elements', 'template-text', 'history', 'opening', 'design', 'sections', 'advanced'];
+    return Array.from(new Set([
+      ...fieldSections,
+      'custom-elements',
+      'layers',
+      'template-elements',
+      'template-text',
+      'history',
+      'opening',
+      'design',
+      'sections',
+      'advanced',
+    ]));
   }, [groupedFields]);
 
   function buildElementPatchWithResponsiveSupport(element, updates, options = {}) {
@@ -1879,9 +1990,19 @@ export default function StudioClient({ session, manifests, openings, inventory }
   });
 
   useEffect(() => {
+    setNativeElementCatalog([]);
+    setTemplateTextCatalog([]);
+    requestStudioCatalogs();
+  }, [draft.templateSlug, previewReloadToken]);
+
+  useEffect(() => {
     function handleMessage(event) {
       const shouldRevealEditor = typeof window !== 'undefined' && window.innerWidth <= 1180;
-      if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
+      if (event.data?.type === 'FARHA_NATIVE_ELEMENT_CATALOG') {
+        setNativeElementCatalog(Array.isArray(event.data.payload?.items) ? event.data.payload.items : []);
+      } else if (event.data?.type === 'FARHA_TEMPLATE_TEXT_CATALOG') {
+        setTemplateTextCatalog(Array.isArray(event.data.payload?.items) ? event.data.payload.items : []);
+      } else if (event.data?.type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
         patchCustomElement(
           event.data.payload.id,
           event.data.payload.updates,
@@ -1898,6 +2019,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedNativeElementAspectRatio(390 / 844);
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
+        setSelectedTemplateTextValue('');
         setOpenSection('layers');
         if (shouldRevealEditor) {
           setEditorOpen(true);
@@ -1912,6 +2034,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedElementId(null);
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
+        setSelectedTemplateTextValue('');
         if (nextId) {
           setOpenSection('template-elements');
           if (shouldRevealEditor) {
@@ -1923,6 +2046,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         const preserveNativeSelection = Boolean(event.data.payload?.preserveNativeSelection);
         setSelectedTemplateTextPath(nextPath);
         setSelectedTemplateTextLabel(event.data.payload?.label || '');
+        setSelectedTemplateTextValue(event.data.payload?.text || '');
         if (nextPath) {
           setSelectedElementId(null);
           if (!preserveNativeSelection) {
@@ -2043,6 +2167,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         if (path) {
           setSelectedTemplateTextPath(path);
           setSelectedTemplateTextLabel(label || '');
+          setSelectedTemplateTextValue(text || '');
           setSelectedNativeElementId(null);
           setSelectedNativeElementLabel('');
           setOpenSection('template-text');
@@ -2110,12 +2235,13 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedNativeElementLabel('');
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
+        setSelectedTemplateTextValue('');
         setCanvasClickMenu({ x, y, token: Date.now() });
       }
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  });
+  }, [currentDeviceMode, draft.ui?.addCustomElementMode, selectedElementId]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -2385,6 +2511,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
   }
 
   function handleOpenSection(sectionKey) {
+    if (showAllSections) {
+      setShowAllSections(false);
+      setOpenSection(sectionKey);
+      return;
+    }
+
     setOpenSection((current) => (current === sectionKey ? '' : sectionKey));
   }
 
@@ -2452,7 +2584,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
   function renderAccordionSection(sectionKey) {
     const sectionMeta = SECTION_META[sectionKey];
-    const isOpen = openSection === sectionKey;
+    const isOpen = showAllSections || openSection === sectionKey;
     const fields = groupedFields[sectionKey] || [];
     const visibleFields = sectionKey === 'media'
       ? fields.filter((field) => !QUICK_MEDIA_KEYS.has(field.key))
@@ -2955,6 +3087,27 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
             {sectionKey === 'template-elements' ? (
               <div className="studio-stack">
+                <div className="studio-text-inspector">
+                  <div className="studio-text-inspector__meta">
+                    <strong>عناصر القالب المتاحة</strong>
+                    <small>اختر من هنا أي عنصر أصلي ليتم تحديده داخل المعاينة مباشرة.</small>
+                  </div>
+                  <div className="studio-version-list">
+                    {availableNativeElements.length ? availableNativeElements.map((item) => (
+                      <div key={item.id} className={`studio-version-item ${selectedNativeElementId === item.id ? 'current' : ''}`}>
+                        <div className="studio-version-item__meta">
+                          <strong>{item.label || item.id}</strong>
+                          <small>{item.kind === 'media' ? 'وسائط/زخرفة' : item.kind === 'text' ? 'عنصر نصي' : 'عنصر قالب'}</small>
+                        </div>
+                        <button type="button" className="mini-btn" onClick={() => requestNativeElementSelection(item)}>
+                          {selectedNativeElementId === item.id ? 'محدد' : 'تحديد'}
+                        </button>
+                      </div>
+                    )) : (
+                      <p className="studio-layer-empty">لم يتم فهرسة عناصر القالب بعد. اضغط تحديث الأدوات أو اختر عنصرًا من المعاينة.</p>
+                    )}
+                  </div>
+                </div>
                 {selectedNativeElement ? (
                   <>
                     <div className="studio-text-inspector">
@@ -3084,6 +3237,20 @@ export default function StudioClient({ session, manifests, openings, inventory }
                         <span>المعرّف/المسار</span>
                         <input type="text" dir="ltr" value={selectedNativeElement.selector || selectedNativeElementId || ''} readOnly />
                       </label>
+                      {selectedNativeElement.kind === 'text' ? (
+                        <label className="studio-field studio-field--full">
+                          <span>النص داخل عنصر القالب</span>
+                          <textarea
+                            rows={4}
+                            value={selectedNativeElement.textContent || ''}
+                            onChange={(event) =>
+                              patchNativeElement(selectedNativeElementId, {
+                                textContent: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                      ) : null}
                       {selectedNativeElement.kind === 'media' ? (
                         <>
                           <label className="studio-field studio-field--full">
@@ -3147,6 +3314,27 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
             {sectionKey === 'template-text' ? (
               <div className="studio-stack">
+                <div className="studio-text-inspector">
+                  <div className="studio-text-inspector__meta">
+                    <strong>كل النصوص القابلة للتحرير</strong>
+                    <small>اختر النص من هذه القائمة ليتم تحديده وفتحه داخل المعاينة مباشرة.</small>
+                  </div>
+                  <div className="studio-version-list">
+                    {availableTemplateTexts.length ? availableTemplateTexts.map((item) => (
+                      <div key={item.path} className={`studio-version-item ${selectedTemplateTextPath === item.path ? 'current' : ''}`}>
+                        <div className="studio-version-item__meta">
+                          <strong>{item.label || item.path}</strong>
+                          <small>{item.text ? item.text.slice(0, 72) : item.selector || item.path}</small>
+                        </div>
+                        <button type="button" className="mini-btn" onClick={() => requestTemplateTextSelection(item)}>
+                          {selectedTemplateTextPath === item.path ? 'محدد' : 'تحديد'}
+                        </button>
+                      </div>
+                    )) : (
+                      <p className="studio-layer-empty">لا توجد نصوص مفهرسة بعد. اضغط تحديث الأدوات أو انقر على نص من المعاينة.</p>
+                    )}
+                  </div>
+                </div>
                 {selectedTemplateText ? (
                   <>
                     <div className="studio-text-inspector">
@@ -3503,6 +3691,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
                   templateSlug={currentManifest.slug}
                   renderConfig={renderConfig}
                   manifest={currentManifest}
+                  bridgeMessage={previewBridgeMessage}
                   className="studio-frame-wrapper"
                   frameClassName="studio-frame"
                 />
@@ -3609,6 +3798,26 @@ export default function StudioClient({ session, manifests, openings, inventory }
           </div>
 
           {notice ? <div className="admin-alert info">{notice}</div> : null}
+          <div className="studio-inline-actions" style={{ padding: '0 16px', flexWrap: 'wrap' }}>
+            <button type="button" className={`mini-btn ${showAllSections ? 'active' : ''}`} onClick={() => setShowAllSections((current) => !current)}>
+              {showAllSections ? 'إظهار قسم واحد' : 'إظهار كل الميزات'}
+            </button>
+            <button type="button" className="mini-btn" onClick={requestStudioCatalogs}>مزامنة الأدوات</button>
+            {['custom-elements', 'layers', 'template-elements', 'template-text', 'opening', 'design', 'history'].map((sectionKey) => (
+              <button
+                key={sectionKey}
+                type="button"
+                className={`mini-btn ${!showAllSections && openSection === sectionKey ? 'active' : ''}`}
+                onClick={() => {
+                  setShowAllSections(false);
+                  setOpenSection(sectionKey);
+                  setEditorOpen(true);
+                }}
+              >
+                {SECTION_META[sectionKey]?.label || sectionKey}
+              </button>
+            ))}
+          </div>
           {replaceMediaRequest ? (
             <div className="admin-alert info">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>

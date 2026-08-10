@@ -23,6 +23,7 @@ export default function RenderFrame({
   manifest,
   className = '',
   frameClassName = '',
+  bridgeMessage = null,
   onLoad = null,
 }) {
   const iframeRef = useRef(null);
@@ -157,6 +158,14 @@ export default function RenderFrame({
 
     return () => window.clearInterval(intervalId);
   }, [openingLoaded, openingVisible]);
+
+  useEffect(() => {
+    if (!loaded || !iframeRef.current?.contentWindow || !bridgeMessage) {
+      return;
+    }
+
+    iframeRef.current.contentWindow.postMessage(bridgeMessage, window.location.origin);
+  }, [bridgeMessage, loaded]);
 
   return (
     <div
