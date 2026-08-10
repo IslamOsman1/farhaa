@@ -174,6 +174,8 @@
     deviceResizeHandler: null,
     activeTextEditor: null,
     entryPassUi: null,
+    nativeOverlaySyncHandler: null,
+    nativeOverlayRaf: 0,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -484,6 +486,127 @@
         outline-style: dashed !important;
         cursor: not-allowed !important;
       }
+      #farha-native-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        z-index: 2147483000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.16s ease;
+      }
+      #farha-native-overlay[data-visible="true"] {
+        opacity: 1;
+      }
+      .farha-native-overlay__toolbar {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+        border: 1px solid rgba(127, 42, 31, 0.12);
+        pointer-events: auto;
+        transform: translateY(calc(-100% - 10px));
+        max-width: min(78vw, 320px);
+      }
+      .farha-native-overlay__toolbar[data-inside="true"] {
+        transform: translateY(10px);
+      }
+      .farha-native-overlay__label {
+        display: inline-flex;
+        align-items: center;
+        max-width: 160px;
+        min-width: 0;
+        padding: 0 10px;
+        height: 36px;
+        border-radius: 999px;
+        background: rgba(127, 42, 31, 0.08);
+        color: #7f2a1f;
+        font: 700 13px/1.1 Tajawal, sans-serif;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .farha-native-overlay__btn,
+      .farha-native-overlay__handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.98);
+        color: #7f2a1f;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+        font: 800 13px/1 Tajawal, sans-serif;
+        cursor: pointer;
+        touch-action: none;
+        user-select: none;
+      }
+      .farha-native-overlay__btn[data-locked="true"] {
+        background: #7f2a1f;
+        color: #fff;
+      }
+      .farha-native-overlay__handle {
+        position: absolute;
+        right: -14px;
+        bottom: -14px;
+        width: 32px;
+        height: 32px;
+        background: #7f2a1f;
+        color: #fff;
+        font-size: 16px;
+        pointer-events: auto;
+        cursor: nwse-resize;
+      }
+      .farha-native-overlay__handle--rotate {
+        left: -14px;
+        right: auto;
+        cursor: grab;
+      }
+      #farha-snap-guides {
+        position: fixed;
+        inset: 0;
+        z-index: 2147482500;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.14s ease;
+      }
+      #farha-snap-guides[data-visible="true"] {
+        opacity: 1;
+      }
+      .farha-snap-guides__line {
+        position: absolute;
+        background: rgba(127, 42, 31, 0.82);
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.65);
+        border-radius: 999px;
+      }
+      .farha-snap-guides__line--v {
+        width: 2px;
+      }
+      .farha-snap-guides__line--h {
+        height: 2px;
+      }
+      .farha-snap-guides__segment {
+        position: absolute;
+        background: rgba(127, 42, 31, 0.58);
+        border-radius: 999px;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.45);
+      }
+      .farha-snap-guides__segment--h {
+        height: 3px;
+      }
+      .farha-snap-guides__segment--v {
+        width: 3px;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -601,7 +724,7 @@
       return false;
     }
 
-    if (node.closest('#farha-custom-elements, .farha-floating-text-editor, #farha-template-bar')) {
+    if (node.closest('#farha-custom-elements, .farha-floating-text-editor, #farha-template-bar, #farha-native-overlay')) {
       return false;
     }
 
@@ -742,6 +865,28 @@
       || document.body;
   }
 
+  function getEditorOverlayTarget() {
+    const candidates = [
+      document.getElementById('allrecords'),
+      document.getElementById('invitation-container'),
+      document.getElementById('main-content'),
+      document.getElementById('invite'),
+      document.getElementById('site'),
+      document.querySelector('.site'),
+      document.querySelector('.invite'),
+    ].filter(Boolean);
+
+    if (!candidates.length) {
+      return document.body;
+    }
+
+    return candidates.sort((a, b) => {
+      const aArea = Math.max(a.scrollHeight || 0, a.offsetHeight || 0);
+      const bArea = Math.max(b.scrollHeight || 0, b.offsetHeight || 0);
+      return bArea - aArea;
+    })[0];
+  }
+
   function getAllNativeElementCandidates() {
     return Array.from(getNativeElementCandidatesRoot().querySelectorAll('*')).filter(isNativeElementCandidate);
   }
@@ -754,6 +899,104 @@
     return getAllNativeElementCandidates().find((node) => buildNativeElementId(node) === id) || null;
   }
 
+  function queueNativeOverlaySync() {
+    if (runtimeState.nativeOverlayRaf) {
+      window.cancelAnimationFrame(runtimeState.nativeOverlayRaf);
+    }
+
+    runtimeState.nativeOverlayRaf = window.requestAnimationFrame(() => {
+      runtimeState.nativeOverlayRaf = 0;
+      syncNativeElementOverlay();
+    });
+  }
+
+  function ensureNativeElementOverlay() {
+    let overlay = document.getElementById('farha-native-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'farha-native-overlay';
+      overlay.dataset.visible = 'false';
+      overlay.innerHTML = `
+        <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
+          <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
+        </div>
+        <button type="button" class="farha-native-overlay__handle farha-native-overlay__handle--rotate" data-farha-native-action="rotate" aria-label="تدوير العنصر">↻</button>
+        <button type="button" class="farha-native-overlay__handle" data-farha-native-action="scale" aria-label="تكبير أو تصغير العنصر">+</button>
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    if (!runtimeState.nativeOverlaySyncHandler) {
+      runtimeState.nativeOverlaySyncHandler = () => queueNativeOverlaySync();
+      window.addEventListener('resize', runtimeState.nativeOverlaySyncHandler);
+      window.addEventListener('scroll', runtimeState.nativeOverlaySyncHandler, true);
+    }
+
+    return overlay;
+  }
+
+  function syncNativeElementOverlay() {
+    const overlay = document.getElementById('farha-native-overlay') || (runtimeState.preview ? ensureNativeElementOverlay() : null);
+    if (!overlay) {
+      return;
+    }
+
+    const selectedId = runtimeState.selectedNativeElementId;
+    const selectedNode = selectedId ? findNativeElementById(selectedId) : null;
+    if (
+      !runtimeState.preview
+      || !selectedId
+      || !selectedNode
+      || selectedNode.dataset.farhaHidden === 'true'
+    ) {
+      overlay.dataset.visible = 'false';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.width = '0';
+      overlay.style.height = '0';
+      return;
+    }
+
+    const rect = selectedNode.getBoundingClientRect();
+    const outsideViewport =
+      rect.width < 8
+      || rect.height < 8
+      || rect.bottom < 0
+      || rect.right < 0
+      || rect.top > window.innerHeight
+      || rect.left > window.innerWidth;
+    if (outsideViewport) {
+      overlay.dataset.visible = 'false';
+      overlay.style.pointerEvents = 'none';
+      return;
+    }
+
+    const currentOverride = runtimeState.nativeElementOverrides?.[selectedId] || {};
+    const toolbar = overlay.querySelector('[data-farha-native-role="toolbar"]');
+    const label = overlay.querySelector('[data-farha-native-role="label"]');
+    const lockButton = overlay.querySelector('[data-farha-native-action="lock"]');
+
+    overlay.dataset.visible = 'true';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.left = `${Math.max(0, rect.left)}px`;
+    overlay.style.top = `${Math.max(0, rect.top)}px`;
+    overlay.style.width = `${Math.max(28, rect.width)}px`;
+    overlay.style.height = `${Math.max(28, rect.height)}px`;
+
+    if (toolbar) {
+      toolbar.dataset.inside = rect.top < 72 ? 'true' : 'false';
+    }
+    if (label) {
+      label.textContent = currentOverride.label || getNativeElementLabel(selectedNode);
+      label.title = currentOverride.selector || getNativeElementSelectorHint(selectedNode) || selectedId;
+    }
+    if (lockButton) {
+      lockButton.dataset.locked = currentOverride.locked ? 'true' : 'false';
+      lockButton.textContent = currentOverride.locked ? 'فتح' : 'قفل';
+    }
+  }
+
   function selectNativeElement(nodeOrId, options = {}) {
     const node = typeof nodeOrId === 'string' ? findNativeElementById(nodeOrId) : nodeOrId;
     const nativeId = node ? buildNativeElementId(node) : (typeof nodeOrId === 'string' ? nodeOrId : null);
@@ -764,6 +1007,8 @@
       const override = runtimeState.nativeElementOverrides?.[candidate.dataset.farhaNativeId] || {};
       applyNativeOverrideToNode(candidate, override);
     });
+
+    queueNativeOverlaySync();
 
     if (options.silent) {
       return;
@@ -784,6 +1029,9 @@
 
   function applyNativeElementOverrides(rawOverrides) {
     ensureNativeElementStyleTag();
+    if (runtimeState.preview) {
+      ensureNativeElementOverlay();
+    }
     const overrides = normalizeNativeElementOverrides(rawOverrides);
     runtimeState.nativeElementOverrides = overrides;
 
@@ -816,6 +1064,8 @@
         runtimeState.selectedNativeElementId = null;
       }
     }
+
+    queueNativeOverlaySync();
   }
 
   function initUniversalTextEditor() {
@@ -2872,6 +3122,392 @@
       const point = event.touches?.[0] || event.changedTouches?.[0] || event;
       return { x: point.clientX, y: point.clientY };
     };
+    const getTouchMetrics = (touches) => {
+      if (!touches || touches.length < 2) {
+        return null;
+      }
+
+      const first = touches[0];
+      const second = touches[1];
+      const dx = second.clientX - first.clientX;
+      const dy = second.clientY - first.clientY;
+
+      return {
+        centerX: (first.clientX + second.clientX) / 2,
+        centerY: (first.clientY + second.clientY) / 2,
+        distance: Math.max(24, Math.hypot(dx, dy)),
+        angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+      };
+    };
+    const getSnapThreshold = () => (window.innerWidth <= 768 ? 14 : 10);
+    const isRootOverlayTarget = (target) => target === document.body || target === document.documentElement;
+    const getSnapTargetRect = (target) => {
+      if (!target || isRootOverlayTarget(target)) {
+        return {
+          left: 0,
+          top: 0,
+          width: window.innerWidth,
+          height: window.innerHeight,
+          right: window.innerWidth,
+          bottom: window.innerHeight,
+        };
+      }
+
+      const rect = target.getBoundingClientRect();
+      return {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        right: rect.right,
+        bottom: rect.bottom,
+      };
+    };
+    const getScrollOffsetForTarget = (target) => {
+      if (!target || isRootOverlayTarget(target)) {
+        return { x: window.scrollX || 0, y: window.scrollY || 0 };
+      }
+      return {
+        x: target.scrollLeft || 0,
+        y: target.scrollTop || 0,
+      };
+    };
+    const rangesOverlap = (startA, endA, startB, endB, tolerance = 24) => {
+      return Math.min(endA, endB) + tolerance >= Math.max(startA, startB);
+    };
+    const isSnapPeerVisible = (node) => {
+      if (!node || !node.isConnected) {
+        return false;
+      }
+
+      const style = window.getComputedStyle(node);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+        return false;
+      }
+
+      const rect = node.getBoundingClientRect();
+      return rect.width >= 8 && rect.height >= 8;
+    };
+    const ensureSnapGuideOverlay = () => {
+      let overlay = document.getElementById('farha-snap-guides');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'farha-snap-guides';
+        overlay.dataset.visible = 'false';
+        overlay.innerHTML = `
+          <div class="farha-snap-guides__line farha-snap-guides__line--v" data-farha-snap="v"></div>
+          <div class="farha-snap-guides__line farha-snap-guides__line--h" data-farha-snap="h"></div>
+          <div class="farha-snap-guides__segment farha-snap-guides__segment--h" data-farha-snap-segment="0"></div>
+          <div class="farha-snap-guides__segment farha-snap-guides__segment--h" data-farha-snap-segment="1"></div>
+        `;
+        document.body.appendChild(overlay);
+      }
+      return overlay;
+    };
+    const hideSnapGuides = () => {
+      const overlay = document.getElementById('farha-snap-guides');
+      if (!overlay) {
+        return;
+      }
+      overlay.dataset.visible = 'false';
+      overlay.querySelectorAll('[data-farha-snap-segment]').forEach((segment) => {
+        segment.style.display = 'none';
+      });
+    };
+    const showSnapGuides = (guides, targetRect) => {
+      const overlay = ensureSnapGuideOverlay();
+      const vertical = overlay.querySelector('[data-farha-snap="v"]');
+      const horizontal = overlay.querySelector('[data-farha-snap="h"]');
+      const spacingSegments = Array.from(overlay.querySelectorAll('[data-farha-snap-segment]'));
+      const hasVertical = Number.isFinite(guides?.vertical);
+      const hasHorizontal = Number.isFinite(guides?.horizontal);
+      const segments = Array.isArray(guides?.spacingSegments) ? guides.spacingSegments : [];
+      const hasSegments = segments.length > 0;
+
+      overlay.dataset.visible = hasVertical || hasHorizontal || hasSegments ? 'true' : 'false';
+
+      if (vertical) {
+        vertical.style.display = hasVertical ? 'block' : 'none';
+        if (hasVertical) {
+          vertical.style.left = `${guides.vertical}px`;
+          vertical.style.top = `${targetRect.top}px`;
+          vertical.style.height = `${targetRect.height}px`;
+        }
+      }
+
+      if (horizontal) {
+        horizontal.style.display = hasHorizontal ? 'block' : 'none';
+        if (hasHorizontal) {
+          horizontal.style.left = `${targetRect.left}px`;
+          horizontal.style.top = `${guides.horizontal}px`;
+          horizontal.style.width = `${targetRect.width}px`;
+        }
+      }
+
+      spacingSegments.forEach((segmentNode, index) => {
+        const segment = segments[index];
+        if (!segment) {
+          segmentNode.style.display = 'none';
+          return;
+        }
+
+        segmentNode.style.display = 'block';
+        segmentNode.className = `farha-snap-guides__segment farha-snap-guides__segment--${segment.orientation === 'v' ? 'v' : 'h'}`;
+        if (segment.orientation === 'v') {
+          segmentNode.style.left = `${segment.x}px`;
+          segmentNode.style.top = `${segment.top}px`;
+          segmentNode.style.height = `${segment.length}px`;
+          segmentNode.style.width = '';
+        } else {
+          segmentNode.style.left = `${segment.left}px`;
+          segmentNode.style.top = `${segment.y}px`;
+          segmentNode.style.width = `${segment.length}px`;
+          segmentNode.style.height = '';
+        }
+      });
+    };
+    const collectSnapPeerRects = ({ excludeNode } = {}) => {
+      const peerRects = [];
+
+      document.querySelectorAll('.farha-custom-element').forEach((wrapper) => {
+        if (
+          !isSnapPeerVisible(wrapper)
+          || wrapper === excludeNode
+          || (excludeNode && (wrapper.contains(excludeNode) || excludeNode.contains(wrapper)))
+        ) {
+          return;
+        }
+
+        peerRects.push(wrapper.getBoundingClientRect());
+      });
+
+      getAllNativeElementCandidates().forEach((node) => {
+        if (
+          !isSnapPeerVisible(node)
+          || node === excludeNode
+          || (excludeNode && (node.contains(excludeNode) || excludeNode.contains(node)))
+        ) {
+          return;
+        }
+
+        peerRects.push(node.getBoundingClientRect());
+      });
+
+      return peerRects;
+    };
+    const computeSnapAdjustments = ({ targetRect, elementRect, peerRects = [] }) => {
+      const threshold = getSnapThreshold();
+      const elementLeft = elementRect.left;
+      const elementTop = elementRect.top;
+      const elementRight = elementRect.right;
+      const elementBottom = elementRect.bottom;
+      const elementCenterX = elementLeft + (elementRect.width / 2);
+      const elementCenterY = elementTop + (elementRect.height / 2);
+      const targetCenterX = targetRect.left + (targetRect.width / 2);
+      const targetCenterY = targetRect.top + (targetRect.height / 2);
+
+      const xCandidates = [
+        { guide: targetRect.left, delta: targetRect.left - elementLeft },
+        { guide: targetCenterX, delta: targetCenterX - elementCenterX },
+        { guide: targetRect.right, delta: targetRect.right - elementRight },
+      ];
+      const yCandidates = [
+        { guide: targetRect.top, delta: targetRect.top - elementTop },
+        { guide: targetCenterY, delta: targetCenterY - elementCenterY },
+        { guide: targetRect.bottom, delta: targetRect.bottom - elementBottom },
+      ];
+
+      peerRects.forEach((peerRect) => {
+        const peerCenterX = peerRect.left + (peerRect.width / 2);
+        const peerCenterY = peerRect.top + (peerRect.height / 2);
+
+        xCandidates.push(
+          { guide: peerRect.left, delta: peerRect.left - elementLeft },
+          { guide: peerCenterX, delta: peerCenterX - elementCenterX },
+          { guide: peerRect.right, delta: peerRect.right - elementRight },
+        );
+        yCandidates.push(
+          { guide: peerRect.top, delta: peerRect.top - elementTop },
+          { guide: peerCenterY, delta: peerCenterY - elementCenterY },
+          { guide: peerRect.bottom, delta: peerRect.bottom - elementBottom },
+        );
+      });
+
+      let deltaX = 0;
+      let deltaY = 0;
+      let verticalGuide = null;
+      let horizontalGuide = null;
+      let spacingSegments = [];
+      let bestSpacingGuideDistance = threshold + 1;
+      let bestXDistance = threshold + 1;
+      let bestYDistance = threshold + 1;
+
+      xCandidates.forEach((candidate) => {
+        const distance = Math.abs(candidate.delta);
+        if (distance <= threshold && distance < bestXDistance) {
+          bestXDistance = distance;
+          deltaX = candidate.delta;
+          verticalGuide = candidate.guide;
+        }
+      });
+
+      yCandidates.forEach((candidate) => {
+        const distance = Math.abs(candidate.delta);
+        if (distance <= threshold && distance < bestYDistance) {
+          bestYDistance = distance;
+          deltaY = candidate.delta;
+          horizontalGuide = candidate.guide;
+        }
+      });
+
+      const horizontalSpacingPeers = peerRects
+        .concat([
+          {
+            left: targetRect.left,
+            right: targetRect.left,
+            top: targetRect.top,
+            bottom: targetRect.bottom,
+            width: 0,
+            height: targetRect.height,
+          },
+          {
+            left: targetRect.right,
+            right: targetRect.right,
+            top: targetRect.top,
+            bottom: targetRect.bottom,
+            width: 0,
+            height: targetRect.height,
+          },
+        ])
+        .filter((peerRect) => {
+          return rangesOverlap(peerRect.top, peerRect.bottom, elementTop, elementBottom, 28);
+        })
+        .sort((leftPeer, rightPeer) => leftPeer.left - rightPeer.left);
+
+      for (let index = 0; index < horizontalSpacingPeers.length - 1; index += 1) {
+        const leftPeer = horizontalSpacingPeers[index];
+        const rightPeer = horizontalSpacingPeers[index + 1];
+        const availableGap = rightPeer.left - leftPeer.right;
+        if (availableGap <= 0 || availableGap < elementRect.width) {
+          continue;
+        }
+
+        const candidateLeft = leftPeer.right + ((availableGap - elementRect.width) / 2);
+        const distance = Math.abs(candidateLeft - elementLeft);
+        if (distance > threshold || distance >= bestXDistance) {
+          continue;
+        }
+
+        const overlapTop = Math.max(elementTop, leftPeer.top, rightPeer.top);
+        const overlapBottom = Math.min(elementBottom, leftPeer.bottom, rightPeer.bottom);
+        const segmentY = overlapBottom > overlapTop
+          ? overlapTop + ((overlapBottom - overlapTop) / 2)
+          : elementCenterY;
+        const leftGapLength = Math.max(0, candidateLeft - leftPeer.right);
+        const rightGapLength = Math.max(0, rightPeer.left - (candidateLeft + elementRect.width));
+        const nextSegments = [
+          {
+            orientation: 'h',
+            left: leftPeer.right,
+            y: segmentY,
+            length: leftGapLength,
+          },
+          {
+            orientation: 'h',
+            left: candidateLeft + elementRect.width,
+            y: segmentY,
+            length: rightGapLength,
+          },
+        ].filter((segment) => segment.length >= 8);
+
+        bestXDistance = distance;
+        deltaX = candidateLeft - elementLeft;
+        verticalGuide = null;
+        if (nextSegments.length === 2 && distance < bestSpacingGuideDistance) {
+          bestSpacingGuideDistance = distance;
+          spacingSegments = nextSegments;
+        }
+      }
+
+      const verticalSpacingPeers = peerRects
+        .concat([
+          {
+            left: targetRect.left,
+            right: targetRect.right,
+            top: targetRect.top,
+            bottom: targetRect.top,
+            width: targetRect.width,
+            height: 0,
+          },
+          {
+            left: targetRect.left,
+            right: targetRect.right,
+            top: targetRect.bottom,
+            bottom: targetRect.bottom,
+            width: targetRect.width,
+            height: 0,
+          },
+        ])
+        .filter((peerRect) => {
+          return rangesOverlap(peerRect.left, peerRect.right, elementLeft, elementRight, 28);
+        })
+        .sort((topPeer, bottomPeer) => topPeer.top - bottomPeer.top);
+
+      for (let index = 0; index < verticalSpacingPeers.length - 1; index += 1) {
+        const topPeer = verticalSpacingPeers[index];
+        const bottomPeer = verticalSpacingPeers[index + 1];
+        const availableGap = bottomPeer.top - topPeer.bottom;
+        if (availableGap <= 0 || availableGap < elementRect.height) {
+          continue;
+        }
+
+        const candidateTop = topPeer.bottom + ((availableGap - elementRect.height) / 2);
+        const distance = Math.abs(candidateTop - elementTop);
+        if (distance > threshold || distance >= bestYDistance) {
+          continue;
+        }
+
+        const overlapLeft = Math.max(elementLeft, topPeer.left, bottomPeer.left);
+        const overlapRight = Math.min(elementRight, topPeer.right, bottomPeer.right);
+        const segmentX = overlapRight > overlapLeft
+          ? overlapLeft + ((overlapRight - overlapLeft) / 2)
+          : elementCenterX;
+        const topGapLength = Math.max(0, candidateTop - topPeer.bottom);
+        const bottomGapLength = Math.max(0, bottomPeer.top - (candidateTop + elementRect.height));
+        const nextSegments = [
+          {
+            orientation: 'v',
+            x: segmentX,
+            top: topPeer.bottom,
+            length: topGapLength,
+          },
+          {
+            orientation: 'v',
+            x: segmentX,
+            top: candidateTop + elementRect.height,
+            length: bottomGapLength,
+          },
+        ].filter((segment) => segment.length >= 8);
+
+        bestYDistance = distance;
+        deltaY = candidateTop - elementTop;
+        horizontalGuide = null;
+        if (nextSegments.length === 2 && distance < bestSpacingGuideDistance) {
+          bestSpacingGuideDistance = distance;
+          spacingSegments = nextSegments;
+        }
+      }
+
+      return {
+        deltaX,
+        deltaY,
+        guides: {
+          vertical: verticalGuide,
+          horizontal: horizontalGuide,
+          spacingSegments,
+        },
+      };
+    };
     const toPxNumber = (value, fallback) => {
       const parsed = parseFloat(String(value || ''));
       return Number.isFinite(parsed) ? parsed : fallback;
@@ -2893,6 +3529,14 @@
           kind: getNativeElementKind(node),
         },
       }, '*');
+    };
+    const applyLocalNativeOverride = (id, node, nextOverride) => {
+      runtimeState.nativeElementOverrides = {
+        ...(runtimeState.nativeElementOverrides || {}),
+        [id]: nextOverride,
+      };
+      applyNativeOverrideToNode(node, nextOverride);
+      queueNativeOverlaySync();
     };
 
     let activeTransform = null;
@@ -2931,6 +3575,8 @@
         kind,
         wrapper,
         id: wrapper.dataset.id,
+        snapTarget: getEditorOverlayTarget(),
+        snapPeers: collectSnapPeerRects({ excludeNode: wrapper }),
         startX: point.x,
         startY: point.y,
         startLeft: toPxNumber(wrapper.style.left, 0),
@@ -2957,6 +3603,8 @@
         kind: 'move',
         node,
         id,
+        snapTarget: getEditorOverlayTarget(),
+        snapPeers: collectSnapPeerRects({ excludeNode: node }),
         label: currentOverride.label || getNativeElementLabel(node),
         selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
         nativeKind: currentOverride.kind || getNativeElementKind(node),
@@ -2964,6 +3612,105 @@
         startY: point.y,
         startOffsetX: toPxNumber(currentOverride.x, 0),
         startOffsetY: toPxNumber(currentOverride.y, 0),
+        startRect: node.getBoundingClientRect(),
+      };
+      node.style.cursor = 'grabbing';
+      selectNativeElement(node, {
+        label: activeTransform.label,
+        selector: activeTransform.selector,
+        kind: activeTransform.nativeKind,
+        silent: true,
+      });
+    };
+
+    const startNativeScaleTransform = (node, point) => {
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      ensureNativeElementBaseState(node);
+      const rect = node.getBoundingClientRect();
+      const centerX = rect.left + (rect.width / 2);
+      const centerY = rect.top + (rect.height / 2);
+      const startDistance = Math.max(40, Math.hypot(point.x - centerX, point.y - centerY));
+
+      activeTransform = {
+        scope: 'native',
+        kind: 'scale',
+        node,
+        id,
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        nativeKind: currentOverride.kind || getNativeElementKind(node),
+        centerX,
+        centerY,
+        startDistance,
+        startScale: Number.isFinite(Number(currentOverride.scale)) ? Number(currentOverride.scale) : 1,
+      };
+      node.style.cursor = 'nwse-resize';
+      selectNativeElement(node, {
+        label: activeTransform.label,
+        selector: activeTransform.selector,
+        kind: activeTransform.nativeKind,
+        silent: true,
+      });
+    };
+
+    const startNativeRotateTransform = (node, point) => {
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      ensureNativeElementBaseState(node);
+      const rect = node.getBoundingClientRect();
+      const centerX = rect.left + (rect.width / 2);
+      const centerY = rect.top + (rect.height / 2);
+      const startAngle = (Math.atan2(point.y - centerY, point.x - centerX) * 180) / Math.PI;
+
+      activeTransform = {
+        scope: 'native',
+        kind: 'rotate',
+        node,
+        id,
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        nativeKind: currentOverride.kind || getNativeElementKind(node),
+        centerX,
+        centerY,
+        startAngle,
+        startRotation: Number.isFinite(Number(currentOverride.rotation)) ? Number(currentOverride.rotation) : 0,
+      };
+      node.style.cursor = 'grabbing';
+      selectNativeElement(node, {
+        label: activeTransform.label,
+        selector: activeTransform.selector,
+        kind: activeTransform.nativeKind,
+        silent: true,
+      });
+    };
+
+    const startNativeGestureTransform = (node, touches) => {
+      const gesture = getTouchMetrics(touches);
+      if (!gesture) {
+        return;
+      }
+
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      ensureNativeElementBaseState(node);
+
+      activeTransform = {
+        scope: 'native',
+        kind: 'gesture',
+        node,
+        id,
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        nativeKind: currentOverride.kind || getNativeElementKind(node),
+        startCenterX: gesture.centerX,
+        startCenterY: gesture.centerY,
+        startDistance: gesture.distance,
+        startAngle: gesture.angle,
+        startOffsetX: toPxNumber(currentOverride.x, 0),
+        startOffsetY: toPxNumber(currentOverride.y, 0),
+        startScale: Number.isFinite(Number(currentOverride.scale)) ? Number(currentOverride.scale) : 1,
+        startRotation: Number.isFinite(Number(currentOverride.rotation)) ? Number(currentOverride.rotation) : 0,
       };
       node.style.cursor = 'grabbing';
       selectNativeElement(node, {
@@ -2977,9 +3724,67 @@
     const handleStart = (event) => {
       if (!runtimeState.preview) return;
       const target = event.target;
+      const nativeActionNode = target.closest('[data-farha-native-action]');
       const actionNode = target.closest('[data-farha-action]');
       const wrapper = target.closest('.farha-custom-element');
       const point = getPoint(event);
+      const touchCount = event.touches?.length || 0;
+
+      if (nativeActionNode) {
+        const selectedId = runtimeState.selectedNativeElementId;
+        const selectedNode = findNativeElementById(selectedId);
+        if (!selectedId || !selectedNode) {
+          return;
+        }
+
+        const action = nativeActionNode.dataset.farhaNativeAction;
+        const currentOverride = runtimeState.nativeElementOverrides?.[selectedId] || {};
+        const baseOverride = {
+          ...currentOverride,
+          label: currentOverride.label || getNativeElementLabel(selectedNode),
+          selector: currentOverride.selector || getNativeElementSelectorHint(selectedNode) || selectedId,
+          kind: currentOverride.kind || getNativeElementKind(selectedNode),
+        };
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if ((action === 'scale' || action === 'rotate') && point && !baseOverride.locked) {
+          if (action === 'scale') {
+            startNativeScaleTransform(selectedNode, point);
+          } else {
+            startNativeRotateTransform(selectedNode, point);
+          }
+          return;
+        }
+
+        if (action === 'lock') {
+          const nextOverride = {
+            ...baseOverride,
+            locked: !baseOverride.locked,
+          };
+          applyLocalNativeOverride(selectedId, selectedNode, nextOverride);
+          persistNativeUpdate(selectedId, selectedNode, nextOverride);
+          return;
+        }
+
+        if (action === 'reset') {
+          const nextOverrides = {
+            ...(runtimeState.nativeElementOverrides || {}),
+          };
+          delete nextOverrides[selectedId];
+          runtimeState.nativeElementOverrides = nextOverrides;
+          applyNativeElementOverrides(nextOverrides);
+          window.parent.postMessage({
+            type: 'FARHA_NATIVE_ELEMENT_RESET',
+            payload: {
+              id: selectedId,
+              label: baseOverride.label,
+            },
+          }, '*');
+        }
+        return;
+      }
 
       if (!wrapper) {
         const nativeTarget = resolveNativeElementTarget(target);
@@ -2994,6 +3799,19 @@
 
           selectElement(null);
           selectTemplateText(null);
+
+          if (touchCount >= 2) {
+            if (nativeOverride.locked) {
+              event.preventDefault();
+              event.stopPropagation();
+              return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            startNativeGestureTransform(nativeTarget, event.touches);
+            return;
+          }
 
           if (String(runtimeState.selectedNativeElementId || '') !== String(nativeId)) {
             selectNativeElement(nativeTarget, nativeMeta);
@@ -3017,6 +3835,7 @@
           selectTemplateText(null);
           selectNativeElement(null, { silent: true });
         }
+        hideSnapGuides();
         return;
       }
 
@@ -3069,6 +3888,7 @@
 
       event.preventDefault();
       event.stopPropagation();
+      hideSnapGuides();
       startTransform(actionKind, wrapper, point);
     };
 
@@ -3079,22 +3899,93 @@
       event.preventDefault();
 
       if (activeTransform.scope === 'native') {
-        const dx = point.x - activeTransform.startX;
-        const dy = point.y - activeTransform.startY;
-        const nextOverride = {
-          ...(runtimeState.nativeElementOverrides?.[activeTransform.id] || {}),
-          label: activeTransform.label,
-          selector: activeTransform.selector,
-          kind: activeTransform.nativeKind,
-          x: activeTransform.startOffsetX + dx,
-          y: activeTransform.startOffsetY + dy,
-        };
+        if (activeTransform.kind === 'gesture') {
+          const gesture = getTouchMetrics(event.touches);
+          if (!gesture) {
+            return;
+          }
 
-        runtimeState.nativeElementOverrides = {
-          ...(runtimeState.nativeElementOverrides || {}),
-          [activeTransform.id]: nextOverride,
-        };
-        applyNativeOverrideToNode(activeTransform.node, nextOverride);
+          hideSnapGuides();
+
+          const nextScale = clamp((activeTransform.startScale * gesture.distance) / activeTransform.startDistance, 0.15, 5);
+          let nextRotation = activeTransform.startRotation + (gesture.angle - activeTransform.startAngle);
+          while (nextRotation > 180) nextRotation -= 360;
+          while (nextRotation < -180) nextRotation += 360;
+
+          const nextOverride = {
+            ...(runtimeState.nativeElementOverrides?.[activeTransform.id] || {}),
+            label: activeTransform.label,
+            selector: activeTransform.selector,
+            kind: activeTransform.nativeKind,
+            x: activeTransform.startOffsetX + (gesture.centerX - activeTransform.startCenterX),
+            y: activeTransform.startOffsetY + (gesture.centerY - activeTransform.startCenterY),
+            scale: nextScale,
+            rotation: nextRotation,
+          };
+          applyLocalNativeOverride(activeTransform.id, activeTransform.node, nextOverride);
+          return;
+        }
+
+        if (activeTransform.kind === 'move') {
+          const dx = point.x - activeTransform.startX;
+          const dy = point.y - activeTransform.startY;
+          const targetRect = getSnapTargetRect(activeTransform.snapTarget);
+          const elementRect = {
+            left: activeTransform.startRect.left + dx,
+            top: activeTransform.startRect.top + dy,
+            width: activeTransform.startRect.width,
+            height: activeTransform.startRect.height,
+            right: activeTransform.startRect.left + dx + activeTransform.startRect.width,
+            bottom: activeTransform.startRect.top + dy + activeTransform.startRect.height,
+          };
+          const snap = computeSnapAdjustments({
+            targetRect,
+            elementRect,
+            peerRects: activeTransform.snapPeers || [],
+          });
+          const nextOverride = {
+            ...(runtimeState.nativeElementOverrides?.[activeTransform.id] || {}),
+            label: activeTransform.label,
+            selector: activeTransform.selector,
+            kind: activeTransform.nativeKind,
+            x: activeTransform.startOffsetX + dx + snap.deltaX,
+            y: activeTransform.startOffsetY + dy + snap.deltaY,
+          };
+          applyLocalNativeOverride(activeTransform.id, activeTransform.node, nextOverride);
+          showSnapGuides(snap.guides, targetRect);
+          return;
+        }
+
+        if (activeTransform.kind === 'scale') {
+          hideSnapGuides();
+          const currentDistance = Math.max(24, Math.hypot(point.x - activeTransform.centerX, point.y - activeTransform.centerY));
+          const nextScale = clamp((activeTransform.startScale * currentDistance) / activeTransform.startDistance, 0.15, 5);
+          const nextOverride = {
+            ...(runtimeState.nativeElementOverrides?.[activeTransform.id] || {}),
+            label: activeTransform.label,
+            selector: activeTransform.selector,
+            kind: activeTransform.nativeKind,
+            scale: nextScale,
+          };
+          applyLocalNativeOverride(activeTransform.id, activeTransform.node, nextOverride);
+          return;
+        }
+
+        if (activeTransform.kind === 'rotate') {
+          hideSnapGuides();
+          const currentAngle = (Math.atan2(point.y - activeTransform.centerY, point.x - activeTransform.centerX) * 180) / Math.PI;
+          let nextRotation = activeTransform.startRotation + (currentAngle - activeTransform.startAngle);
+          while (nextRotation > 180) nextRotation -= 360;
+          while (nextRotation < -180) nextRotation += 360;
+          const nextOverride = {
+            ...(runtimeState.nativeElementOverrides?.[activeTransform.id] || {}),
+            label: activeTransform.label,
+            selector: activeTransform.selector,
+            kind: activeTransform.nativeKind,
+            rotation: nextRotation,
+          };
+          applyLocalNativeOverride(activeTransform.id, activeTransform.node, nextOverride);
+        }
         return;
       }
 
@@ -3103,12 +3994,40 @@
       const { wrapper, kind, imageNode, contentNode } = activeTransform;
 
       if (kind === 'move') {
-        wrapper.style.left = `${activeTransform.startLeft + dx}px`;
-        wrapper.style.top = `${activeTransform.startTop + dy}px`;
+        const targetRect = getSnapTargetRect(activeTransform.snapTarget);
+        const scrollOffset = getScrollOffsetForTarget(activeTransform.snapTarget);
+        const nextLeft = activeTransform.startLeft + dx;
+        const nextTop = activeTransform.startTop + dy;
+        const elementRect = isRootOverlayTarget(activeTransform.snapTarget)
+          ? {
+              left: nextLeft - scrollOffset.x,
+              top: nextTop - scrollOffset.y,
+              width: wrapper.offsetWidth || 0,
+              height: wrapper.offsetHeight || 0,
+              right: nextLeft - scrollOffset.x + (wrapper.offsetWidth || 0),
+              bottom: nextTop - scrollOffset.y + (wrapper.offsetHeight || 0),
+            }
+          : {
+              left: targetRect.left - scrollOffset.x + nextLeft,
+              top: targetRect.top - scrollOffset.y + nextTop,
+              width: wrapper.offsetWidth || 0,
+              height: wrapper.offsetHeight || 0,
+              right: targetRect.left - scrollOffset.x + nextLeft + (wrapper.offsetWidth || 0),
+              bottom: targetRect.top - scrollOffset.y + nextTop + (wrapper.offsetHeight || 0),
+            };
+        const snap = computeSnapAdjustments({
+          targetRect,
+          elementRect,
+          peerRects: activeTransform.snapPeers || [],
+        });
+        wrapper.style.left = `${nextLeft + snap.deltaX}px`;
+        wrapper.style.top = `${nextTop + snap.deltaY}px`;
+        showSnapGuides(snap.guides, targetRect);
         return;
       }
 
       if (kind === 'resize') {
+        hideSnapGuides();
         if (wrapper.dataset.type === 'text') {
           const nextFontSize = clamp(activeTransform.startFontSize + ((dx + dy) * 0.08), 12, 120);
           wrapper.dataset.fontSize = `${nextFontSize}px`;
@@ -3125,6 +4044,7 @@
       }
 
       if (kind === 'crop' && imageNode) {
+        hideSnapGuides();
         const width = Math.max(activeTransform.startWidth, 1);
         const height = Math.max(activeTransform.startHeight, 1);
         const nextCropX = clamp(activeTransform.startCropX - ((dx / width) * 100), 0, 100);
@@ -3137,6 +4057,7 @@
 
     const handleEnd = () => {
       if (!activeTransform) return;
+      hideSnapGuides();
 
       if (activeTransform.scope === 'native') {
         const { id, node } = activeTransform;
@@ -3199,30 +4120,8 @@
       initDragHandlers();
     }
 
-    const getOverlayTarget = () => {
-      const candidates = [
-        document.getElementById('allrecords'),
-        document.getElementById('invitation-container'),
-        document.getElementById('main-content'),
-        document.getElementById('invite'),
-        document.getElementById('site'),
-        document.querySelector('.site'),
-        document.querySelector('.invite'),
-      ].filter(Boolean);
-
-      if (!candidates.length) {
-        return document.body;
-      }
-
-      return candidates.sort((a, b) => {
-        const aArea = Math.max(a.scrollHeight || 0, a.offsetHeight || 0);
-        const bArea = Math.max(b.scrollHeight || 0, b.offsetHeight || 0);
-        return bArea - aArea;
-      })[0];
-    };
-
     let container = document.getElementById('farha-custom-elements');
-    const target = getOverlayTarget();
+    const target = getEditorOverlayTarget();
     if (!container) {
       container = document.createElement('div');
       container.id = 'farha-custom-elements';

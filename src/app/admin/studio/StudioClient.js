@@ -1106,6 +1106,28 @@ export default function StudioClient({ session, manifests, openings, inventory }
     recordActivity('إعادة ضبط عنصر قالب', selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId);
   }
 
+  function resetNativeElementById(id, label = '') {
+    if (!id) {
+      return;
+    }
+
+    setDraft((current) => {
+      const nextOverrides = {
+        ...normalizeNativeElementOverrides(current.nativeElementOverrides),
+      };
+      delete nextOverrides[id];
+      return {
+        ...current,
+        nativeElementOverrides: nextOverrides,
+      };
+    });
+    const resolvedLabel =
+      label
+      || (id === selectedNativeElementId ? selectedNativeElement?.label || selectedNativeElementLabel || id : id);
+    setNotice(`تمت إعادة ضبط عنصر القالب: ${resolvedLabel}`);
+    recordActivity('إعادة ضبط عنصر قالب', resolvedLabel);
+  }
+
   function clearDeviceOverride(id, deviceMode = currentDeviceMode) {
     const label = DEVICE_PRESETS[deviceMode]?.label || deviceMode;
     updateCustomElements((elements) =>
@@ -1399,6 +1421,15 @@ export default function StudioClient({ session, manifests, openings, inventory }
         });
         setOpenSection('template-elements');
         recordActivity('تحريك عنصر من القالب', event.data.payload?.label || nextId);
+      } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_RESET') {
+        const nextId = event.data.payload?.id || null;
+        if (!nextId) {
+          return;
+        }
+        setSelectedNativeElementId(nextId);
+        setSelectedNativeElementLabel(event.data.payload?.label || '');
+        resetNativeElementById(nextId, event.data.payload?.label || nextId);
+        setOpenSection('template-elements');
       } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
         const { path, text, label } = event.data.payload;
         setDraft(current => ({
