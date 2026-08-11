@@ -840,373 +840,31 @@
   }
 
   function isNativeElementCandidate(node) {
-    if (!node || node.nodeType !== 1) {
-      return false;
-    }
-
-    if (node.closest('#farha-custom-elements, .farha-floating-text-editor, #farha-template-bar, #farha-native-overlay, #farha-editor-dock')) {
-      return false;
-    }
-
-    if (node.matches('html, body, iframe, form, input, textarea, select, option')) {
-      return false;
-    }
-
-    if (node.closest('form, input, textarea, select')) {
-      return false;
-    }
-
-    const style = window.getComputedStyle(node);
-    if (style.display === 'none' || style.visibility === 'hidden') {
-      return false;
-    }
-
-    const rect = node.getBoundingClientRect();
-    if (rect.width < 24 || rect.height < 24) {
-      return false;
-    }
-
-    const tagName = (node.tagName || '').toLowerCase();
-    const normalizedText = (node.textContent || '').replace(/\s+/g, ' ').trim();
-    const hasVisualMedia = ['img', 'video', 'svg', 'canvas', 'picture'].includes(tagName) || style.backgroundImage !== 'none';
-    const isDecorativeLayer = ['absolute', 'fixed', 'sticky'].includes(style.position) || style.transform !== 'none' || Boolean(node.dataset?.farhaSlot);
-    const hasSurfaceStyle =
-      (style.backgroundColor && style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent')
-      || style.boxShadow !== 'none'
-      || style.borderTopWidth !== '0px'
-      || style.borderRightWidth !== '0px'
-      || style.borderBottomWidth !== '0px'
-      || style.borderLeftWidth !== '0px';
-    const isTextCandidate =
-      normalizedText.length > 0
-      && normalizedText.length <= 180
-      && rect.width <= (window.innerWidth * 0.96)
-      && rect.height <= (window.innerHeight * 0.72);
-    const coversWholeViewport = rect.width > (window.innerWidth * 0.98) && rect.height > (window.innerHeight * 0.86);
-
-    if (hasVisualMedia) {
-      return !coversWholeViewport || isDecorativeLayer;
-    }
-
-    if (isTextCandidate) {
-      return !coversWholeViewport;
-    }
-
-    return (isDecorativeLayer || hasSurfaceStyle) && !coversWholeViewport;
-  }
-
-  function resolveNativeElementTarget(startNode) {
-    let current = startNode?.nodeType === 1 ? startNode : startNode?.parentElement;
-    while (current && current !== document.body && current !== document.documentElement) {
-      if (current.closest('.farha-custom-element')) {
-        return null;
+      if (!node || node.nodeType !== 1) {
+        return false;
       }
 
-      if (isNativeElementCandidate(current)) {
-        return current;
+      if (node.closest('#farha-custom-elements, .farha-floating-text-editor, #farha-template-bar, #farha-native-overlay, #farha-editor-dock')) {
+        return false;
       }
 
-      current = current.parentElement;
-    }
+      if (node.matches('html, body, iframe, form, input, textarea, select, option')) {
+        return false;
+      }
 
-    return null;
-  }
+      if (node.closest('form, input, textarea, select')) {
+        return false;
+      }
 
-  function ensureNativeElementBaseState(node) {
-    if (!node) {
-      return;
-    }
+      if (node.id === 'allrecords' || node.id === 'invitation-container' || node.id === 'farha-root') {
+        return false;
+      }
 
-    if (node.dataset.farhaNativeBaseTransform === undefined) {
-      const inlineTransform = node.style.transform;
-      const computedTransform = window.getComputedStyle(node).transform;
-      node.dataset.farhaNativeBaseTransform = inlineTransform || (computedTransform !== 'none' ? computedTransform : '');
-    }
-    if (node.dataset.farhaNativeBaseOpacity === undefined) {
-      node.dataset.farhaNativeBaseOpacity = node.style.opacity || '';
-    }
-    if (node.dataset.farhaNativeBaseDisplay === undefined) {
-      node.dataset.farhaNativeBaseDisplay = node.style.display || '';
-    }
-    if (node.dataset.farhaNativeBasePointerEvents === undefined) {
-      node.dataset.farhaNativeBasePointerEvents = node.style.pointerEvents || '';
-    }
-    if (node.dataset.farhaNativeBaseTouchAction === undefined) {
-      node.dataset.farhaNativeBaseTouchAction = node.style.touchAction || '';
-    }
-    if (node.dataset.farhaNativeBaseBackgroundImage === undefined) {
-      const computedBackgroundImage = window.getComputedStyle(node).backgroundImage;
-      node.dataset.farhaNativeBaseBackgroundImage = node.style.backgroundImage || (computedBackgroundImage !== 'none' ? computedBackgroundImage : '');
-    }
-    if (node.dataset.farhaNativeBaseBackgroundPosition === undefined) {
-      node.dataset.farhaNativeBaseBackgroundPosition = node.style.backgroundPosition || '';
-    }
-    if (node.dataset.farhaNativeBaseBackgroundSize === undefined) {
-      node.dataset.farhaNativeBaseBackgroundSize = node.style.backgroundSize || '';
-    }
-    if (node.dataset.farhaNativeBaseBackgroundColor === undefined) {
-      node.dataset.farhaNativeBaseBackgroundColor = node.style.backgroundColor || '';
-    }
-    if (node.dataset.farhaNativeBaseWidth === undefined) {
-      node.dataset.farhaNativeBaseWidth = node.style.width || '';
-    }
-    if (node.dataset.farhaNativeBaseHeight === undefined) {
-      node.dataset.farhaNativeBaseHeight = node.style.height || '';
-    }
-    if (node.dataset.farhaNativeBaseZIndex === undefined) {
-      node.dataset.farhaNativeBaseZIndex = node.style.zIndex || '';
-    }
-    if (node.dataset.farhaNativeBaseBorderRadius === undefined) {
-      node.dataset.farhaNativeBaseBorderRadius = node.style.borderRadius || '';
-    }
-    if (node.dataset.farhaNativeBaseBorderWidth === undefined) {
-      node.dataset.farhaNativeBaseBorderWidth = node.style.borderWidth || '';
-    }
-    if (node.dataset.farhaNativeBaseBorderColor === undefined) {
-      node.dataset.farhaNativeBaseBorderColor = node.style.borderColor || '';
-    }
-    if (node.dataset.farhaNativeBaseBorderStyle === undefined) {
-      node.dataset.farhaNativeBaseBorderStyle = node.style.borderStyle || '';
-    }
-    if (node.dataset.farhaNativeBaseBoxShadow === undefined) {
-      node.dataset.farhaNativeBaseBoxShadow = node.style.boxShadow || '';
-    }
-    if (node.dataset.farhaNativeBaseSrc === undefined) {
-      const mediaNode = ((node.tagName || '').toLowerCase() === 'picture' ? node.querySelector('img') : node);
-      node.dataset.farhaNativeBaseSrc = mediaNode?.getAttribute?.('src') || '';
-    }
-    const imageNode = getNativeImageTarget(node);
-    if (imageNode?.dataset?.farhaNativeBaseObjectPosition === undefined) {
-      imageNode.dataset.farhaNativeBaseObjectPosition = imageNode.style.objectPosition || '';
-    }
-    if (imageNode?.dataset?.farhaNativeBaseObjectFit === undefined) {
-      imageNode.dataset.farhaNativeBaseObjectFit = imageNode.style.objectFit || '';
-    }
-    const textTarget = getNativeTextEditTarget(node);
-    if (textTarget?.dataset?.farhaNativeBaseText === undefined) {
-      textTarget.dataset.farhaNativeBaseText = textTarget.innerText || textTarget.textContent || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseColor === undefined) {
-      textTarget.dataset.farhaNativeBaseColor = textTarget.style.color || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontFamily === undefined) {
-      textTarget.dataset.farhaNativeBaseFontFamily = textTarget.style.fontFamily || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontSize === undefined) {
-      textTarget.dataset.farhaNativeBaseFontSize = textTarget.style.fontSize || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontWeight === undefined) {
-      textTarget.dataset.farhaNativeBaseFontWeight = textTarget.style.fontWeight || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontStyle === undefined) {
-      textTarget.dataset.farhaNativeBaseFontStyle = textTarget.style.fontStyle || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseLineHeight === undefined) {
-      textTarget.dataset.farhaNativeBaseLineHeight = textTarget.style.lineHeight || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseLetterSpacing === undefined) {
-      textTarget.dataset.farhaNativeBaseLetterSpacing = textTarget.style.letterSpacing || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextAlign === undefined) {
-      textTarget.dataset.farhaNativeBaseTextAlign = textTarget.style.textAlign || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextTransform === undefined) {
-      textTarget.dataset.farhaNativeBaseTextTransform = textTarget.style.textTransform || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextDecoration === undefined) {
-      textTarget.dataset.farhaNativeBaseTextDecoration = textTarget.style.textDecoration || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseDirection === undefined) {
-      textTarget.dataset.farhaNativeBaseDirection = textTarget.style.direction || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextShadow === undefined) {
-      textTarget.dataset.farhaNativeBaseTextShadow = textTarget.style.textShadow || '';
-    }
+      const style = window.getComputedStyle(node);
+      if (style.display === 'none' || style.visibility === 'hidden') {
+        return false;
+      }
 
-    node.classList.add('farha-native-editable-target');
-    node.dataset.farhaNativeManaged = 'true';
-    buildNativeElementId(node);
-  }
-
-  function getNativeImageTarget(node) {
-    if (!node) {
-      return null;
-    }
-
-    const tagName = (node.tagName || '').toLowerCase();
-    if (tagName === 'picture') {
-      return node.querySelector('img');
-    }
-
-    if (['img', 'video', 'svg', 'canvas'].includes(tagName)) {
-      return node;
-    }
-
-    const directMediaChild = node.querySelector(':scope > picture img, :scope > img, :scope > video, :scope > svg, :scope > canvas');
-    if (directMediaChild) {
-      return directMediaChild;
-    }
-
-    const nestedMediaChild = node.querySelector('picture img, img, video, svg, canvas');
-    if (nestedMediaChild) {
-      return nestedMediaChild;
-    }
-
-    return node;
-  }
-
-  function extractCssUrl(value) {
-    if (!value || value === 'none') {
-      return '';
-    }
-
-    const match = String(value).match(/url\((['"]?)(.*?)\1\)/i);
-    return match?.[2] || '';
-  }
-
-  function getNodeAspectRatio(node) {
-    const rect = node?.getBoundingClientRect?.();
-    if (!rect || rect.height <= 0 || rect.width <= 0) {
-      return 390 / 844;
-    }
-
-    return rect.width / rect.height;
-  }
-
-  function getNativeElementPreviewUrl(node) {
-    if (!node) {
-      return '';
-    }
-
-    ensureNativeElementBaseState(node);
-    const targetNode = getNativeImageTarget(node);
-    const tagName = (targetNode?.tagName || '').toLowerCase();
-
-    if (tagName === 'img') {
-      return targetNode.currentSrc || targetNode.getAttribute('src') || node.dataset.farhaNativeBaseSrc || '';
-    }
-
-    const inlineBackground = node.style.backgroundImage && node.style.backgroundImage !== 'none'
-      ? node.style.backgroundImage
-      : '';
-    const computedBackground = window.getComputedStyle(node).backgroundImage;
-    return extractCssUrl(inlineBackground) || extractCssUrl(computedBackground) || extractCssUrl(node.dataset.farhaNativeBaseBackgroundImage || '');
-  }
-
-  function getNativeElementBasePreviewUrl(node) {
-    if (!node) {
-      return '';
-    }
-
-    ensureNativeElementBaseState(node);
-    const targetNode = getNativeImageTarget(node);
-    const tagName = (targetNode?.tagName || '').toLowerCase();
-
-    if (tagName === 'img') {
-      return node.dataset.farhaNativeBaseSrc || targetNode.getAttribute('src') || '';
-    }
-
-    return extractCssUrl(node.dataset.farhaNativeBaseBackgroundImage || '') || node.dataset.farhaNativeBaseSrc || '';
-  }
-
-  function getCanvasPlacementFromNode(node, offsetX = 0, offsetY = 0) {
-    if (!node) {
-      return {
-        x: 40,
-        y: 40,
-        width: 160,
-        height: 160,
-      };
-    }
-
-    const target = getEditorOverlayTarget();
-    const rect = node.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const scrollX = target === document.body || target === document.documentElement
-      ? (window.scrollX || 0)
-      : (target.scrollLeft || 0);
-    const scrollY = target === document.body || target === document.documentElement
-      ? (window.scrollY || 0)
-      : (target.scrollTop || 0);
-
-    return {
-      x: Math.max(12, Math.round(rect.left - targetRect.left + scrollX + offsetX)),
-      y: Math.max(12, Math.round(rect.top - targetRect.top + scrollY + offsetY)),
-      width: Math.max(24, Math.round(rect.width || 160)),
-      height: Math.max(24, Math.round(rect.height || 160)),
-    };
-  }
-
-  function buildNativeClipboardPayload(node, override = {}) {
-    if (!node) {
-      return null;
-    }
-
-    const label = override.label || getNativeElementLabel(node);
-    const selector = override.selector || getNativeElementSelectorHint(node) || buildNativeElementId(node);
-    const previewUrl = getNativeElementPreviewUrl(node);
-    const textTarget = getNativeTextEditTarget(node);
-    const computedTextStyle = textTarget ? window.getComputedStyle(textTarget) : null;
-    const placement = getCanvasPlacementFromNode(node, 22, 22);
-    const resolvedKind =
-      override.kind === 'native'
-        ? (previewUrl ? 'media' : (textTarget ? 'text' : getNativeElementKind(node)))
-        : (override.kind || getNativeElementKind(node));
-
-    if (resolvedKind === 'text' && textTarget) {
-      const textContent = override.textContent == null || override.textContent === ''
-        ? (textTarget.innerText || textTarget.textContent || '')
-        : String(override.textContent);
-
-      return {
-        source: 'native',
-        label,
-        selector,
-        element: {
-          type: 'text',
-          content: textContent,
-          x: placement.x,
-          y: placement.y,
-          fontSize: textTarget.style.fontSize || computedTextStyle?.fontSize || '24px',
-          color: textTarget.style.color || computedTextStyle?.color || '#1f2937',
-          fontFamily: textTarget.style.fontFamily || computedTextStyle?.fontFamily || '',
-          opacity: Number.isFinite(Number(override.opacity)) ? Number(override.opacity) : 1,
-          rotation: Number.isFinite(Number(override.rotation)) ? Number(override.rotation) : 0,
-        },
-      };
-    }
-
-    if ((resolvedKind === 'media' || previewUrl) && previewUrl) {
-      return {
-        source: 'native',
-        label,
-        selector,
-        element: {
-          type: 'image',
-          content: previewUrl,
-          x: placement.x,
-          y: placement.y,
-          width: `${placement.width}px`,
-          height: `${placement.height}px`,
-          cropX: Number.isFinite(Number(override.cropX)) ? Number(override.cropX) : 50,
-          cropY: Number.isFinite(Number(override.cropY)) ? Number(override.cropY) : 50,
-          opacity: Number.isFinite(Number(override.opacity)) ? Number(override.opacity) : 1,
-          rotation: Number.isFinite(Number(override.rotation)) ? Number(override.rotation) : 0,
-        },
-      };
-    }
-
-    return null;
-  }
-
-  function isNativeReplaceableImageNode(node) {
-    if (!node) {
-      return false;
-    }
-
-    const targetNode = getNativeImageTarget(node);
-    const tagName = (targetNode?.tagName || '').toLowerCase();
-    if (tagName === 'img') {
       return true;
     }
 
@@ -1563,6 +1221,8 @@
           <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="Move element">MOVE</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="Replace image">REPLACE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-text" aria-label="Add text here">+ TEXT</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-image" aria-label="Add image here">+ IMG</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="Delete element">X</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="Edit text">EDIT</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="Crop image">CROP</button>
