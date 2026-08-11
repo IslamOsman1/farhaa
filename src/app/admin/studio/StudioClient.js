@@ -1949,6 +1949,34 @@ export default function StudioClient({ session, manifests, openings, inventory }
     setCropMediaRequest(null);
   }
 
+  function openSelectedNativeReplacePicker() {
+    if (!selectedNativeElementId || !selectedNativeElement) {
+      return;
+    }
+
+    setSelectedElementId(null);
+    setSelectedNativeElementId(selectedNativeElementId);
+    setSelectedNativeElementLabel(selectedNativeElement.label || selectedNativeElementLabel || '');
+    setOpenSection('template-elements');
+    setEditorOpen(true);
+    setReplaceMediaRequest({
+      scope: 'native',
+      id: selectedNativeElementId,
+      label: selectedNativeElement.label || selectedNativeElementLabel || selectedNativeElementId,
+      token: Date.now(),
+    });
+  }
+
+  function removeSelectedNativeElement() {
+    if (!selectedNativeElementId || !selectedNativeElement) {
+      return;
+    }
+
+    patchNativeElement(selectedNativeElementId, { hidden: true });
+    setNotice(`تم إخفاء عنصر القالب: ${selectedNativeElement.label || selectedNativeElementId}`);
+    recordActivity('إخفاء عنصر قالب', selectedNativeElement.label || selectedNativeElementId || 'عنصر قالب');
+  }
+
   function resetSelectedNativeElement() {
     if (!selectedNativeElementId) {
       return;
@@ -3703,6 +3731,31 @@ export default function StudioClient({ session, manifests, openings, inventory }
                           }
                         >
                           {selectedNativeElement.hidden ? 'إظهار' : 'إخفاء'}
+                        </button>
+                        {selectedNativeElement.kind === 'media' ? (
+                          <button
+                            type="button"
+                            className="mini-btn"
+                            onClick={openSelectedNativeReplacePicker}
+                          >
+                            استبدال
+                          </button>
+                        ) : null}
+                        {selectedNativeElement.kind === 'media' ? (
+                          <button
+                            type="button"
+                            className="mini-btn"
+                            onClick={openSelectedNativeCropEditor}
+                          >
+                            قص
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="mini-btn danger"
+                          onClick={removeSelectedNativeElement}
+                        >
+                          حذف
                         </button>
                         <button
                           type="button"

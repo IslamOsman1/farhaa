@@ -754,7 +754,8 @@
   }
 
   function getNativeElementKind(node) {
-    const tagName = (node?.tagName || '').toLowerCase();
+    const targetNode = getNativeImageTarget(node);
+    const tagName = (targetNode?.tagName || node?.tagName || '').toLowerCase();
     if (['img', 'video', 'svg', 'canvas', 'picture'].includes(tagName)) {
       return 'media';
     }
@@ -1034,6 +1035,20 @@
     const tagName = (node.tagName || '').toLowerCase();
     if (tagName === 'picture') {
       return node.querySelector('img');
+    }
+
+    if (['img', 'video', 'svg', 'canvas'].includes(tagName)) {
+      return node;
+    }
+
+    const directMediaChild = node.querySelector(':scope > picture img, :scope > img, :scope > video, :scope > svg, :scope > canvas');
+    if (directMediaChild) {
+      return directMediaChild;
+    }
+
+    const nestedMediaChild = node.querySelector('picture img, img, video, svg, canvas');
+    if (nestedMediaChild) {
+      return nestedMediaChild;
     }
 
     return node;
@@ -1546,8 +1561,9 @@
         <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
           <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="Move element">MOVE</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="Edit text">EDIT</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="Replace image">REPLACE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="Delete element">X</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="Edit text">EDIT</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="Crop image">CROP</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="duplicate" aria-label="Duplicate element">DUP</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="copy" aria-label="Copy element">COPY</button>
@@ -1555,7 +1571,6 @@
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="hide" aria-label="Hide element">HIDE</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="Delete element">X</button>
         </div>
         <button type="button" class="farha-native-overlay__handle farha-native-overlay__handle--rotate" data-farha-native-action="rotate" aria-label="تدوير العنصر">↻</button>
         <button type="button" class="farha-native-overlay__handle" data-farha-native-action="scale" aria-label="تكبير أو تصغير العنصر">+</button>
@@ -5539,6 +5554,18 @@
         moveButton.style.fontSize = '11px';
         moveButton.style.fontWeight = '800';
         controlsRoot.appendChild(moveButton);
+        if (el.type === 'image') {
+          const replaceButton = makeActionButton('REPLACE', 'replace');
+          replaceButton.style.width = '74px';
+          replaceButton.style.fontSize = '10px';
+          replaceButton.style.fontWeight = '800';
+          controlsRoot.appendChild(replaceButton);
+        }
+        const deleteButton = makeActionButton('X', 'delete');
+        deleteButton.style.color = '#b42318';
+        deleteButton.style.fontSize = '18px';
+        deleteButton.style.fontWeight = '700';
+        controlsRoot.appendChild(deleteButton);
         const duplicateButton = makeActionButton('DUP', 'duplicate');
         duplicateButton.style.width = '52px';
         duplicateButton.style.fontSize = '10px';
@@ -5566,22 +5593,12 @@
         lockButton.dataset.active = el.locked ? 'true' : 'false';
         controlsRoot.appendChild(lockButton);
         if (el.type === 'image') {
-          const replaceButton = makeActionButton('REPLACE', 'replace');
-          replaceButton.style.width = '74px';
-          replaceButton.style.fontSize = '10px';
-          replaceButton.style.fontWeight = '800';
-          controlsRoot.appendChild(replaceButton);
           const cropButton = makeActionButton('CROP', 'crop-toggle');
           cropButton.style.width = '64px';
           cropButton.style.fontSize = '10px';
           cropButton.style.fontWeight = '800';
           controlsRoot.appendChild(cropButton);
         }
-        const deleteButton = makeActionButton('X', 'delete');
-        deleteButton.style.color = '#b42318';
-        deleteButton.style.fontSize = '18px';
-        deleteButton.style.fontWeight = '700';
-        controlsRoot.appendChild(deleteButton);
 
         resizeHandle.style.position = 'absolute';
         resizeHandle.style.bottom = '-16px';
