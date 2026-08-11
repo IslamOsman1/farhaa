@@ -3571,8 +3571,57 @@ export default function StudioClient({ session, manifests, openings, inventory }
                               onChange={(event) => patchCustomElement(selectedCustomElement.id, { color: event.target.value })}
                             />
                           </label>
-                          <label className="studio-field studio-field--full">
-                            <span>Font Family</span>
+                          
+                            <label className="studio-field">
+                              <span>وزن الخط</span>
+                              <select
+                                value={selectedCustomElement.fontWeight || ''}
+                                onChange={(event) => patchCustomElement(selectedCustomElement.id, { fontWeight: event.target.value })}
+                              >
+                                <option value="">افتراضي</option>
+                                <option value="300">خفيف (300)</option>
+                                <option value="400">عادي (400)</option>
+                                <option value="500">متوسط (500)</option>
+                                <option value="600">شبه غامق (600)</option>
+                                <option value="700">غامق (700)</option>
+                                <option value="800">عريض (800)</option>
+                                <option value="900">أسود (900)</option>
+                              </select>
+                            </label>
+                            <label className="studio-field">
+                              <span>محاذاة النص</span>
+                              <select
+                                value={selectedCustomElement.textAlign || ''}
+                                onChange={(event) => patchCustomElement(selectedCustomElement.id, { textAlign: event.target.value })}
+                              >
+                                <option value="">افتراضي</option>
+                                <option value="right">يمين</option>
+                                <option value="center">وسط</option>
+                                <option value="left">يسار</option>
+                                <option value="justify">ضبط</option>
+                              </select>
+                            </label>
+                            <label className="studio-field">
+                              <span>تباعد الأحرف</span>
+                              <input
+                                type="text"
+                                value={selectedCustomElement.letterSpacing || ''}
+                                placeholder="0px"
+                                onChange={(event) => patchCustomElement(selectedCustomElement.id, { letterSpacing: event.target.value })}
+                              />
+                            </label>
+                            <label className="studio-field">
+                              <span>ارتفاع السطر</span>
+                              <input
+                                type="text"
+                                value={selectedCustomElement.lineHeight || ''}
+                                placeholder="1.5"
+                                onChange={(event) => patchCustomElement(selectedCustomElement.id, { lineHeight: event.target.value })}
+                              />
+                            </label>
+
+                            <label className="studio-field studio-field--full">
+                              <span>Font Family</span>
                             <input
                               type="text"
                               dir="ltr"

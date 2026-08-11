@@ -5008,7 +5008,8 @@
 
       const isEditableTarget =
         target?.isContentEditable ||
-        target?.closest?.('[contenteditable="true"], input, textarea, select');
+        target?.closest?.('[contenteditable="true"], input, textarea, select') ||
+        wrapper?.classList?.contains('farha-studio-editing');
       if (isEditableTarget && !action) {
         return;
       }
@@ -5287,7 +5288,10 @@
 
     let container = document.getElementById('farha-custom-elements');
     const target = getEditorOverlayTarget();
-    if (!container) {
+      if (window.getComputedStyle(target).position === 'static' && target !== document.body) {
+        target.style.position = 'relative';
+      }
+      if (!container) {
       container = document.createElement('div');
       container.id = 'farha-custom-elements';
       container.style.position = 'absolute';
@@ -5544,8 +5548,31 @@
           button.style.color = '#7f2a1f';
           button.style.fontSize = '16px';
           button.style.cursor = 'pointer';
-          return button;
-        };
+            return button;
+          };
+
+          const createDeleteBtn = () => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.dataset.farhaAction = 'delete';
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            btn.style.position = 'absolute';
+            btn.style.top = '-12px';
+            btn.style.right = '-12px';
+            btn.style.width = '24px';
+            btn.style.height = '24px';
+            btn.style.borderRadius = '50%';
+            btn.style.background = '#ff3366';
+            btn.style.color = '#fff';
+            btn.style.border = '2px solid #fff';
+            btn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+            btn.style.display = 'flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.style.cursor = 'pointer';
+            btn.style.zIndex = '3';
+            return btn;
+          };
 
         controlsRoot.style.alignItems = 'center';
         controlsRoot.style.justifyContent = 'flex-end';
