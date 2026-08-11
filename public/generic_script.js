@@ -4828,7 +4828,11 @@
           if (String(runtimeState.selectedNativeElementId || '') !== String(nativeId)) {
             event.preventDefault();
             event.stopPropagation();
-            selectNativeElement(nativeTarget, nativeMeta);
+            if (nativeOverride.locked) {
+              selectNativeElement(nativeTarget, nativeMeta);
+              return;
+            }
+            startNativeTransform(nativeTarget, point);
             return;
           }
 
@@ -4844,6 +4848,7 @@
             startNativeCropTransform(nativeTarget, point);
             return;
           }
+          startNativeTransform(nativeTarget, point);
           return;
         }
 
@@ -4993,18 +4998,20 @@
         return;
       }
 
-      if (!action) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-
       const actionKind =
         action === 'resize'
           ? 'resize'
           : wrapper.dataset.cropMode === 'true' && target.closest('.farha-custom-element__image')
             ? 'crop'
             : 'move';
+
+      if (!action) {
+        event.preventDefault();
+        event.stopPropagation();
+        hideSnapGuides();
+        startTransform(actionKind, wrapper, point);
+        return;
+      }
 
       event.preventDefault();
       event.stopPropagation();
