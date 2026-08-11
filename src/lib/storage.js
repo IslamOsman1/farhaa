@@ -16,7 +16,34 @@ const ALLOWED_MIME_TYPES = [
   'audio/wav',
   'audio/ogg',
   'application/pdf',
+  'font/ttf',
+  'font/otf',
+  'font/woff',
+  'font/woff2',
+  'application/font-sfnt',
+  'application/x-font-ttf',
+  'application/x-font-otf',
+  'application/font-woff',
+  'application/font-woff2',
 ];
+const ALLOWED_FILE_EXTENSIONS = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.svg',
+  '.mp4',
+  '.webm',
+  '.mp3',
+  '.wav',
+  '.ogg',
+  '.pdf',
+  '.ttf',
+  '.otf',
+  '.woff',
+  '.woff2',
+]);
 
 function sanitizeFilename(name = 'file') {
   return name
@@ -63,6 +90,7 @@ function shouldUseRemoteStorage() {
 }
 
 export function getFileTypeFromMime(mimeType = '') {
+  if (mimeType.startsWith('font/') || mimeType.includes('font')) return 'font';
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType.startsWith('video/')) return 'video';
   if (mimeType.startsWith('audio/')) return 'audio';
@@ -74,7 +102,12 @@ export function validateUploadFile(file) {
     throw new Error('لم يتم العثور على ملف للرفع.');
   }
 
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+  const fileExtension = (() => {
+    const match = String(file.name || '').match(/\.[^.]+$/);
+    return match ? match[0].toLowerCase() : '';
+  })();
+
+  if (!ALLOWED_MIME_TYPES.includes(file.type) && !ALLOWED_FILE_EXTENSIONS.has(fileExtension)) {
     throw new Error('نوع الملف غير مسموح به.');
   }
 
@@ -91,6 +124,7 @@ function getCloudinaryResourceType(fileType) {
   if (fileType === 'image') return 'image';
   if (fileType === 'video') return 'video';
   if (fileType === 'audio') return 'video';
+  if (fileType === 'font') return 'raw';
   return 'raw';
 }
 

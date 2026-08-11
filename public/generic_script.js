@@ -301,6 +301,7 @@
       ? window.location.pathname.split('/').filter(Boolean).pop() || null
       : runtimeState.invitationSlug;
 
+    ensureSharedFontLibraryStyles();
     hideLegacyTemplateBars();
     setupNativeOpeningGuard();
     if (initialOpeningDisabled) {
@@ -341,6 +342,18 @@
     return [];
   }
 
+  function ensureSharedFontLibraryStyles() {
+    if (document.querySelector('link[data-farha-font-library-styles="true"]')) {
+      return;
+    }
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/api/public/font-library/styles';
+    link.dataset.farhaFontLibraryStyles = 'true';
+    document.head.appendChild(link);
+  }
+
   function applyTextOverrides(rawOverrides) {
     const overrides = normalizeTextOverrides(rawOverrides);
     if (!overrides.length) return;
@@ -365,6 +378,72 @@
       queryAll(`[data-farha-studio-field="${path}"], [data-farha-text-path="${path}"]`).forEach((node) => {
         if (document.activeElement === node || node.contains?.(document.activeElement)) return;
         node.textContent = text;
+      });
+    });
+  }
+
+  function normalizeTextStyleOverrides(rawOverrides) {
+    if (!rawOverrides || typeof rawOverrides !== 'object' || Array.isArray(rawOverrides)) {
+      return [];
+    }
+
+    return Object.entries(rawOverrides)
+      .map(([path, style]) => {
+        if (!path || !style || typeof style !== 'object' || Array.isArray(style)) {
+          return null;
+        }
+
+        const fontFamily = style.fontFamily == null ? '' : String(style.fontFamily).trim();
+        const color = style.color == null ? '' : String(style.color).trim();
+        if (!fontFamily && !color) {
+          return null;
+        }
+
+        return {
+          path,
+          fontFamily,
+          color,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function applyTextStyleOverrides(rawOverrides) {
+    const overrides = normalizeTextStyleOverrides(rawOverrides);
+    if (!overrides.length) {
+      return;
+    }
+
+    ensureSharedFontLibraryStyles();
+
+    const bindings =
+      (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+      || fallbackBindings
+      || {};
+
+    overrides.forEach((override) => {
+      const boundNodes = [];
+      const binding = bindings[override.path];
+
+      if (binding && binding.method === 'text' && binding.selector) {
+        boundNodes.push(...queryAll(binding.selector));
+      }
+
+      boundNodes.push(...queryAll(`[data-farha-studio-field="${override.path}"], [data-farha-text-path="${override.path}"]`));
+
+      Array.from(new Set(boundNodes)).forEach((node) => {
+        const textNode = getNativeTextEditTarget(node) || node;
+        if (!textNode) {
+          return;
+        }
+
+        if (override.color) {
+          textNode.style.color = override.color;
+        }
+
+        if (override.fontFamily) {
+          textNode.style.fontFamily = `"${String(override.fontFamily).replace(/"/g, '')}"`;
+        }
       });
     });
   }
@@ -1298,6 +1377,7 @@
       renderWidth: `${placement.width}px`,
       renderHeight: `${placement.height}px`,
       textContent: textTarget ? (textTarget.innerText || textTarget.textContent || '') : '',
+      textPath: getNativeTextPathForNode(node),
       width: node.style.width || computedNodeStyle.width || '',
       height: node.style.height || computedNodeStyle.height || '',
       zIndex: computedNodeStyle.zIndex && computedNodeStyle.zIndex !== 'auto' ? Number(computedNodeStyle.zIndex) : undefined,
@@ -2103,6 +2183,7 @@
     const bindings =
       (manifest && manifest.runtimeBindings && manifest.runtimeBindings.fieldBindings) || fallbackBindings;
 
+    ensureSharedFontLibraryStyles();
     runtimeState.baseFields = fields;
     runtimeState.activeLocale = renderConfig.ui?.defaultLocale || renderConfig.locale || 'ar';
     runtimeState.activeDeviceMode = resolveRenderDeviceMode(renderConfig);
@@ -2134,6 +2215,7 @@
     
     // NEW: apply universal text overrides
     applyTextOverrides(renderConfig.textOverrides || []);
+    applyTextStyleOverrides(renderConfig.ui?.textStyleOverrides || {});
     applyNativeElementOverrides(renderConfig.nativeElementOverrides || {});
     postStudioCatalogs(bindings);
     initUniversalTextEditor();

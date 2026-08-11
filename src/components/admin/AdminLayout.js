@@ -13,6 +13,7 @@ const links = [
   { href: '/admin/studio', label: 'استوديو الدعوات', permissions: ['studio.view'] },
   { href: '/admin/openings', label: 'الافتتاحيات', permissions: ['openings.view'] },
   { href: '/admin/media', label: 'الوسائط', permissions: ['media.view'] },
+  { href: '/admin/fonts', label: 'مكتبة الخطوط', permissions: ['settings.manage'] },
   { href: '/admin/packages', label: 'الباقات', permissions: ['packages.manage'] },
   { href: '/admin/settings', label: 'الإعدادات', permissions: ['settings.manage'] },
   { href: '/admin/audit-logs', label: 'سجل العمليات', permissions: ['auditLogs.view'] },

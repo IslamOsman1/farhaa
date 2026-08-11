@@ -1524,6 +1524,12 @@ export function buildInvitationRenderConfig({ invitation, manifest, opening, pre
         || invitation?.contentConfig?.__uiConfig?.defaultLocale
         || invitation?.locale
         || 'ar',
+      textStyleOverrides:
+        invitation?.uiConfig?.textStyleOverrides && typeof invitation.uiConfig.textStyleOverrides === 'object' && !Array.isArray(invitation.uiConfig.textStyleOverrides)
+          ? invitation.uiConfig.textStyleOverrides
+          : invitation?.contentConfig?.__textStyleOverrides && typeof invitation.contentConfig.__textStyleOverrides === 'object' && !Array.isArray(invitation.contentConfig.__textStyleOverrides)
+            ? invitation.contentConfig.__textStyleOverrides
+            : {},
     },
   });
 }

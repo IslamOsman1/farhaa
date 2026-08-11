@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import RenderFrame from '@/components/invitation/RenderFrame';
 import MediaPicker from '@/components/admin/MediaPicker';
+import {
+  BUILTIN_FONT_LIBRARY,
+  PUBLIC_FONT_LIBRARY_STYLESHEET_PATH,
+} from '@/lib/font-library';
 import { buildInvitationRenderConfig, getOpeningBySlug } from '@/lib/template-system';
 
 const DEVICE_PRESETS = {
@@ -15,18 +19,6 @@ const DEVICE_PRESETS = {
 const RESPONSIVE_ELEMENT_KEYS = new Set(['x', 'y', 'width', 'height', 'fontSize', 'opacity', 'rotation', 'cropX', 'cropY']);
 const RESPONSIVE_NUMERIC_KEYS = new Set(['x', 'y', 'opacity', 'rotation', 'cropX', 'cropY']);
 const DEVICE_MODES = ['mobile', 'tablet', 'desktop'];
-const FONT_FAMILY_OPTIONS = [
-  'Tajawal',
-  'Cairo',
-  'Noto Kufi Arabic',
-  'Noto Naskh Arabic',
-  'Amiri',
-  'Aref Ruqaa',
-  'Playfair Display',
-  'Cormorant Garamond',
-  'Poppins',
-  'Inter',
-];
 const TEXT_ALIGN_OPTIONS = ['right', 'center', 'left', 'justify'];
 const TEXT_TRANSFORM_OPTIONS = ['none', 'uppercase', 'lowercase', 'capitalize'];
 const TEXT_DECORATION_OPTIONS = ['none', 'underline', 'line-through', 'overline'];
@@ -90,6 +82,32 @@ function arrayValue(value) {
 function toFiniteNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeHexColor(value, fallback = '#7f2a1f') {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) {
+    return fallback;
+  }
+
+  const shortHexMatch = raw.match(/^#([0-9a-f]{3})$/i);
+  if (shortHexMatch) {
+    return `#${shortHexMatch[1].split('').map((part) => `${part}${part}`).join('')}`.toLowerCase();
+  }
+
+  if (/^#([0-9a-f]{6})$/i.test(raw)) {
+    return raw.toLowerCase();
+  }
+
+  const rgbMatch = raw.match(/^rgba?\(\s*(\d{1,3})\s*[, ]\s*(\d{1,3})\s*[, ]\s*(\d{1,3})/i);
+  if (rgbMatch) {
+    return `#${rgbMatch
+      .slice(1, 4)
+      .map((channel) => Math.max(0, Math.min(255, Number(channel))).toString(16).padStart(2, '0'))
+      .join('')}`;
+  }
+
+  return fallback;
 }
 
 function getCustomElementLabel(element, index) {
@@ -1228,6 +1246,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [historyMeta, setHistoryMeta] = useState({ canUndo: false, canRedo: false, pastCount: 0, futureCount: 0 });
   const [activityLog, setActivityLog] = useState([]);
   const [versionTrail, setVersionTrail] = useState([]);
+  const [fontLibrary, setFontLibrary] = useState(BUILTIN_FONT_LIBRARY);
   const autosaveRef = useRef(null);
   const lastSavedRef = useRef(JSON.stringify(initialDraft));
   const historyRef = useRef({ current: null, past: [], future: [] });
@@ -1257,6 +1276,48 @@ export default function StudioClient({ session, manifests, openings, inventory }
       setEditorOpen(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (!document.querySelector('link[data-farha-font-library-styles="true"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = PUBLIC_FONT_LIBRARY_STYLESHEET_PATH;
+      link.dataset.farhaFontLibraryStyles = 'true';
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadFontLibrary() {
+      try {
+        const response = await fetch('/api/public/font-library', { cache: 'no-store' });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.message || 'تعذر تحميل مكتبة الخطوط.');
+        }
+
+        if (!ignore && Array.isArray(payload.data?.all) && payload.data.all.length) {
+          setFontLibrary(payload.data.all);
+        }
+      } catch (_error) {
+        if (!ignore) {
+          setFontLibrary(BUILTIN_FONT_LIBRARY);
+        }
+      }
+    }
+
+    void loadFontLibrary();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
   const previewInvitation = useMemo(() => buildPreviewInvitation(session, draft), [session, draft]);
   const renderConfig = useMemo(
     () =>
@@ -1283,7 +1344,17 @@ export default function StudioClient({ session, manifests, openings, inventory }
     () => new Map(currentManifest.editableFields.map((field) => [field.key, field])),
     [currentManifest],
   );
-
+  const fontLibraryOptions = useMemo(() => {
+    const seenFamilies = new Set();
+    return fontLibrary.filter((font) => {
+      const family = String(font?.family || '').trim();
+      if (!family || seenFamilies.has(family)) {
+        return false;
+      }
+      seenFamilies.add(family);
+      return true;
+    });
+  }, [fontLibrary]);
   const normalizedCustomElements = useMemo(
     () => normalizeCustomElements(draft.customElements || []),
     [draft.customElements],
@@ -1376,6 +1447,17 @@ export default function StudioClient({ session, manifests, openings, inventory }
       locked: Boolean(templateTextLocks[selectedTemplateTextPath]),
     };
   }, [draft.contentConfig, draft.textOverrides, editableFieldMap, selectedTemplateTextLabel, selectedTemplateTextPath, selectedTemplateTextValue, templateTextLocks]);
+  const selectedTemplateTextStyleTarget = useMemo(() => {
+    if (!selectedTemplateTextPath || !selectedNativeElement || selectedNativeElement.kind !== 'text') {
+      return null;
+    }
+
+    if (selectedNativeElement.textPath && selectedNativeElement.textPath !== selectedTemplateTextPath) {
+      return null;
+    }
+
+    return selectedNativeElement;
+  }, [selectedNativeElement, selectedTemplateTextPath]);
 
   function recordActivity(title, detail = '') {
     const entry = {
@@ -3843,8 +3925,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
                     </div>
 
                     <datalist id="studio-font-options">
-                      {FONT_FAMILY_OPTIONS.map((fontName) => (
-                        <option key={fontName} value={fontName} />
+                      {fontLibraryOptions.map((font) => (
+                        <option key={font.id || font.family} value={font.family} />
                       ))}
                     </datalist>
 

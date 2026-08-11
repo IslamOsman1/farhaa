@@ -5,6 +5,10 @@ import Link from 'next/link';
 import RenderFrame from '@/components/invitation/RenderFrame';
 import MediaPicker from '@/components/admin/MediaPicker';
 import {
+  BUILTIN_FONT_LIBRARY,
+  PUBLIC_FONT_LIBRARY_STYLESHEET_PATH,
+} from '@/lib/font-library';
+import {
   buildInvitationRenderConfig,
   getOpeningBySlug,
   migrateTemplateConfigBetweenManifests,
@@ -57,8 +61,67 @@ function withUiConfig(contentConfig = {}, uiConfig = {}) {
   };
 }
 
+function normalizeFieldTextStyle(style = {}) {
+  const fontFamily = typeof style?.fontFamily === 'string' ? style.fontFamily.trim() : '';
+  const color = typeof style?.color === 'string' ? style.color.trim() : '';
+
+  return {
+    fontFamily,
+    color,
+  };
+}
+
+function extractTextStyleOverrides(contentConfig = {}) {
+  const rawValue =
+    contentConfig?.__textStyleOverrides
+    && typeof contentConfig.__textStyleOverrides === 'object'
+    && !Array.isArray(contentConfig.__textStyleOverrides)
+      ? contentConfig.__textStyleOverrides
+      : {};
+
+  return Object.entries(rawValue).reduce((accumulator, [key, value]) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return accumulator;
+    }
+
+    const normalized = normalizeFieldTextStyle(value);
+    if (normalized.fontFamily || normalized.color) {
+      accumulator[key] = normalized;
+    }
+    return accumulator;
+  }, {});
+}
+
+function withTextStyleOverrides(contentConfig = {}, nextOverrides = {}) {
+  const cleaned = Object.entries(nextOverrides).reduce((accumulator, [key, value]) => {
+    const normalized = normalizeFieldTextStyle(value);
+    if (normalized.fontFamily || normalized.color) {
+      accumulator[key] = normalized;
+    }
+    return accumulator;
+  }, {});
+
+  if (!Object.keys(cleaned).length) {
+    const { __textStyleOverrides, ...rest } = contentConfig || {};
+    return rest;
+  }
+
+  return {
+    ...contentConfig,
+    __textStyleOverrides: cleaned,
+  };
+}
+
+function getFieldTextStyle(contentConfig = {}, key = '') {
+  return extractTextStyleOverrides(contentConfig)[key] || { fontFamily: '', color: '' };
+}
+
 function isTranslatableField(field) {
   return ['text', 'textarea', 'list', 'schedule'].includes(field.type);
+}
+
+function supportsFieldStyleControls(field) {
+  return field?.type === 'text' || field?.type === 'textarea';
 }
 
 function buildInitialDraft(invitation, manifest, normalized) {
@@ -117,34 +180,98 @@ function buildPreviewInvitation(invitation, draft) {
   };
 }
 
-function renderField({ field, draft, onContentChange, onScheduleChange, onListChange }) {
+function renderField({
+  field,
+  draft,
+  onContentChange,
+  onScheduleChange,
+  onListChange,
+  onTextStyleChange,
+  fontLibraryOptions,
+}) {
   const value = draft.contentConfig[field.key];
   const bilingualEnabled = Boolean(draft.uiConfig?.bilingualEnabled);
   const englishKey = getEnglishKey(field.key);
   const englishValue = draft.contentConfig[englishKey];
+  const fieldTextStyle = getFieldTextStyle(draft.contentConfig, field.key);
+  const activeColor = fieldTextStyle.color || '#7f2a1f';
+  const activeFont = fieldTextStyle.fontFamily || '';
+  const showStyleControls = supportsFieldStyleControls(field);
+
+  const inlineStyleControls = showStyleControls ? (
+    <div className="field-style-tools">
+      <div className="field-style-tools__header">
+        <strong>تنسيق هذا النص</strong>
+        <Link href="/admin/fonts" className="field-style-tools__link">
+          مكتبة الخطوط
+        </Link>
+      </div>
+      <div className="field-style-tools__grid">
+        <label className="bilingual-subfield">
+          <span>لون النص</span>
+          <input
+            type="color"
+            value={activeColor}
+            onChange={(event) => onTextStyleChange(field.key, 'color', event.target.value)}
+          />
+        </label>
+        <label className="bilingual-subfield">
+          <span>نوع الخط</span>
+          <select
+            value={activeFont}
+            onChange={(event) => onTextStyleChange(field.key, 'fontFamily', event.target.value)}
+          >
+            <option value="">خط القالب</option>
+            {fontLibraryOptions.map((font) => (
+              <option key={font.id || font.family} value={font.family}>
+                {font.nameAr || font.family}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div
+        className="field-style-preview"
+        style={{
+          color: activeColor,
+          fontFamily: activeFont ? `"${String(activeFont).replace(/"/g, '')}"` : undefined,
+        }}
+      >
+        {value || 'معاينة الخط داخل القالب'}
+      </div>
+    </div>
+  ) : null;
 
   if (field.type === 'textarea') {
     if (bilingualEnabled && isTranslatableField(field)) {
       return (
-        <div className="bilingual-stack">
-          <label className="bilingual-subfield">
-            <span>العربي</span>
-            <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
-          </label>
-          <label className="bilingual-subfield">
-            <span>English</span>
-            <textarea
-              rows={4}
-              dir="ltr"
-              value={englishValue || ''}
-              onChange={(event) => onContentChange(englishKey, event.target.value)}
-            />
-          </label>
-        </div>
+        <>
+          <div className="bilingual-stack">
+            <label className="bilingual-subfield">
+              <span>العربي</span>
+              <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
+            </label>
+            <label className="bilingual-subfield">
+              <span>English</span>
+              <textarea
+                rows={4}
+                dir="ltr"
+                value={englishValue || ''}
+                onChange={(event) => onContentChange(englishKey, event.target.value)}
+              />
+            </label>
+          </div>
+          {inlineStyleControls}
+        </>
       );
     }
 
-    return <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />;
+    return (
+      <>
+        <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
+        {inlineStyleControls}
+      </>
+    );
   }
 
   if (field.type === 'gallery') {
@@ -333,31 +460,37 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
 
   if (bilingualEnabled && isTranslatableField(field) && inputType === 'text') {
     return (
-      <div className="bilingual-stack">
-        <label className="bilingual-subfield">
-          <span>العربي</span>
-          <input type="text" value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
-        </label>
-        <label className="bilingual-subfield">
-          <span>English</span>
-          <input
-            type="text"
-            dir="ltr"
-            value={englishValue || ''}
-            onChange={(event) => onContentChange(englishKey, event.target.value)}
-          />
-        </label>
-      </div>
+      <>
+        <div className="bilingual-stack">
+          <label className="bilingual-subfield">
+            <span>العربي</span>
+            <input type="text" value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
+          </label>
+          <label className="bilingual-subfield">
+            <span>English</span>
+            <input
+              type="text"
+              dir="ltr"
+              value={englishValue || ''}
+              onChange={(event) => onContentChange(englishKey, event.target.value)}
+            />
+          </label>
+        </div>
+        {inlineStyleControls}
+      </>
     );
   }
 
   return (
-    <input
-      type={inputType}
-      value={value || ''}
-      dir={inputType === 'url' ? 'ltr' : undefined}
-      onChange={(event) => onContentChange(field.key, event.target.value)}
-    />
+    <>
+      <input
+        type={inputType}
+        value={value || ''}
+        dir={inputType === 'url' ? 'ltr' : undefined}
+        onChange={(event) => onContentChange(field.key, event.target.value)}
+      />
+      {inputType === 'text' ? inlineStyleControls : null}
+    </>
   );
 }
 
@@ -372,6 +505,7 @@ export default function EditorClient({ invitation, manifest, manifests, openings
   const [revisions, setRevisions] = useState(invitation.revisions || []);
   const [compareSelection, setCompareSelection] = useState({ from: '', to: '' });
   const [compareResult, setCompareResult] = useState(null);
+  const [fontLibrary, setFontLibrary] = useState(BUILTIN_FONT_LIBRARY);
   const autosaveTimer = useRef(null);
   const lastSavedRef = useRef(JSON.stringify(initialDraft));
 
@@ -390,6 +524,56 @@ export default function EditorClient({ invitation, manifest, manifests, openings
   );
 
   const previewInvitation = useMemo(() => buildPreviewInvitation(currentInvitation, draft), [currentInvitation, draft]);
+  const fontLibraryOptions = useMemo(() => {
+    const seenFamilies = new Set();
+    return fontLibrary.filter((font) => {
+      const family = String(font?.family || '').trim();
+      if (!family || seenFamilies.has(family)) {
+        return false;
+      }
+      seenFamilies.add(family);
+      return true;
+    });
+  }, [fontLibrary]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (!document.querySelector('link[data-farha-font-library-styles="true"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = PUBLIC_FONT_LIBRARY_STYLESHEET_PATH;
+      link.dataset.farhaFontLibraryStyles = 'true';
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadFontLibrary() {
+      try {
+        const response = await fetch('/api/public/font-library', { cache: 'no-store' });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          return;
+        }
+
+        if (isMounted && Array.isArray(payload.data?.all) && payload.data.all.length) {
+          setFontLibrary(payload.data.all);
+        }
+      } catch (_error) {
+        // Keep the built-in library as a safe fallback for the editor.
+      }
+    }
+
+    void loadFontLibrary();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const renderConfig = useMemo(
     () =>
@@ -410,6 +594,24 @@ export default function EditorClient({ invitation, manifest, manifests, openings
         [key]: value,
       },
     }));
+  }
+
+  function setFieldTextStyleValue(key, property, value) {
+    setDraft((current) => {
+      const currentOverrides = extractTextStyleOverrides(current.contentConfig);
+      const nextOverrides = {
+        ...currentOverrides,
+        [key]: {
+          ...(currentOverrides[key] || {}),
+          [property]: value,
+        },
+      };
+
+      return {
+        ...current,
+        contentConfig: withTextStyleOverrides(current.contentConfig, nextOverrides),
+      };
+    });
   }
 
   function setThemeValue(key, value) {
@@ -742,11 +944,37 @@ export default function EditorClient({ invitation, manifest, manifests, openings
                   {currentManifest.themeOptions.map((field) => (
                     <label key={field.key} className="field-block">
                       <span>{field.labelAr}</span>
-                      <input
-                        type={field.type === 'color' ? 'color' : 'text'}
-                        value={draft.themeConfig[field.key] || ''}
-                        onChange={(event) => setThemeValue(field.key, event.target.value)}
-                      />
+                      {field.type === 'font' ? (
+                        <>
+                          <select
+                            value={draft.themeConfig[field.key] || ''}
+                            onChange={(event) => setThemeValue(field.key, event.target.value)}
+                          >
+                            <option value="">خط القالب</option>
+                            {fontLibraryOptions.map((font) => (
+                              <option key={`${field.key}-${font.id || font.family}`} value={font.family}>
+                                {font.nameAr || font.family}
+                              </option>
+                            ))}
+                          </select>
+                          <div
+                            className="field-style-preview"
+                            style={{
+                              fontFamily: draft.themeConfig[field.key]
+                                ? `"${String(draft.themeConfig[field.key]).replace(/"/g, '')}"`
+                                : undefined,
+                            }}
+                          >
+                            {draft.themeConfig[field.key] || 'معاينة الخط'}
+                          </div>
+                        </>
+                      ) : (
+                        <input
+                          type={field.type === 'color' ? 'color' : 'text'}
+                          value={draft.themeConfig[field.key] || ''}
+                          onChange={(event) => setThemeValue(field.key, event.target.value)}
+                        />
+                      )}
                     </label>
                   ))}
                 </div>
@@ -859,6 +1087,8 @@ export default function EditorClient({ invitation, manifest, manifests, openings
                         onContentChange: setContentValue,
                         onScheduleChange: setScheduleValue,
                         onListChange: setListValue,
+                        onTextStyleChange: setFieldTextStyleValue,
+                        fontLibraryOptions,
                       })}
                     </label>
                   ))}
@@ -1096,6 +1326,46 @@ export default function EditorClient({ invitation, manifest, manifests, openings
           font-size: 0.78rem;
           font-weight: 700;
         }
+        .field-style-tools {
+          display: grid;
+          gap: 10px;
+          margin-top: 6px;
+          padding: 12px;
+          border-radius: 16px;
+          background: rgba(195, 154, 88, 0.08);
+          border: 1px solid rgba(127, 42, 31, 0.08);
+        }
+        .field-style-tools__header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .field-style-tools__header strong {
+          color: #7f2a1f;
+          font-size: 0.82rem;
+        }
+        .field-style-tools__link {
+          color: #9f7a38;
+          font-size: 0.8rem;
+          font-weight: 800;
+        }
+        .field-style-tools__grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .field-style-preview {
+          border-radius: 14px;
+          background: #fff;
+          border: 1px solid rgba(127, 42, 31, 0.1);
+          padding: 12px 14px;
+          min-height: 52px;
+          display: flex;
+          align-items: center;
+          color: #7f2a1f;
+          line-height: 1.6;
+        }
         .cards-grid {
           display: grid;
           gap: 10px;
@@ -1263,6 +1533,10 @@ export default function EditorClient({ invitation, manifest, manifests, openings
             overflow: auto;
             border-left: none;
             border-bottom: 1px solid rgba(127, 42, 31, 0.06);
+          }
+          .field-style-tools__grid,
+          .schedule-row {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
