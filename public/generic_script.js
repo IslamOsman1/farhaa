@@ -609,6 +609,7 @@
         right: 0;
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 6px;
         padding: 6px;
         border-radius: 999px;
@@ -617,7 +618,7 @@
         border: 1px solid rgba(127, 42, 31, 0.12);
         pointer-events: auto;
         transform: translateY(calc(-100% - 10px));
-        max-width: min(86vw, 460px);
+        max-width: min(92vw, 560px);
       }
       .farha-native-overlay__toolbar[data-inside="true"] {
         transform: translateY(10px);
@@ -941,6 +942,33 @@
     if (node.dataset.farhaNativeBaseBackgroundSize === undefined) {
       node.dataset.farhaNativeBaseBackgroundSize = node.style.backgroundSize || '';
     }
+    if (node.dataset.farhaNativeBaseBackgroundColor === undefined) {
+      node.dataset.farhaNativeBaseBackgroundColor = node.style.backgroundColor || '';
+    }
+    if (node.dataset.farhaNativeBaseWidth === undefined) {
+      node.dataset.farhaNativeBaseWidth = node.style.width || '';
+    }
+    if (node.dataset.farhaNativeBaseHeight === undefined) {
+      node.dataset.farhaNativeBaseHeight = node.style.height || '';
+    }
+    if (node.dataset.farhaNativeBaseZIndex === undefined) {
+      node.dataset.farhaNativeBaseZIndex = node.style.zIndex || '';
+    }
+    if (node.dataset.farhaNativeBaseBorderRadius === undefined) {
+      node.dataset.farhaNativeBaseBorderRadius = node.style.borderRadius || '';
+    }
+    if (node.dataset.farhaNativeBaseBorderWidth === undefined) {
+      node.dataset.farhaNativeBaseBorderWidth = node.style.borderWidth || '';
+    }
+    if (node.dataset.farhaNativeBaseBorderColor === undefined) {
+      node.dataset.farhaNativeBaseBorderColor = node.style.borderColor || '';
+    }
+    if (node.dataset.farhaNativeBaseBorderStyle === undefined) {
+      node.dataset.farhaNativeBaseBorderStyle = node.style.borderStyle || '';
+    }
+    if (node.dataset.farhaNativeBaseBoxShadow === undefined) {
+      node.dataset.farhaNativeBaseBoxShadow = node.style.boxShadow || '';
+    }
     if (node.dataset.farhaNativeBaseSrc === undefined) {
       const mediaNode = ((node.tagName || '').toLowerCase() === 'picture' ? node.querySelector('img') : node);
       node.dataset.farhaNativeBaseSrc = mediaNode?.getAttribute?.('src') || '';
@@ -955,6 +983,42 @@
     const textTarget = getNativeTextEditTarget(node);
     if (textTarget?.dataset?.farhaNativeBaseText === undefined) {
       textTarget.dataset.farhaNativeBaseText = textTarget.innerText || textTarget.textContent || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseColor === undefined) {
+      textTarget.dataset.farhaNativeBaseColor = textTarget.style.color || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseFontFamily === undefined) {
+      textTarget.dataset.farhaNativeBaseFontFamily = textTarget.style.fontFamily || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseFontSize === undefined) {
+      textTarget.dataset.farhaNativeBaseFontSize = textTarget.style.fontSize || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseFontWeight === undefined) {
+      textTarget.dataset.farhaNativeBaseFontWeight = textTarget.style.fontWeight || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseFontStyle === undefined) {
+      textTarget.dataset.farhaNativeBaseFontStyle = textTarget.style.fontStyle || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseLineHeight === undefined) {
+      textTarget.dataset.farhaNativeBaseLineHeight = textTarget.style.lineHeight || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseLetterSpacing === undefined) {
+      textTarget.dataset.farhaNativeBaseLetterSpacing = textTarget.style.letterSpacing || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseTextAlign === undefined) {
+      textTarget.dataset.farhaNativeBaseTextAlign = textTarget.style.textAlign || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseTextTransform === undefined) {
+      textTarget.dataset.farhaNativeBaseTextTransform = textTarget.style.textTransform || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseTextDecoration === undefined) {
+      textTarget.dataset.farhaNativeBaseTextDecoration = textTarget.style.textDecoration || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseDirection === undefined) {
+      textTarget.dataset.farhaNativeBaseDirection = textTarget.style.direction || '';
+    }
+    if (textTarget?.dataset?.farhaNativeBaseTextShadow === undefined) {
+      textTarget.dataset.farhaNativeBaseTextShadow = textTarget.style.textShadow || '';
     }
 
     node.classList.add('farha-native-editable-target');
@@ -1029,6 +1093,96 @@
     return extractCssUrl(node.dataset.farhaNativeBaseBackgroundImage || '') || node.dataset.farhaNativeBaseSrc || '';
   }
 
+  function getCanvasPlacementFromNode(node, offsetX = 0, offsetY = 0) {
+    if (!node) {
+      return {
+        x: 40,
+        y: 40,
+        width: 160,
+        height: 160,
+      };
+    }
+
+    const target = getEditorOverlayTarget();
+    const rect = node.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const scrollX = target === document.body || target === document.documentElement
+      ? (window.scrollX || 0)
+      : (target.scrollLeft || 0);
+    const scrollY = target === document.body || target === document.documentElement
+      ? (window.scrollY || 0)
+      : (target.scrollTop || 0);
+
+    return {
+      x: Math.max(12, Math.round(rect.left - targetRect.left + scrollX + offsetX)),
+      y: Math.max(12, Math.round(rect.top - targetRect.top + scrollY + offsetY)),
+      width: Math.max(24, Math.round(rect.width || 160)),
+      height: Math.max(24, Math.round(rect.height || 160)),
+    };
+  }
+
+  function buildNativeClipboardPayload(node, override = {}) {
+    if (!node) {
+      return null;
+    }
+
+    const label = override.label || getNativeElementLabel(node);
+    const selector = override.selector || getNativeElementSelectorHint(node) || buildNativeElementId(node);
+    const previewUrl = getNativeElementPreviewUrl(node);
+    const textTarget = getNativeTextEditTarget(node);
+    const computedTextStyle = textTarget ? window.getComputedStyle(textTarget) : null;
+    const placement = getCanvasPlacementFromNode(node, 22, 22);
+    const resolvedKind =
+      override.kind === 'native'
+        ? (previewUrl ? 'media' : (textTarget ? 'text' : getNativeElementKind(node)))
+        : (override.kind || getNativeElementKind(node));
+
+    if (resolvedKind === 'text' && textTarget) {
+      const textContent = override.textContent == null || override.textContent === ''
+        ? (textTarget.innerText || textTarget.textContent || '')
+        : String(override.textContent);
+
+      return {
+        source: 'native',
+        label,
+        selector,
+        element: {
+          type: 'text',
+          content: textContent,
+          x: placement.x,
+          y: placement.y,
+          fontSize: textTarget.style.fontSize || computedTextStyle?.fontSize || '24px',
+          color: textTarget.style.color || computedTextStyle?.color || '#1f2937',
+          fontFamily: textTarget.style.fontFamily || computedTextStyle?.fontFamily || '',
+          opacity: Number.isFinite(Number(override.opacity)) ? Number(override.opacity) : 1,
+          rotation: Number.isFinite(Number(override.rotation)) ? Number(override.rotation) : 0,
+        },
+      };
+    }
+
+    if ((resolvedKind === 'media' || previewUrl) && previewUrl) {
+      return {
+        source: 'native',
+        label,
+        selector,
+        element: {
+          type: 'image',
+          content: previewUrl,
+          x: placement.x,
+          y: placement.y,
+          width: `${placement.width}px`,
+          height: `${placement.height}px`,
+          cropX: Number.isFinite(Number(override.cropX)) ? Number(override.cropX) : 50,
+          cropY: Number.isFinite(Number(override.cropY)) ? Number(override.cropY) : 50,
+          opacity: Number.isFinite(Number(override.opacity)) ? Number(override.opacity) : 1,
+          rotation: Number.isFinite(Number(override.rotation)) ? Number(override.rotation) : 0,
+        },
+      };
+    }
+
+    return null;
+  }
+
   function isNativeReplaceableImageNode(node) {
     if (!node) {
       return false;
@@ -1082,6 +1236,103 @@
     return Boolean(getNativeTextEditTarget(node));
   }
 
+  function applyInlineStyle(target, property, overrideValue, baseValue = '') {
+    if (!target) {
+      return;
+    }
+
+    const hasOverride = !(overrideValue == null || overrideValue === '');
+    target.style[property] = hasOverride ? String(overrideValue) : (baseValue || '');
+  }
+
+  function applyNativeBoxStylesToNode(node, override = {}) {
+    if (!node) {
+      return;
+    }
+
+    ensureNativeElementBaseState(node);
+    applyInlineStyle(node, 'width', override?.width, node.dataset.farhaNativeBaseWidth || '');
+    applyInlineStyle(node, 'height', override?.height, node.dataset.farhaNativeBaseHeight || '');
+    applyInlineStyle(node, 'zIndex', override?.zIndex, node.dataset.farhaNativeBaseZIndex || '');
+    applyInlineStyle(node, 'backgroundColor', override?.backgroundColor, node.dataset.farhaNativeBaseBackgroundColor || '');
+    applyInlineStyle(node, 'borderRadius', override?.borderRadius, node.dataset.farhaNativeBaseBorderRadius || '');
+    applyInlineStyle(node, 'borderWidth', override?.borderWidth, node.dataset.farhaNativeBaseBorderWidth || '');
+    applyInlineStyle(node, 'borderColor', override?.borderColor, node.dataset.farhaNativeBaseBorderColor || '');
+    applyInlineStyle(node, 'boxShadow', override?.boxShadow, node.dataset.farhaNativeBaseBoxShadow || '');
+
+    const hasBorderOverride = !(
+      (override?.borderWidth == null || override.borderWidth === '')
+      && (override?.borderColor == null || override.borderColor === '')
+    );
+    node.style.borderStyle = hasBorderOverride
+      ? (node.dataset.farhaNativeBaseBorderStyle || 'solid')
+      : (node.dataset.farhaNativeBaseBorderStyle || '');
+  }
+
+  function applyNativeTextStylesToNode(node, override = {}) {
+    const textTarget = getNativeTextEditTarget(node);
+    if (!textTarget) {
+      return;
+    }
+
+    ensureNativeElementBaseState(node);
+    applyInlineStyle(textTarget, 'color', override?.color, textTarget.dataset.farhaNativeBaseColor || '');
+    applyInlineStyle(textTarget, 'fontFamily', override?.fontFamily, textTarget.dataset.farhaNativeBaseFontFamily || '');
+    applyInlineStyle(textTarget, 'fontSize', override?.fontSize, textTarget.dataset.farhaNativeBaseFontSize || '');
+    applyInlineStyle(textTarget, 'fontWeight', override?.fontWeight, textTarget.dataset.farhaNativeBaseFontWeight || '');
+    applyInlineStyle(textTarget, 'fontStyle', override?.fontStyle, textTarget.dataset.farhaNativeBaseFontStyle || '');
+    applyInlineStyle(textTarget, 'lineHeight', override?.lineHeight, textTarget.dataset.farhaNativeBaseLineHeight || '');
+    applyInlineStyle(textTarget, 'letterSpacing', override?.letterSpacing, textTarget.dataset.farhaNativeBaseLetterSpacing || '');
+    applyInlineStyle(textTarget, 'textAlign', override?.textAlign, textTarget.dataset.farhaNativeBaseTextAlign || '');
+    applyInlineStyle(textTarget, 'textTransform', override?.textTransform, textTarget.dataset.farhaNativeBaseTextTransform || '');
+    applyInlineStyle(textTarget, 'textDecoration', override?.textDecoration, textTarget.dataset.farhaNativeBaseTextDecoration || '');
+    applyInlineStyle(textTarget, 'direction', override?.direction, textTarget.dataset.farhaNativeBaseDirection || '');
+    applyInlineStyle(textTarget, 'textShadow', override?.textShadow, textTarget.dataset.farhaNativeBaseTextShadow || '');
+  }
+
+  function getNativeElementSelectionMeta(node) {
+    if (!node) {
+      return {};
+    }
+
+    ensureNativeElementBaseState(node);
+    const placement = getCanvasPlacementFromNode(node);
+    const computedNodeStyle = window.getComputedStyle(node);
+    const textTarget = getNativeTextEditTarget(node);
+    const computedTextStyle = textTarget ? window.getComputedStyle(textTarget) : null;
+    const imageTarget = getNativeImageTarget(node);
+    const computedImageStyle = imageTarget ? window.getComputedStyle(imageTarget) : null;
+
+    return {
+      canvasX: placement.x,
+      canvasY: placement.y,
+      renderWidth: `${placement.width}px`,
+      renderHeight: `${placement.height}px`,
+      textContent: textTarget ? (textTarget.innerText || textTarget.textContent || '') : '',
+      width: node.style.width || computedNodeStyle.width || '',
+      height: node.style.height || computedNodeStyle.height || '',
+      zIndex: computedNodeStyle.zIndex && computedNodeStyle.zIndex !== 'auto' ? Number(computedNodeStyle.zIndex) : undefined,
+      color: computedTextStyle ? (textTarget.style.color || computedTextStyle.color || '') : '',
+      fontFamily: computedTextStyle ? (textTarget.style.fontFamily || computedTextStyle.fontFamily || '') : '',
+      fontSize: computedTextStyle ? (textTarget.style.fontSize || computedTextStyle.fontSize || '') : '',
+      fontWeight: computedTextStyle ? (textTarget.style.fontWeight || computedTextStyle.fontWeight || '') : '',
+      fontStyle: computedTextStyle ? (textTarget.style.fontStyle || computedTextStyle.fontStyle || '') : '',
+      lineHeight: computedTextStyle ? (textTarget.style.lineHeight || computedTextStyle.lineHeight || '') : '',
+      letterSpacing: computedTextStyle ? (textTarget.style.letterSpacing || computedTextStyle.letterSpacing || '') : '',
+      textAlign: computedTextStyle ? (textTarget.style.textAlign || computedTextStyle.textAlign || '') : '',
+      textTransform: computedTextStyle ? (textTarget.style.textTransform || computedTextStyle.textTransform || '') : '',
+      textDecoration: computedTextStyle ? (textTarget.style.textDecoration || computedTextStyle.textDecoration || '') : '',
+      direction: computedTextStyle ? (textTarget.style.direction || computedTextStyle.direction || '') : '',
+      textShadow: computedTextStyle ? (textTarget.style.textShadow || computedTextStyle.textShadow || '') : '',
+      backgroundColor: node.style.backgroundColor || computedNodeStyle.backgroundColor || '',
+      borderRadius: node.style.borderRadius || computedNodeStyle.borderRadius || '',
+      borderWidth: node.style.borderWidth || computedNodeStyle.borderWidth || '',
+      borderColor: node.style.borderColor || computedNodeStyle.borderColor || '',
+      boxShadow: node.style.boxShadow || computedNodeStyle.boxShadow || '',
+      objectFit: computedImageStyle ? (imageTarget.style.objectFit || computedImageStyle.objectFit || '') : '',
+    };
+  }
+
   function applyNativeMediaToNode(node, mediaUrl = '') {
     if (!node) {
       return;
@@ -1114,16 +1365,22 @@
     const cropY = clamp(Number.isFinite(Number(override?.cropY)) ? Number(override.cropY) : 50, 0, 100);
     const imageNode = getNativeImageTarget(node);
     const imageTagName = (imageNode?.tagName || '').toLowerCase();
+    const requestedFit = override?.objectFit == null ? '' : String(override.objectFit).trim();
 
     if (imageTagName === 'img') {
       const baseFit = imageNode.dataset.farhaNativeBaseObjectFit || '';
-      imageNode.style.objectFit = baseFit && baseFit !== 'fill' ? baseFit : 'cover';
+      imageNode.style.objectFit = requestedFit || (baseFit && baseFit !== 'fill' ? baseFit : 'cover');
       imageNode.style.objectPosition = `${cropX}% ${cropY}%`;
     }
 
     if (window.getComputedStyle(node).backgroundImage !== 'none' || node.dataset.farhaNativeBaseBackgroundImage) {
       const baseSize = node.dataset.farhaNativeBaseBackgroundSize || '';
-      node.style.backgroundSize = baseSize && baseSize !== 'auto' && baseSize !== 'auto auto' ? baseSize : 'cover';
+      const nextBackgroundSize = requestedFit === 'fill'
+        ? '100% 100%'
+        : requestedFit
+          ? requestedFit
+          : (baseSize && baseSize !== 'auto' && baseSize !== 'auto auto' ? baseSize : 'cover');
+      node.style.backgroundSize = nextBackgroundSize;
       node.style.backgroundPosition = `${cropX}% ${cropY}%`;
     }
   }
@@ -1163,6 +1420,15 @@
     node.style.touchAction = node.dataset.farhaNativeBaseTouchAction || '';
     node.style.backgroundPosition = node.dataset.farhaNativeBaseBackgroundPosition || '';
     node.style.backgroundSize = node.dataset.farhaNativeBaseBackgroundSize || '';
+    node.style.backgroundColor = node.dataset.farhaNativeBaseBackgroundColor || '';
+    node.style.width = node.dataset.farhaNativeBaseWidth || '';
+    node.style.height = node.dataset.farhaNativeBaseHeight || '';
+    node.style.zIndex = node.dataset.farhaNativeBaseZIndex || '';
+    node.style.borderRadius = node.dataset.farhaNativeBaseBorderRadius || '';
+    node.style.borderWidth = node.dataset.farhaNativeBaseBorderWidth || '';
+    node.style.borderColor = node.dataset.farhaNativeBaseBorderColor || '';
+    node.style.borderStyle = node.dataset.farhaNativeBaseBorderStyle || '';
+    node.style.boxShadow = node.dataset.farhaNativeBaseBoxShadow || '';
     applyNativeMediaToNode(node, '');
     const imageNode = getNativeImageTarget(node);
     if (imageNode) {
@@ -1170,6 +1436,7 @@
       imageNode.style.objectFit = imageNode.dataset.farhaNativeBaseObjectFit || '';
     }
     applyNativeTextToNode(node, {});
+    applyNativeTextStylesToNode(node, {});
     node.dataset.farhaSelected = 'false';
     node.dataset.farhaLocked = 'false';
     node.dataset.farhaHidden = 'false';
@@ -1208,9 +1475,11 @@
     node.dataset.farhaLocked = locked ? 'true' : 'false';
     node.dataset.farhaHidden = hidden ? 'true' : 'false';
     node.dataset.farhaSelected = String(runtimeState.selectedNativeElementId || '') === String(node.dataset.farhaNativeId || '') ? 'true' : 'false';
+    applyNativeBoxStylesToNode(node, override);
     applyNativeMediaToNode(node, mediaUrl);
     applyNativeCropToNode(node, override);
     applyNativeTextToNode(node, override);
+    applyNativeTextStylesToNode(node, override);
   }
 
   function getNativeElementCandidatesRoot() {
@@ -1280,6 +1549,10 @@
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="Edit text">EDIT</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="Replace image">REPLACE</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="Crop image">CROP</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="duplicate" aria-label="Duplicate element">DUP</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="copy" aria-label="Copy element">COPY</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="paste" aria-label="Paste element">PASTE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="hide" aria-label="Hide element">HIDE</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="Delete element">X</button>
@@ -1366,6 +1639,7 @@
       dock.innerHTML = `
         <button type="button" data-farha-editor-action="add-text" data-kind="primary">TEXT</button>
         <button type="button" data-farha-editor-action="add-image">IMAGE</button>
+        <button type="button" data-farha-editor-action="paste-element">PASTE</button>
         <button type="button" data-farha-editor-action="open-layers">LAYERS</button>
         <button type="button" data-farha-editor-action="cancel-add">ESC</button>
       `;
@@ -1502,6 +1776,7 @@
             previewUrl: getNativeElementPreviewUrl(node),
             basePreviewUrl: getNativeElementBasePreviewUrl(node),
             aspectRatio: getNodeAspectRatio(node),
+            ...getNativeElementSelectionMeta(node),
           }
         : { id: null },
     }, '*');
@@ -4084,6 +4359,7 @@
           previewUrl: getNativeElementPreviewUrl(node),
           basePreviewUrl: getNativeElementBasePreviewUrl(node),
           aspectRatio: getNodeAspectRatio(node),
+          ...getNativeElementSelectionMeta(node),
         },
       }, '*');
     };
@@ -4147,24 +4423,24 @@
         selectNativeElement(null, { silent: true });
       }
       const container = document.getElementById('farha-custom-elements');
-      if (!container) return;
-      Array.from(container.children).forEach((wrapper) => {
-        const isSelected = String(wrapper.dataset.id) === String(runtimeState.selectedCustomElementId || '');
-        wrapper.dataset.selected = isSelected ? 'true' : 'false';
-        const controls = wrapper.querySelector('.farha-custom-element__controls');
-        const resize = wrapper.querySelector('.farha-custom-element__resize');
-        if (controls) controls.style.display = isSelected ? 'flex' : 'none';
-        if (resize) resize.style.display = isSelected ? 'block' : 'none';
-        wrapper.style.boxShadow = isSelected
-          ? '0 0 0 2px rgba(255,255,255,0.95), 0 0 0 4px rgba(127, 42, 31, 0.45)'
-          : 'none';
-      });
-      if (id) {
-        window.parent.postMessage({
-          type: 'FARHA_CUSTOM_ELEMENT_SELECT',
-          payload: { id },
-        }, '*');
+      if (container) {
+        Array.from(container.children).forEach((wrapper) => {
+          const isSelected = String(wrapper.dataset.id) === String(runtimeState.selectedCustomElementId || '');
+          wrapper.dataset.selected = isSelected ? 'true' : 'false';
+          const controls = wrapper.querySelector('.farha-custom-element__controls');
+          const resize = wrapper.querySelector('.farha-custom-element__resize');
+          if (controls) controls.style.display = isSelected ? 'flex' : 'none';
+          if (resize) resize.style.display = isSelected && wrapper.dataset.locked !== 'true' ? 'block' : 'none';
+          wrapper.style.boxShadow = isSelected
+            ? '0 0 0 2px rgba(255,255,255,0.95), 0 0 0 4px rgba(127, 42, 31, 0.45)'
+            : 'none';
+        });
       }
+
+      window.parent.postMessage({
+        type: 'FARHA_CUSTOM_ELEMENT_SELECT',
+        payload: { id: id || null },
+      }, '*');
     };
 
     const startTransform = (kind, wrapper, point) => {
@@ -4420,6 +4696,54 @@
           return;
         }
 
+        if (action === 'copy') {
+          window.parent.postMessage({
+            type: 'FARHA_ELEMENT_COPY_REQUEST',
+            payload: {
+              scope: 'native',
+              id: selectedId,
+              label: baseOverride.label,
+              clipboard: buildNativeClipboardPayload(selectedNode, baseOverride),
+            },
+          }, '*');
+          return;
+        }
+
+        if (action === 'duplicate') {
+          window.parent.postMessage({
+            type: 'FARHA_ELEMENT_DUPLICATE_REQUEST',
+            payload: {
+              scope: 'native',
+              id: selectedId,
+              label: baseOverride.label,
+              clipboard: buildNativeClipboardPayload(selectedNode, baseOverride),
+              position: getCanvasPlacementFromNode(selectedNode, 24, 24),
+            },
+          }, '*');
+          return;
+        }
+
+        if (action === 'paste') {
+          window.parent.postMessage({
+            type: 'FARHA_ELEMENT_PASTE_REQUEST',
+            payload: {
+              position: getCanvasPlacementFromNode(selectedNode, 24, 24),
+            },
+          }, '*');
+          return;
+        }
+
+        if (action === 'hide') {
+          const nextOverride = {
+            ...baseOverride,
+            hidden: true,
+          };
+          applyLocalNativeOverride(selectedId, selectedNode, nextOverride);
+          persistNativeUpdate(selectedId, selectedNode, nextOverride);
+          selectNativeElement(null);
+          return;
+        }
+
         if (action === 'crop-toggle') {
           if (!isNativeReplaceableImageNode(selectedNode)) {
             return;
@@ -4456,6 +4780,7 @@
               label: baseOverride.label,
               basePreviewUrl: getNativeElementBasePreviewUrl(selectedNode),
               aspectRatio: getNodeAspectRatio(selectedNode),
+              ...getNativeElementSelectionMeta(selectedNode),
             },
           }, '*');
           return;
@@ -4554,6 +4879,75 @@
         window.parent.postMessage({
           type: 'FARHA_CUSTOM_ELEMENT_DELETE',
           payload: { id: wrapper.dataset.id },
+        }, '*');
+        return;
+      }
+
+      if (action === 'hide') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+          payload: {
+            id: wrapper.dataset.id,
+            updates: {
+              hidden: true,
+            },
+          },
+        }, '*');
+        selectElement(null);
+        return;
+      }
+
+      if (action === 'lock') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+          payload: {
+            id: wrapper.dataset.id,
+            updates: {
+              locked: wrapper.dataset.locked !== 'true',
+            },
+          },
+        }, '*');
+        return;
+      }
+
+      if (action === 'copy') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_ELEMENT_COPY_REQUEST',
+          payload: {
+            scope: 'custom',
+            id: wrapper.dataset.id,
+          },
+        }, '*');
+        return;
+      }
+
+      if (action === 'duplicate') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_ELEMENT_DUPLICATE_REQUEST',
+          payload: {
+            scope: 'custom',
+            id: wrapper.dataset.id,
+          },
+        }, '*');
+        return;
+      }
+
+      if (action === 'paste') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.parent.postMessage({
+          type: 'FARHA_ELEMENT_PASTE_REQUEST',
+          payload: {
+            position: getCanvasPlacementFromNode(wrapper, 24, 24),
+          },
         }, '*');
         return;
       }
@@ -5108,6 +5502,8 @@
         controlsRoot.style.left = 'auto';
         controlsRoot.style.display = isSelected ? 'flex' : 'none';
         controlsRoot.style.gap = '6px';
+        controlsRoot.style.flexWrap = 'wrap';
+        controlsRoot.style.maxWidth = '240px';
         controlsRoot.style.pointerEvents = 'auto';
         controlsRoot.style.zIndex = '2';
         controlsRoot.style.opacity = el.locked ? '0.72' : '1';
@@ -5136,6 +5532,32 @@
         moveButton.style.fontSize = '11px';
         moveButton.style.fontWeight = '800';
         controlsRoot.appendChild(moveButton);
+        const duplicateButton = makeActionButton('DUP', 'duplicate');
+        duplicateButton.style.width = '52px';
+        duplicateButton.style.fontSize = '10px';
+        duplicateButton.style.fontWeight = '800';
+        controlsRoot.appendChild(duplicateButton);
+        const copyButton = makeActionButton('COPY', 'copy');
+        copyButton.style.width = '58px';
+        copyButton.style.fontSize = '10px';
+        copyButton.style.fontWeight = '800';
+        controlsRoot.appendChild(copyButton);
+        const pasteButton = makeActionButton('PASTE', 'paste');
+        pasteButton.style.width = '60px';
+        pasteButton.style.fontSize = '10px';
+        pasteButton.style.fontWeight = '800';
+        controlsRoot.appendChild(pasteButton);
+        const hideButton = makeActionButton('HIDE', 'hide');
+        hideButton.style.width = '56px';
+        hideButton.style.fontSize = '10px';
+        hideButton.style.fontWeight = '800';
+        controlsRoot.appendChild(hideButton);
+        const lockButton = makeActionButton(el.locked ? 'UNLOCK' : 'LOCK', 'lock');
+        lockButton.style.width = '62px';
+        lockButton.style.fontSize = '10px';
+        lockButton.style.fontWeight = '800';
+        lockButton.dataset.active = el.locked ? 'true' : 'false';
+        controlsRoot.appendChild(lockButton);
         if (el.type === 'image') {
           const replaceButton = makeActionButton('REPLACE', 'replace');
           replaceButton.style.width = '74px';

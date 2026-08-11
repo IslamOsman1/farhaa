@@ -15,6 +15,53 @@ const DEVICE_PRESETS = {
 const RESPONSIVE_ELEMENT_KEYS = new Set(['x', 'y', 'width', 'height', 'fontSize', 'opacity', 'rotation', 'cropX', 'cropY']);
 const RESPONSIVE_NUMERIC_KEYS = new Set(['x', 'y', 'opacity', 'rotation', 'cropX', 'cropY']);
 const DEVICE_MODES = ['mobile', 'tablet', 'desktop'];
+const FONT_FAMILY_OPTIONS = [
+  'Tajawal',
+  'Cairo',
+  'Noto Kufi Arabic',
+  'Noto Naskh Arabic',
+  'Amiri',
+  'Aref Ruqaa',
+  'Playfair Display',
+  'Cormorant Garamond',
+  'Poppins',
+  'Inter',
+];
+const TEXT_ALIGN_OPTIONS = ['right', 'center', 'left', 'justify'];
+const TEXT_TRANSFORM_OPTIONS = ['none', 'uppercase', 'lowercase', 'capitalize'];
+const TEXT_DECORATION_OPTIONS = ['none', 'underline', 'line-through', 'overline'];
+const FONT_STYLE_OPTIONS = ['normal', 'italic'];
+const FONT_WEIGHT_OPTIONS = ['300', '400', '500', '600', '700', '800'];
+const DIRECTION_OPTIONS = ['rtl', 'ltr'];
+const OBJECT_FIT_OPTIONS = ['cover', 'contain', 'fill'];
+const SHARED_STYLE_KEYS = ['opacity', 'rotation'];
+const NATIVE_SHARED_STYLE_KEYS = [
+  'opacity',
+  'rotation',
+  'width',
+  'height',
+  'zIndex',
+  'backgroundColor',
+  'borderRadius',
+  'borderWidth',
+  'borderColor',
+  'boxShadow',
+];
+const NATIVE_TEXT_STYLE_KEYS = [
+  'color',
+  'fontFamily',
+  'fontSize',
+  'fontWeight',
+  'fontStyle',
+  'lineHeight',
+  'letterSpacing',
+  'textAlign',
+  'textTransform',
+  'textDecoration',
+  'direction',
+  'textShadow',
+];
+const NATIVE_MEDIA_STYLE_KEYS = ['objectFit', 'cropX', 'cropY'];
 
 const SECTION_META = {
   'custom-elements': { icon: '✚', label: 'العناصر الحرة', description: 'إضافة نصوص وصور متحركة فوق القالب' },
@@ -137,9 +184,30 @@ function buildDefaultNativeElementOverride(seed = {}) {
     cropY: 50,
     x: 0,
     y: 0,
+    width: '',
+    height: '',
     scale: 1,
     rotation: 0,
     opacity: 1,
+    zIndex: undefined,
+    color: '',
+    fontFamily: '',
+    fontSize: '',
+    fontWeight: '',
+    fontStyle: '',
+    lineHeight: '',
+    letterSpacing: '',
+    textAlign: '',
+    textTransform: '',
+    textDecoration: '',
+    direction: '',
+    textShadow: '',
+    backgroundColor: '',
+    borderRadius: '',
+    borderWidth: '',
+    borderColor: '',
+    boxShadow: '',
+    objectFit: '',
     hidden: false,
     locked: false,
     ...seed,
@@ -164,9 +232,30 @@ function normalizeNativeElementOverrides(overrides) {
       cropY: toFiniteNumber(value.cropY, 50),
       x: toFiniteNumber(value.x, 0),
       y: toFiniteNumber(value.y, 0),
+      width: value.width == null ? '' : String(value.width),
+      height: value.height == null ? '' : String(value.height),
       scale: Math.max(0.1, toFiniteNumber(value.scale, 1)),
       rotation: toFiniteNumber(value.rotation, 0),
       opacity: Math.min(1, Math.max(0.05, toFiniteNumber(value.opacity, 1))),
+      zIndex: Number.isFinite(Number(value.zIndex)) ? Number(value.zIndex) : undefined,
+      color: value.color == null ? '' : String(value.color),
+      fontFamily: value.fontFamily == null ? '' : String(value.fontFamily),
+      fontSize: value.fontSize == null ? '' : String(value.fontSize),
+      fontWeight: value.fontWeight == null ? '' : String(value.fontWeight),
+      fontStyle: value.fontStyle == null ? '' : String(value.fontStyle),
+      lineHeight: value.lineHeight == null ? '' : String(value.lineHeight),
+      letterSpacing: value.letterSpacing == null ? '' : String(value.letterSpacing),
+      textAlign: value.textAlign == null ? '' : String(value.textAlign),
+      textTransform: value.textTransform == null ? '' : String(value.textTransform),
+      textDecoration: value.textDecoration == null ? '' : String(value.textDecoration),
+      direction: value.direction == null ? '' : String(value.direction),
+      textShadow: value.textShadow == null ? '' : String(value.textShadow),
+      backgroundColor: value.backgroundColor == null ? '' : String(value.backgroundColor),
+      borderRadius: value.borderRadius == null ? '' : String(value.borderRadius),
+      borderWidth: value.borderWidth == null ? '' : String(value.borderWidth),
+      borderColor: value.borderColor == null ? '' : String(value.borderColor),
+      boxShadow: value.boxShadow == null ? '' : String(value.boxShadow),
+      objectFit: value.objectFit == null ? '' : String(value.objectFit),
       hidden: Boolean(value.hidden),
       locked: Boolean(value.locked),
     });
@@ -228,6 +317,90 @@ function buildDefaultCustomElement(type, seed = {}) {
   };
 }
 
+function getCustomElementClipboardPayload(element) {
+  if (!element) {
+    return null;
+  }
+
+  const elementType = element.type === 'image' ? 'image' : 'text';
+  const base = {
+    type: elementType,
+    content: element.content == null ? '' : String(element.content),
+    x: toFiniteNumber(element.x, 40),
+    y: toFiniteNumber(element.y, 40),
+    opacity: toFiniteNumber(element.opacity, 1),
+    rotation: toFiniteNumber(element.rotation, 0),
+  };
+
+  if (elementType === 'text') {
+    return {
+      source: 'custom',
+      label: element.name || getCustomElementLabel(element, 0),
+      element: {
+        ...base,
+        fontSize: element.fontSize || '24px',
+        color: element.color || '#1f2937',
+        fontFamily: element.fontFamily || '',
+      },
+    };
+  }
+
+  return {
+    source: 'custom',
+    label: element.name || getCustomElementLabel(element, 0),
+    element: {
+      ...base,
+      width: element.width || '150px',
+      height: element.height || element.width || '150px',
+      cropX: toFiniteNumber(element.cropX, 50),
+      cropY: toFiniteNumber(element.cropY, 50),
+    },
+  };
+}
+
+function normalizeElementClipboardPayload(payload) {
+  if (!payload || typeof payload !== 'object' || !payload.element || typeof payload.element !== 'object') {
+    return null;
+  }
+
+  const rawElement = payload.element;
+  const elementType = rawElement.type === 'image' ? 'image' : 'text';
+  const normalizedElement = {
+    ...buildDefaultCustomElement(elementType, {}),
+    ...rawElement,
+    type: elementType,
+    content: rawElement.content == null ? '' : String(rawElement.content),
+    x: toFiniteNumber(rawElement.x, 40),
+    y: toFiniteNumber(rawElement.y, 40),
+    opacity: Math.min(1, Math.max(0.05, toFiniteNumber(rawElement.opacity, 1))),
+    rotation: toFiniteNumber(rawElement.rotation, 0),
+    hidden: false,
+    locked: false,
+    deviceOverrides: {},
+  };
+
+  if (elementType === 'text') {
+    normalizedElement.fontSize = rawElement.fontSize == null ? '24px' : String(rawElement.fontSize);
+    normalizedElement.color = rawElement.color == null ? '#1f2937' : String(rawElement.color);
+    normalizedElement.fontFamily = rawElement.fontFamily == null ? '' : String(rawElement.fontFamily);
+    delete normalizedElement.width;
+    delete normalizedElement.height;
+    delete normalizedElement.cropX;
+    delete normalizedElement.cropY;
+  } else {
+    normalizedElement.width = rawElement.width == null ? '150px' : String(rawElement.width);
+    normalizedElement.height = rawElement.height == null ? normalizedElement.width : String(rawElement.height);
+    normalizedElement.cropX = toFiniteNumber(rawElement.cropX, 50);
+    normalizedElement.cropY = toFiniteNumber(rawElement.cropY, 50);
+  }
+
+  return {
+    source: payload.source || 'custom',
+    label: payload.label || (elementType === 'text' ? 'نص حر' : 'صورة حرة'),
+    element: normalizedElement,
+  };
+}
+
 function getElementStyleClipboardPayload(element) {
   if (!element) {
     return null;
@@ -259,6 +432,53 @@ function getElementStyleClipboardPayload(element) {
       cropX: toFiniteNumber(element.cropX, 50),
       cropY: toFiniteNumber(element.cropY, 50),
     },
+  };
+}
+
+function pickStyleSubset(source, keys) {
+  return keys.reduce((accumulator, key) => {
+    if (source?.[key] !== undefined) {
+      accumulator[key] = source[key];
+    }
+    return accumulator;
+  }, {});
+}
+
+function getNativeElementStyleClipboardPayload(element) {
+  if (!element) {
+    return null;
+  }
+
+  const common = pickStyleSubset(element, NATIVE_SHARED_STYLE_KEYS);
+  common.opacity = toFiniteNumber(element.opacity, 1);
+  common.rotation = toFiniteNumber(element.rotation, 0);
+
+  if (element.kind === 'text') {
+    return {
+      type: 'text',
+      source: 'native',
+      styles: {
+        ...common,
+        ...pickStyleSubset(element, NATIVE_TEXT_STYLE_KEYS),
+      },
+    };
+  }
+
+  if (element.kind === 'media') {
+    return {
+      type: 'image',
+      source: 'native',
+      styles: {
+        ...common,
+        ...pickStyleSubset(element, NATIVE_MEDIA_STYLE_KEYS),
+      },
+    };
+  }
+
+  return {
+    type: 'native',
+    source: 'native',
+    styles: common,
   };
 }
 
@@ -992,6 +1212,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [selectedNativeElementId, setSelectedNativeElementId] = useState(null);
   const [selectedNativeElementLabel, setSelectedNativeElementLabel] = useState('');
+  const [selectedNativeElementMeta, setSelectedNativeElementMeta] = useState(null);
   const [selectedNativeElementPreviewUrl, setSelectedNativeElementPreviewUrl] = useState('');
   const [selectedNativeElementBasePreviewUrl, setSelectedNativeElementBasePreviewUrl] = useState('');
   const [selectedNativeElementAspectRatio, setSelectedNativeElementAspectRatio] = useState(390 / 844);
@@ -1003,6 +1224,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [replaceMediaRequest, setReplaceMediaRequest] = useState(null);
   const [cropMediaRequest, setCropMediaRequest] = useState(null);
   const [styleClipboard, setStyleClipboard] = useState(null);
+  const [elementClipboard, setElementClipboard] = useState(null);
   const [historyMeta, setHistoryMeta] = useState({ canUndo: false, canRedo: false, pastCount: 0, futureCount: 0 });
   const [activityLog, setActivityLog] = useState([]);
   const [versionTrail, setVersionTrail] = useState([]);
@@ -1100,11 +1322,18 @@ export default function StudioClient({ session, manifests, openings, inventory }
     }
 
     const currentOverride = nativeElementOverrides[selectedNativeElementId] || {};
+    const currentMeta =
+      selectedNativeElementMeta && selectedNativeElementMeta.id === selectedNativeElementId
+        ? selectedNativeElementMeta
+        : {};
     return buildDefaultNativeElementOverride({
+      ...currentMeta,
       ...currentOverride,
-      label: currentOverride.label || selectedNativeElementLabel || selectedNativeElementId,
+      label: currentOverride.label || currentMeta.label || selectedNativeElementLabel || selectedNativeElementId,
+      selector: currentOverride.selector || currentMeta.selector || '',
+      kind: currentOverride.kind || currentMeta.kind || 'native',
     });
-  }, [nativeElementOverrides, selectedNativeElementId, selectedNativeElementLabel]);
+  }, [nativeElementOverrides, selectedNativeElementId, selectedNativeElementLabel, selectedNativeElementMeta]);
   const templateTextLocks = useMemo(() => {
     const value = draft.uiConfig?.textLocks;
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -1415,6 +1644,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     setSelectedTemplateTextValue('');
     setSelectedNativeElementId(item.id);
     setSelectedNativeElementLabel(item.label || '');
+    setSelectedNativeElementMeta(item);
     setSelectedNativeElementPreviewUrl(item.previewUrl || '');
     setSelectedNativeElementBasePreviewUrl(item.basePreviewUrl || item.previewUrl || '');
     setSelectedNativeElementAspectRatio(toFiniteNumber(item.aspectRatio, 390 / 844));
@@ -1436,6 +1666,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
     setSelectedElementId(null);
     setSelectedNativeElementId(null);
     setSelectedNativeElementLabel('');
+    setSelectedNativeElementMeta(null);
     setSelectedNativeElementPreviewUrl('');
     setSelectedNativeElementBasePreviewUrl('');
     setSelectedNativeElementAspectRatio(390 / 844);
@@ -1567,6 +1798,21 @@ export default function StudioClient({ session, manifests, openings, inventory }
     patchNativeElement(id, {
       [key]: Number.isFinite(numeric) ? numeric : fallback,
     });
+  }
+
+  function setNativeElementDimension(id, key, value, fallback = '') {
+    const normalizedValue = String(value || '').trim();
+    if (!normalizedValue) {
+      patchNativeElement(id, { [key]: fallback });
+      return;
+    }
+
+    if (/^\d+(\.\d+)?$/.test(normalizedValue)) {
+      patchNativeElement(id, { [key]: `${normalizedValue}px` });
+      return;
+    }
+
+    patchNativeElement(id, { [key]: normalizedValue });
   }
 
   function openCropEditor(request) {
@@ -1830,6 +2076,181 @@ export default function StudioClient({ session, manifests, openings, inventory }
     recordActivity('نسخ عنصر حر', source.name || 'عنصر حر');
   }
 
+  function setElementClipboardPayload(payload, options = {}) {
+    const normalized = normalizeElementClipboardPayload(payload);
+    const fallbackLabel = options.label || payload?.label || 'العنصر';
+    if (!normalized) {
+      if (!options.silent) {
+        setNotice(options.errorNotice || `لا يمكن نسخ ${fallbackLabel} كعنصر حر بصري الآن.`);
+        recordActivity('تعذر نسخ عنصر', fallbackLabel);
+      }
+      return null;
+    }
+
+    setElementClipboard(normalized);
+    if (!options.silent) {
+      setNotice(options.notice || `تم نسخ العنصر: ${normalized.label}`);
+      recordActivity(options.activity || 'نسخ عنصر', normalized.label);
+    }
+    return normalized;
+  }
+
+  function pasteElementClipboardAt(position = null, clipboardSource = elementClipboard, options = {}) {
+    const normalized = normalizeElementClipboardPayload(clipboardSource);
+    if (!normalized) {
+      if (!options.silent) {
+        setNotice('لا يوجد عنصر منسوخ للصقه داخل القالب.');
+      }
+      return null;
+    }
+
+    const nextId = `custom-${Math.random().toString(36).slice(2, 11)}`;
+    const nextLabelBase = String(options.label || normalized.label || (normalized.element.type === 'text' ? 'نص حر' : 'صورة حرة')).trim();
+    const fallbackX = Math.max(12, Math.round(toFiniteNumber(normalized.element.x, 40) + 18));
+    const fallbackY = Math.max(12, Math.round(toFiniteNumber(normalized.element.y, 40) + 18));
+    const resolvedPosition = {
+      x: Math.max(12, Math.round(position?.x ?? fallbackX)),
+      y: Math.max(12, Math.round(position?.y ?? fallbackY)),
+    };
+
+    setDraft((current) => {
+      const elements = current.customElements || [];
+      const nextElement = {
+        ...buildDefaultCustomElement(normalized.element.type, {}),
+        ...cloneValue(normalized.element),
+        id: nextId,
+        name: options.name || `${nextLabelBase} (نسخة)`,
+        x: resolvedPosition.x,
+        y: resolvedPosition.y,
+        zIndex: elements.length + 1,
+        hidden: false,
+        locked: false,
+        deviceOverrides: {},
+      };
+
+      return {
+        ...current,
+        customElements: normalizeCustomElements([...elements, nextElement]),
+      };
+    });
+
+    setSelectedElementId(nextId);
+    setSelectedNativeElementId(null);
+    setSelectedNativeElementLabel('');
+    setSelectedNativeElementMeta(null);
+    setSelectedTemplateTextPath(null);
+    setSelectedTemplateTextLabel('');
+    setSelectedTemplateTextValue('');
+    setOpenSection('layers');
+    setEditorOpen(true);
+
+    if (!options.silent) {
+      setNotice(options.notice || `تمت إضافة نسخة جديدة من: ${nextLabelBase}`);
+      recordActivity(options.activity || 'لصق عنصر حر', nextLabelBase);
+    }
+
+    return nextId;
+  }
+
+  function copyCustomElementToClipboardById(id, options = {}) {
+    const source =
+      responsiveCustomElements.find((element) => element.id === id)
+      || normalizedCustomElements.find((element) => element.id === id);
+    if (!source) {
+      return null;
+    }
+
+    return setElementClipboardPayload(getCustomElementClipboardPayload(source), {
+      notice: options.notice || `تم نسخ العنصر الحر: ${source.name}`,
+      activity: options.activity || 'نسخ عنصر حر',
+      label: source.name,
+      silent: options.silent,
+    });
+  }
+
+  function buildSelectedNativeElementClipboardPayload() {
+    if (!selectedNativeElement) {
+      return null;
+    }
+
+    const label = selectedNativeElement.label || selectedNativeElementId || 'عنصر من القالب';
+    const previewUrl = selectedNativeElementPreviewUrl || selectedNativeElement.mediaUrl || '';
+    const resolvedKind =
+      selectedNativeElement.kind === 'native'
+        ? (previewUrl ? 'media' : (selectedNativeElement.textContent ? 'text' : 'native'))
+        : selectedNativeElement.kind;
+
+    const baseX = toFiniteNumber(selectedNativeElement.canvasX, toFiniteNumber(selectedNativeElement.x, 40));
+    const baseY = toFiniteNumber(selectedNativeElement.canvasY, toFiniteNumber(selectedNativeElement.y, 40));
+
+    if (resolvedKind === 'text') {
+      return {
+        source: 'native',
+        label,
+        element: {
+          type: 'text',
+          content: selectedNativeElement.textContent || '',
+          x: baseX,
+          y: baseY,
+          fontSize: selectedNativeElement.fontSize || '24px',
+          color: selectedNativeElement.color || '#1f2937',
+          fontFamily: selectedNativeElement.fontFamily || '',
+          opacity: toFiniteNumber(selectedNativeElement.opacity, 1),
+          rotation: toFiniteNumber(selectedNativeElement.rotation, 0),
+        },
+      };
+    }
+
+    if (resolvedKind === 'media' && previewUrl) {
+      return {
+        source: 'native',
+        label,
+        element: {
+          type: 'image',
+          content: previewUrl,
+          x: baseX,
+          y: baseY,
+          width: selectedNativeElement.renderWidth || selectedNativeElement.width || '160px',
+          height: selectedNativeElement.renderHeight || selectedNativeElement.height || selectedNativeElement.renderWidth || selectedNativeElement.width || '160px',
+          cropX: toFiniteNumber(selectedNativeElement.cropX, 50),
+          cropY: toFiniteNumber(selectedNativeElement.cropY, 50),
+          opacity: toFiniteNumber(selectedNativeElement.opacity, 1),
+          rotation: toFiniteNumber(selectedNativeElement.rotation, 0),
+        },
+      };
+    }
+
+    return null;
+  }
+
+  function copySelectedNativeElementToClipboard() {
+    const payload = buildSelectedNativeElementClipboardPayload();
+    return setElementClipboardPayload(payload, {
+      notice: `تم نسخ عنصر القالب: ${selectedNativeElement?.label || selectedNativeElementId || 'عنصر من القالب'}`,
+      activity: 'نسخ عنصر قالب',
+      label: selectedNativeElement?.label || selectedNativeElementId || 'عنصر من القالب',
+      errorNotice: 'هذا العنصر لا يمكن تحويله الآن إلى عنصر حر قابل للصق.',
+    });
+  }
+
+  function duplicateSelectedNativeElementAsCustom(position = null, clipboardPayload = null, label = '') {
+    const payload = clipboardPayload || buildSelectedNativeElementClipboardPayload();
+    const normalized = setElementClipboardPayload(payload, {
+      silent: true,
+      label: label || selectedNativeElement?.label || selectedNativeElementId || 'عنصر من القالب',
+    });
+    if (!normalized) {
+      setNotice('هذا العنصر لا يمكن تحويله الآن إلى نسخة حرة داخل القالب.');
+      return;
+    }
+
+    pasteElementClipboardAt(position, normalized, {
+      notice: `تم إنشاء نسخة حرة من: ${normalized.label}`,
+      activity: 'إنشاء نسخة حرة من عنصر قالب',
+      label: normalized.label,
+    });
+  }
+
   function addCustomElement(type, position, content = '') {
     const nextId = `custom-${Math.random().toString(36).slice(2, 11)}`;
     setDraft((current) => {
@@ -2014,6 +2435,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedElementId(event.data.payload?.id || null);
         setSelectedNativeElementId(null);
         setSelectedNativeElementLabel('');
+        setSelectedNativeElementMeta(null);
         setSelectedNativeElementPreviewUrl('');
         setSelectedNativeElementBasePreviewUrl('');
         setSelectedNativeElementAspectRatio(390 / 844);
@@ -2028,6 +2450,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         const nextId = event.data.payload?.id || null;
         setSelectedNativeElementId(nextId);
         setSelectedNativeElementLabel(event.data.payload?.label || '');
+        setSelectedNativeElementMeta(nextId ? { ...event.data.payload } : null);
         setSelectedNativeElementPreviewUrl(event.data.payload?.previewUrl || '');
         setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '');
         setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
@@ -2041,6 +2464,31 @@ export default function StudioClient({ session, manifests, openings, inventory }
             setEditorOpen(true);
           }
         }
+      } else if (event.data?.type === 'FARHA_ELEMENT_COPY_REQUEST') {
+        const scope = event.data.payload?.scope;
+        if (scope === 'custom') {
+          copyCustomElementToClipboardById(event.data.payload?.id || null);
+        } else if (scope === 'native') {
+          setElementClipboardPayload(event.data.payload?.clipboard, {
+            notice: `تم نسخ عنصر القالب: ${event.data.payload?.label || 'عنصر من القالب'}`,
+            activity: 'نسخ عنصر قالب',
+            label: event.data.payload?.label || 'عنصر من القالب',
+            errorNotice: 'هذا العنصر لا يمكن تحويله الآن إلى عنصر حر قابل للصق.',
+          });
+        }
+      } else if (event.data?.type === 'FARHA_ELEMENT_DUPLICATE_REQUEST') {
+        const scope = event.data.payload?.scope;
+        if (scope === 'custom') {
+          duplicateCustomElement(event.data.payload?.id || null);
+        } else if (scope === 'native') {
+          duplicateSelectedNativeElementAsCustom(
+            event.data.payload?.position || null,
+            event.data.payload?.clipboard || null,
+            event.data.payload?.label || '',
+          );
+        }
+      } else if (event.data?.type === 'FARHA_ELEMENT_PASTE_REQUEST') {
+        pasteElementClipboardAt(event.data.payload?.position || null);
       } else if (event.data?.type === 'FARHA_TEMPLATE_TEXT_SELECT') {
         const nextPath = event.data.payload?.path || null;
         const preserveNativeSelection = Boolean(event.data.payload?.preserveNativeSelection);
@@ -2052,6 +2500,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
           if (!preserveNativeSelection) {
             setSelectedNativeElementId(null);
             setSelectedNativeElementLabel('');
+            setSelectedNativeElementMeta(null);
           }
           setOpenSection('template-text');
           if (shouldRevealEditor) {
@@ -2070,10 +2519,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setSelectedElementId(nextId);
           setSelectedNativeElementId(null);
           setSelectedNativeElementLabel('');
+          setSelectedNativeElementMeta(null);
           setOpenSection('layers');
         } else {
           setSelectedNativeElementId(nextId);
           setSelectedNativeElementLabel(nextLabel);
+          setSelectedNativeElementMeta({ ...(event.data.payload || {}), id: nextId, label: nextLabel });
           setSelectedElementId(null);
           setOpenSection('template-elements');
         }
@@ -2096,6 +2547,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setSelectedElementId(nextId);
           setSelectedNativeElementId(null);
           setSelectedNativeElementLabel('');
+          setSelectedNativeElementMeta(null);
           setSelectedNativeElementPreviewUrl('');
           setSelectedNativeElementBasePreviewUrl('');
           setSelectedNativeElementAspectRatio(390 / 844);
@@ -2103,6 +2555,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         } else {
           setSelectedNativeElementId(nextId);
           setSelectedNativeElementLabel(event.data.payload?.label || '');
+          setSelectedNativeElementMeta(nextId ? { ...event.data.payload } : null);
           setSelectedNativeElementPreviewUrl(event.data.payload?.previewUrl || '');
           setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '');
           setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
@@ -2132,6 +2585,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         }
         setSelectedNativeElementId(nextId);
         setSelectedNativeElementLabel(event.data.payload?.label || '');
+        setSelectedNativeElementMeta(nextId ? { ...event.data.payload } : null);
         setSelectedNativeElementPreviewUrl(event.data.payload?.previewUrl || '');
         setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '');
         setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
@@ -2150,6 +2604,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         }
         setSelectedNativeElementId(nextId);
         setSelectedNativeElementLabel(event.data.payload?.label || '');
+        setSelectedNativeElementMeta(nextId ? { ...event.data.payload } : null);
         setSelectedNativeElementPreviewUrl(event.data.payload?.basePreviewUrl || '');
         setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || '');
         setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
@@ -2170,6 +2625,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setSelectedTemplateTextValue(text || '');
           setSelectedNativeElementId(null);
           setSelectedNativeElementLabel('');
+          setSelectedNativeElementMeta(null);
           setOpenSection('template-text');
           recordActivity('تعديل نص من المعاينة', label || path);
         }
@@ -2215,6 +2671,10 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setNotice('تم إلغاء وضع الإضافة من المحاكي.');
           return;
         }
+        if (action === 'paste-element') {
+          pasteElementClipboardAt();
+          return;
+        }
         if (action === 'open-layers') {
           setOpenSection(selectedElementId ? 'layers' : 'custom-elements');
           setEditorOpen(true);
@@ -2241,7 +2701,18 @@ export default function StudioClient({ session, manifests, openings, inventory }
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [currentDeviceMode, draft.ui?.addCustomElementMode, selectedElementId]);
+  }, [
+    currentDeviceMode,
+    draft.ui?.addCustomElementMode,
+    elementClipboard,
+    normalizedCustomElements,
+    selectedElementId,
+    selectedNativeElement,
+    selectedNativeElementBasePreviewUrl,
+    selectedNativeElementId,
+    selectedNativeElementLabel,
+    selectedNativeElementPreviewUrl,
+  ]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -2382,18 +2853,61 @@ export default function StudioClient({ session, manifests, openings, inventory }
     }
 
     if (styleClipboard.type !== selectedCustomElement.type) {
-      patchCustomElement(selectedCustomElement.id, {
-        opacity: styleClipboard.styles.opacity,
-        rotation: styleClipboard.styles.rotation,
-      });
+      patchCustomElement(selectedCustomElement.id, pickStyleSubset(styleClipboard.styles, SHARED_STYLE_KEYS));
       setNotice('تم لصق التنسيق المشترك فقط لأن نوع العنصر مختلف.');
       recordActivity('لصق تنسيق مشترك', selectedCustomElement.name);
       return;
     }
 
-    patchCustomElement(selectedCustomElement.id, styleClipboard.styles);
+    const nextStyles =
+      selectedCustomElement.type === 'text'
+        ? pickStyleSubset(styleClipboard.styles, ['opacity', 'rotation', 'fontSize', 'color', 'fontFamily'])
+        : pickStyleSubset(styleClipboard.styles, ['opacity', 'rotation', 'width', 'height', 'cropX', 'cropY']);
+
+    patchCustomElement(selectedCustomElement.id, nextStyles);
     setNotice(`تم لصق التنسيق على: ${selectedCustomElement.name}`);
     recordActivity('لصق تنسيق عنصر', selectedCustomElement.name);
+  }
+
+  function copySelectedNativeElementStyles() {
+    if (!selectedNativeElement) {
+      return;
+    }
+
+    const payload = getNativeElementStyleClipboardPayload(selectedNativeElement);
+    setStyleClipboard(payload);
+    setNotice(`تم نسخ تنسيق عنصر القالب: ${selectedNativeElement.label || selectedNativeElementId}`);
+    recordActivity('نسخ تنسيق عنصر قالب', selectedNativeElement.label || selectedNativeElementId || 'عنصر قالب');
+  }
+
+  function pasteStylesToSelectedNativeElement() {
+    if (!selectedNativeElement || !selectedNativeElementId || !styleClipboard) {
+      return;
+    }
+
+    const commonStyles = {
+      ...pickStyleSubset(styleClipboard.styles, NATIVE_SHARED_STYLE_KEYS),
+      ...pickStyleSubset(styleClipboard.styles, SHARED_STYLE_KEYS),
+    };
+    let nextStyles = commonStyles;
+
+    if (selectedNativeElement.kind === 'text' && styleClipboard.type === 'text') {
+      nextStyles = {
+        ...nextStyles,
+        ...pickStyleSubset(styleClipboard.styles, NATIVE_TEXT_STYLE_KEYS),
+      };
+    }
+
+    if (selectedNativeElement.kind === 'media' && styleClipboard.type === 'image') {
+      nextStyles = {
+        ...nextStyles,
+        ...pickStyleSubset(styleClipboard.styles, NATIVE_MEDIA_STYLE_KEYS),
+      };
+    }
+
+    patchNativeElement(selectedNativeElementId, nextStyles);
+    setNotice(`تم لصق التنسيق على عنصر القالب: ${selectedNativeElement.label || selectedNativeElementId}`);
+    recordActivity('لصق تنسيق عنصر قالب', selectedNativeElement.label || selectedNativeElementId || 'عنصر قالب');
   }
 
   function canResetSection(sectionKey) {
@@ -2858,6 +3372,26 @@ export default function StudioClient({ session, manifests, openings, inventory }
                         </small>
                       </div>
                       <div className="studio-inline-actions">
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={() => copyCustomElementToClipboardById(selectedCustomElement.id)}
+                        >
+                          نسخ العنصر
+                        </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={() =>
+                            pasteElementClipboardAt({
+                              x: Math.round(toFiniteNumber(selectedCustomElement.x, 40) + 24),
+                              y: Math.round(toFiniteNumber(selectedCustomElement.y, 40) + 24),
+                            })
+                          }
+                          disabled={!elementClipboard}
+                        >
+                          لصق عنصر
+                        </button>
                         <button type="button" className="mini-btn" onClick={copySelectedElementStyles}>
                           نسخ التنسيق
                         </button>
@@ -2873,7 +3407,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
                           Reset Element
                         </button>
                         <button type="button" className="mini-btn" onClick={() => duplicateCustomElement(selectedCustomElement.id)}>
-                          نسخ
+                          تكرار
                         </button>
                         <button type="button" className="mini-btn danger" onClick={() => removeCustomElement(selectedCustomElement.id)}>
                           حذف
@@ -3118,6 +3652,38 @@ export default function StudioClient({ session, manifests, openings, inventory }
                       <div className="studio-inline-actions">
                         <button
                           type="button"
+                          className="mini-btn"
+                          onClick={copySelectedNativeElementToClipboard}
+                        >
+                          نسخ العنصر
+                        </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={() =>
+                            duplicateSelectedNativeElementAsCustom({
+                              x: Math.round(toFiniteNumber(selectedNativeElement.canvasX, toFiniteNumber(selectedNativeElement.x, 40)) + 24),
+                              y: Math.round(toFiniteNumber(selectedNativeElement.canvasY, toFiniteNumber(selectedNativeElement.y, 40)) + 24),
+                            })
+                          }
+                        >
+                          إنشاء نسخة حرة
+                        </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={() =>
+                            pasteElementClipboardAt({
+                              x: Math.round(toFiniteNumber(selectedNativeElement.canvasX, toFiniteNumber(selectedNativeElement.x, 40)) + 24),
+                              y: Math.round(toFiniteNumber(selectedNativeElement.canvasY, toFiniteNumber(selectedNativeElement.y, 40)) + 24),
+                            })
+                          }
+                          disabled={!elementClipboard}
+                        >
+                          لصق عنصر
+                        </button>
+                        <button
+                          type="button"
                           className={`mini-btn ${selectedNativeElement.locked ? 'active' : ''}`}
                           onClick={() =>
                             patchNativeElement(selectedNativeElementId, {
@@ -3145,6 +3711,21 @@ export default function StudioClient({ session, manifests, openings, inventory }
                         >
                           إعادة الأصل
                         </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={copySelectedNativeElementStyles}
+                        >
+                          نسخ التنسيق
+                        </button>
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          onClick={pasteStylesToSelectedNativeElement}
+                          disabled={!styleClipboard}
+                        >
+                          لصق التنسيق
+                        </button>
                       </div>
                     </div>
 
@@ -3158,6 +3739,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
                         <strong>{selectedNativeElement.locked ? 'مقفول' : 'قابل للتحريك'}</strong>
                       </div>
                     </div>
+
+                    <datalist id="studio-font-options">
+                      {FONT_FAMILY_OPTIONS.map((fontName) => (
+                        <option key={fontName} value={fontName} />
+                      ))}
+                    </datalist>
 
                     <div className="studio-form-grid">
                       <label className="studio-field">
@@ -3233,23 +3820,228 @@ export default function StudioClient({ session, manifests, openings, inventory }
                           }
                         />
                       </label>
+                      <label className="studio-field">
+                        <span>العرض</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.width || ''}
+                          placeholder="auto / 240px"
+                          onChange={(event) => setNativeElementDimension(selectedNativeElementId, 'width', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>الارتفاع</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.height || ''}
+                          placeholder="auto / 240px"
+                          onChange={(event) => setNativeElementDimension(selectedNativeElementId, 'height', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>Z-Index</span>
+                        <input
+                          type="number"
+                          value={selectedNativeElement.zIndex ?? ''}
+                          onChange={(event) => {
+                            const raw = String(event.target.value || '').trim();
+                            patchNativeElement(selectedNativeElementId, {
+                              zIndex: raw ? toFiniteNumber(raw, 0) : undefined,
+                            });
+                          }}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>لون الخلفية</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.backgroundColor || ''}
+                          placeholder="transparent / #ffffff"
+                          onChange={(event) => patchNativeElement(selectedNativeElementId, { backgroundColor: event.target.value })}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>استدارة الحواف</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.borderRadius || ''}
+                          placeholder="0px / 24px"
+                          onChange={(event) => setNativeElementDimension(selectedNativeElementId, 'borderRadius', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>سمك الإطار</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.borderWidth || ''}
+                          placeholder="0px / 2px"
+                          onChange={(event) => setNativeElementDimension(selectedNativeElementId, 'borderWidth', event.target.value)}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>لون الإطار</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.borderColor || ''}
+                          placeholder="#d1d5db"
+                          onChange={(event) => patchNativeElement(selectedNativeElementId, { borderColor: event.target.value })}
+                        />
+                      </label>
+                      <label className="studio-field studio-field--full">
+                        <span>الظل</span>
+                        <input
+                          type="text"
+                          value={selectedNativeElement.boxShadow || ''}
+                          placeholder="0 16px 36px rgba(15,23,42,.18)"
+                          onChange={(event) => patchNativeElement(selectedNativeElementId, { boxShadow: event.target.value })}
+                        />
+                      </label>
                       <label className="studio-field studio-field--full">
                         <span>المعرّف/المسار</span>
                         <input type="text" dir="ltr" value={selectedNativeElement.selector || selectedNativeElementId || ''} readOnly />
                       </label>
                       {selectedNativeElement.kind === 'text' ? (
-                        <label className="studio-field studio-field--full">
-                          <span>النص داخل عنصر القالب</span>
-                          <textarea
-                            rows={4}
-                            value={selectedNativeElement.textContent || ''}
-                            onChange={(event) =>
-                              patchNativeElement(selectedNativeElementId, {
-                                textContent: event.target.value,
-                              })
-                            }
-                          />
-                        </label>
+                        <>
+                          <label className="studio-field studio-field--full">
+                            <span>النص داخل عنصر القالب</span>
+                            <textarea
+                              rows={4}
+                              value={selectedNativeElement.textContent || ''}
+                              onChange={(event) =>
+                                patchNativeElement(selectedNativeElementId, {
+                                  textContent: event.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>الخط</span>
+                            <input
+                              type="text"
+                              list="studio-font-options"
+                              value={selectedNativeElement.fontFamily || ''}
+                              placeholder="Tajawal"
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { fontFamily: event.target.value })}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>حجم الخط</span>
+                            <input
+                              type="text"
+                              value={selectedNativeElement.fontSize || ''}
+                              placeholder="24px"
+                              onChange={(event) => setNativeElementDimension(selectedNativeElementId, 'fontSize', event.target.value)}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>وزن الخط</span>
+                            <select
+                              value={selectedNativeElement.fontWeight || ''}
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { fontWeight: event.target.value })}
+                            >
+                              <option value="">افتراضي</option>
+                              {FONT_WEIGHT_OPTIONS.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="studio-field">
+                            <span>نمط الخط</span>
+                            <select
+                              value={selectedNativeElement.fontStyle || ''}
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { fontStyle: event.target.value })}
+                            >
+                              <option value="">افتراضي</option>
+                              {FONT_STYLE_OPTIONS.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="studio-field">
+                            <span>لون النص</span>
+                            <input
+                              type="text"
+                              value={selectedNativeElement.color || ''}
+                              placeholder="#7f2a1f"
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { color: event.target.value })}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>ارتفاع السطر</span>
+                            <input
+                              type="text"
+                              value={selectedNativeElement.lineHeight || ''}
+                              placeholder="1.6 / 32px"
+                              onChange={(event) => setNativeElementDimension(selectedNativeElementId, 'lineHeight', event.target.value)}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>تباعد الحروف</span>
+                            <input
+                              type="text"
+                              value={selectedNativeElement.letterSpacing || ''}
+                              placeholder="0px / .08em"
+                              onChange={(event) => setNativeElementDimension(selectedNativeElementId, 'letterSpacing', event.target.value)}
+                            />
+                          </label>
+                          <label className="studio-field">
+                            <span>محاذاة النص</span>
+                            <select
+                              value={selectedNativeElement.textAlign || ''}
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { textAlign: event.target.value })}
+                            >
+                              <option value="">افتراضي</option>
+                              {TEXT_ALIGN_OPTIONS.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="studio-field">
+                            <span>اتجاه النص</span>
+                            <select
+                              value={selectedNativeElement.direction || ''}
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { direction: event.target.value })}
+                            >
+                              <option value="">افتراضي</option>
+                              {DIRECTION_OPTIONS.map((option) => (
+                                <option key={option} value={option}>{option.toUpperCase()}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="studio-field">
+                            <span>تحويل النص</span>
+                            <select
+                              value={selectedNativeElement.textTransform || ''}
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { textTransform: event.target.value })}
+                            >
+                              <option value="">افتراضي</option>
+                              {TEXT_TRANSFORM_OPTIONS.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="studio-field">
+                            <span>زخرفة النص</span>
+                            <select
+                              value={selectedNativeElement.textDecoration || ''}
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { textDecoration: event.target.value })}
+                            >
+                              <option value="">افتراضي</option>
+                              {TEXT_DECORATION_OPTIONS.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="studio-field studio-field--full">
+                            <span>ظل النص</span>
+                            <input
+                              type="text"
+                              value={selectedNativeElement.textShadow || ''}
+                              placeholder="0 8px 20px rgba(15,23,42,.18)"
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { textShadow: event.target.value })}
+                            />
+                          </label>
+                        </>
                       ) : null}
                       {selectedNativeElement.kind === 'media' ? (
                         <>
@@ -3289,6 +4081,18 @@ export default function StudioClient({ session, manifests, openings, inventory }
                               value={Math.round(toFiniteNumber(selectedNativeElement.cropY, 50))}
                               onChange={(event) => setNativeElementNumber(selectedNativeElementId, 'cropY', event.target.value, 50)}
                             />
+                          </label>
+                          <label className="studio-field">
+                            <span>Object Fit</span>
+                            <select
+                              value={selectedNativeElement.objectFit || ''}
+                              onChange={(event) => patchNativeElement(selectedNativeElementId, { objectFit: event.target.value })}
+                            >
+                              <option value="">افتراضي</option>
+                              {OBJECT_FIT_OPTIONS.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
                           </label>
                           <div className="studio-field studio-field--full">
                             <button type="button" className="mini-btn" onClick={openSelectedNativeCropEditor}>
