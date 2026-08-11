@@ -28,17 +28,55 @@ function arrayValue(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function normalizeLocale(value) {
+  return value === 'en' ? 'en' : 'ar';
+}
+
+function getEnglishKey(key) {
+  return `${key}__en`;
+}
+
+function buildUiConfig(contentConfig = {}, fallbackLocale = 'ar') {
+  const storedConfig =
+    contentConfig?.__uiConfig && typeof contentConfig.__uiConfig === 'object' ? contentConfig.__uiConfig : {};
+
+  return {
+    bilingualEnabled: Boolean(storedConfig.bilingualEnabled),
+    defaultLocale: normalizeLocale(storedConfig.defaultLocale || fallbackLocale),
+  };
+}
+
+function withUiConfig(contentConfig = {}, uiConfig = {}) {
+  return {
+    ...contentConfig,
+    __uiConfig: {
+      ...(contentConfig?.__uiConfig && typeof contentConfig.__uiConfig === 'object' ? contentConfig.__uiConfig : {}),
+      bilingualEnabled: Boolean(uiConfig.bilingualEnabled),
+      defaultLocale: normalizeLocale(uiConfig.defaultLocale || 'ar'),
+    },
+  };
+}
+
+function isTranslatableField(field) {
+  return ['text', 'textarea', 'list', 'schedule'].includes(field.type);
+}
+
 function buildInitialDraft(invitation, manifest, normalized) {
+  const uiConfig = buildUiConfig(normalized.contentConfig, invitation.locale || 'ar');
+
   return {
     templateSlug: manifest.slug,
     openingSlug: invitation.opening?.slug || 'native-template',
-    contentConfig: {
-      ...normalized.contentConfig,
-      weddingDate: invitation.weddingDate ? new Date(invitation.weddingDate).toISOString().slice(0, 16) : '',
-      galleryImages: arrayValue(normalized.contentConfig.galleryImages),
-      program: arrayValue(normalized.contentConfig.program),
-      notes: arrayValue(normalized.contentConfig.notes),
-    },
+    contentConfig: withUiConfig(
+      {
+        ...normalized.contentConfig,
+        weddingDate: invitation.weddingDate ? new Date(invitation.weddingDate).toISOString().slice(0, 16) : '',
+        galleryImages: arrayValue(normalized.contentConfig.galleryImages),
+        program: arrayValue(normalized.contentConfig.program),
+        notes: arrayValue(normalized.contentConfig.notes),
+      },
+      uiConfig,
+    ),
     themeConfig: {
       ...(manifest.defaultValues.theme || {}),
       ...(normalized.themeConfig || {}),
@@ -50,24 +88,30 @@ function buildInitialDraft(invitation, manifest, normalized) {
     openingConfig: {
       ...(normalized.openingConfig || {}),
     },
+    uiConfig,
     hiddenConfig: {},
   };
 }
 
 function buildPreviewInvitation(invitation, draft) {
+  const uiConfig = buildUiConfig(draft.contentConfig, draft.uiConfig?.defaultLocale || invitation.locale || 'ar');
+  const contentConfig = withUiConfig(draft.contentConfig, uiConfig);
+
   return {
     ...invitation,
-    groomName: draft.contentConfig.groomName,
-    brideName: draft.contentConfig.brideName,
-    weddingDate: draft.contentConfig.weddingDate ? new Date(draft.contentConfig.weddingDate) : invitation.weddingDate,
-    venueName: draft.contentConfig.venueName,
-    venueAddress: draft.contentConfig.venueAddress,
-    welcomeMessage: draft.contentConfig.welcomeMessage,
-    musicUrl: draft.contentConfig.musicUrl,
-    contentConfig: draft.contentConfig,
+    locale: uiConfig.defaultLocale || invitation.locale || 'ar',
+    groomName: contentConfig.groomName,
+    brideName: contentConfig.brideName,
+    weddingDate: contentConfig.weddingDate ? new Date(contentConfig.weddingDate) : invitation.weddingDate,
+    venueName: contentConfig.venueName,
+    venueAddress: contentConfig.venueAddress,
+    welcomeMessage: contentConfig.welcomeMessage,
+    musicUrl: contentConfig.musicUrl,
+    contentConfig,
     themeConfig: draft.themeConfig,
     sectionConfig: draft.sectionConfig,
     openingConfig: draft.openingConfig,
+    uiConfig,
     opening: { slug: draft.openingSlug },
     template: { slug: draft.templateSlug },
   };
@@ -75,13 +119,37 @@ function buildPreviewInvitation(invitation, draft) {
 
 function renderField({ field, draft, onContentChange, onScheduleChange, onListChange }) {
   const value = draft.contentConfig[field.key];
+  const bilingualEnabled = Boolean(draft.uiConfig?.bilingualEnabled);
+  const englishKey = getEnglishKey(field.key);
+  const englishValue = draft.contentConfig[englishKey];
 
   if (field.type === 'textarea') {
+    if (bilingualEnabled && isTranslatableField(field)) {
+      return (
+        <div className="bilingual-stack">
+          <label className="bilingual-subfield">
+            <span>العربي</span>
+            <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
+          </label>
+          <label className="bilingual-subfield">
+            <span>English</span>
+            <textarea
+              rows={4}
+              dir="ltr"
+              value={englishValue || ''}
+              onChange={(event) => onContentChange(englishKey, event.target.value)}
+            />
+          </label>
+        </div>
+      );
+    }
+
     return <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />;
   }
 
   if (field.type === 'gallery') {
     const items = arrayValue(value);
+    const englishItems = arrayValue(englishValue);
     return (
       <div className="array-editor">
         {items.map((item, index) => (
@@ -100,13 +168,22 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             <button
               type="button"
               className="mini-btn danger"
-              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+              onClick={() => {
+                onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index));
+                if (bilingualEnabled) {
+                  onContentChange(englishKey, englishItems.filter((_, itemIndex) => itemIndex !== index));
+                }
+              }}
             >
               حذف
             </button>
           </div>
         ))}
-        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, ''])}>
+        <button
+          type="button"
+          className="mini-btn"
+          onClick={() => onContentChange(field.key, [...items, ''])}
+        >
           إضافة صورة
         </button>
       </div>
@@ -115,6 +192,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
 
   if (field.type === 'schedule') {
     const items = arrayValue(value);
+    const englishItems = arrayValue(englishValue);
     return (
       <div className="array-editor">
         {items.map((item, index) => (
@@ -131,16 +209,39 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
               placeholder="الفقرة"
               onChange={(event) => onScheduleChange(field.key, index, 'title', event.target.value)}
             />
+            {bilingualEnabled ? (
+              <input
+                type="text"
+                dir="ltr"
+                value={englishItems[index]?.title || ''}
+                placeholder="Title (EN)"
+                onChange={(event) => onScheduleChange(englishKey, index, 'title', event.target.value)}
+              />
+            ) : null}
             <button
               type="button"
               className="mini-btn danger"
-              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+              onClick={() => {
+                onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index));
+                if (bilingualEnabled) {
+                  onContentChange(englishKey, englishItems.filter((_, itemIndex) => itemIndex !== index));
+                }
+              }}
             >
               حذف
             </button>
           </div>
         ))}
-        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, { time: '', title: '' }])}>
+        <button
+          type="button"
+          className="mini-btn"
+          onClick={() => {
+            onContentChange(field.key, [...items, { time: '', title: '' }]);
+            if (bilingualEnabled) {
+              onContentChange(englishKey, [...englishItems, { time: '', title: '' }]);
+            }
+          }}
+        >
           إضافة فقرة
         </button>
       </div>
@@ -149,6 +250,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
 
   if (field.type === 'list') {
     const items = arrayValue(value);
+    const englishItems = arrayValue(englishValue);
     return (
       <div className="array-editor">
         {items.map((item, index) => (
@@ -159,16 +261,39 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
               placeholder="ملاحظة"
               onChange={(event) => onListChange(field.key, index, event.target.value)}
             />
+            {bilingualEnabled ? (
+              <input
+                type="text"
+                dir="ltr"
+                value={englishItems[index] || ''}
+                placeholder="Note (EN)"
+                onChange={(event) => onListChange(englishKey, index, event.target.value)}
+              />
+            ) : null}
             <button
               type="button"
               className="mini-btn danger"
-              onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}
+              onClick={() => {
+                onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index));
+                if (bilingualEnabled) {
+                  onContentChange(englishKey, englishItems.filter((_, itemIndex) => itemIndex !== index));
+                }
+              }}
             >
               حذف
             </button>
           </div>
         ))}
-        <button type="button" className="mini-btn" onClick={() => onContentChange(field.key, [...items, ''])}>
+        <button
+          type="button"
+          className="mini-btn"
+          onClick={() => {
+            onContentChange(field.key, [...items, '']);
+            if (bilingualEnabled) {
+              onContentChange(englishKey, [...englishItems, '']);
+            }
+          }}
+        >
           إضافة ملاحظة
         </button>
       </div>
@@ -205,6 +330,26 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
     url: 'url',
     phone: 'text',
   }[field.type] || 'text';
+
+  if (bilingualEnabled && isTranslatableField(field) && inputType === 'text') {
+    return (
+      <div className="bilingual-stack">
+        <label className="bilingual-subfield">
+          <span>العربي</span>
+          <input type="text" value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
+        </label>
+        <label className="bilingual-subfield">
+          <span>English</span>
+          <input
+            type="text"
+            dir="ltr"
+            value={englishValue || ''}
+            onChange={(event) => onContentChange(englishKey, event.target.value)}
+          />
+        </label>
+      </div>
+    );
+  }
 
   return (
     <input
@@ -287,6 +432,21 @@ export default function EditorClient({ invitation, manifest, manifests, openings
     }));
   }
 
+  function setUiValue(key, value) {
+    setDraft((current) => {
+      const nextUiConfig = {
+        ...(current.uiConfig || buildUiConfig(current.contentConfig, currentInvitation.locale || 'ar')),
+        [key]: value,
+      };
+
+      return {
+        ...current,
+        uiConfig: nextUiConfig,
+        contentConfig: withUiConfig(current.contentConfig, nextUiConfig),
+      };
+    });
+  }
+
   function setScheduleValue(key, index, property, value) {
     const items = [...arrayValue(draft.contentConfig[key])];
     items[index] = { ...items[index], [property]: value };
@@ -313,18 +473,25 @@ export default function EditorClient({ invitation, manifest, manifests, openings
 
   async function persistDraft(action = 'save', silent = false) {
     setSaveState('saving');
+    const nextDraft = {
+      ...draft,
+      uiConfig: {
+        ...(draft.uiConfig || buildUiConfig(draft.contentConfig, currentInvitation.locale || 'ar')),
+      },
+    };
+    nextDraft.contentConfig = withUiConfig(nextDraft.contentConfig, nextDraft.uiConfig);
 
     try {
       const response = await fetch(`/api/editor/${currentInvitation.slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          templateSlug: draft.templateSlug,
-          openingSlug: draft.openingSlug,
-          contentConfig: draft.contentConfig,
-          themeConfig: draft.themeConfig,
-          sectionConfig: draft.sectionConfig,
-          openingConfig: draft.openingConfig,
+          templateSlug: nextDraft.templateSlug,
+          openingSlug: nextDraft.openingSlug,
+          contentConfig: nextDraft.contentConfig,
+          themeConfig: nextDraft.themeConfig,
+          sectionConfig: nextDraft.sectionConfig,
+          openingConfig: nextDraft.openingConfig,
           action,
         }),
       });
@@ -334,7 +501,8 @@ export default function EditorClient({ invitation, manifest, manifests, openings
         throw new Error(result.error || result.message || 'تعذر حفظ الدعوة.');
       }
 
-      lastSavedRef.current = JSON.stringify(draft);
+      setDraft(nextDraft);
+      lastSavedRef.current = JSON.stringify(nextDraft);
       setSaveState('saved');
       setCurrentInvitation((current) => ({
         ...current,
@@ -430,15 +598,25 @@ export default function EditorClient({ invitation, manifest, manifests, openings
 
       const restoredInvitation = result.data.invitation;
       setCurrentInvitation((current) => ({ ...current, ...restoredInvitation }));
-      setDraft((current) => ({
-        ...current,
-        templateSlug: restoredInvitation.template?.slug || current.templateSlug,
-        openingSlug: restoredInvitation.opening?.slug || current.openingSlug,
-        contentConfig: restoredInvitation.contentConfig || current.contentConfig,
-        themeConfig: restoredInvitation.themeConfig || current.themeConfig,
-        sectionConfig: restoredInvitation.sectionConfig || current.sectionConfig,
-        openingConfig: restoredInvitation.openingConfig || current.openingConfig,
-      }));
+      setDraft((current) => {
+        const restoredUiConfig = buildUiConfig(
+          restoredInvitation.contentConfig || current.contentConfig,
+          restoredInvitation.locale || current.uiConfig?.defaultLocale || 'ar',
+        );
+        const nextDraft = {
+          ...current,
+          templateSlug: restoredInvitation.template?.slug || current.templateSlug,
+          openingSlug: restoredInvitation.opening?.slug || current.openingSlug,
+          contentConfig: withUiConfig(restoredInvitation.contentConfig || current.contentConfig, restoredUiConfig),
+          themeConfig: restoredInvitation.themeConfig || current.themeConfig,
+          sectionConfig: restoredInvitation.sectionConfig || current.sectionConfig,
+          openingConfig: restoredInvitation.openingConfig || current.openingConfig,
+          uiConfig: restoredUiConfig,
+        };
+        lastSavedRef.current = JSON.stringify(nextDraft);
+        return nextDraft;
+      });
+      setSaveState('saved');
       setCompareResult(null);
       setNotice('تمت استعادة النسخة بنجاح.');
       void loadRevisions();
@@ -488,6 +666,14 @@ export default function EditorClient({ invitation, manifest, manifests, openings
           </div>
         </div>
         <div className="topbar-actions">
+          <label className="topbar-toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(draft.uiConfig?.bilingualEnabled)}
+              onChange={(event) => setUiValue('bilingualEnabled', event.target.checked)}
+            />
+            <span>السماح بلغتين</span>
+          </label>
           <span className={`save-state ${saveState}`}>
             {saveState === 'saving' ? 'جارٍ الحفظ' : saveState === 'dirty' ? 'تغييرات غير محفوظة' : saveState === 'error' ? 'فشل الحفظ' : 'محفوظ'}
           </span>
@@ -769,6 +955,23 @@ export default function EditorClient({ invitation, manifest, manifests, openings
           gap: 10px;
           flex-wrap: wrap;
         }
+        .topbar-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 14px;
+          border-radius: 999px;
+          background: #fff;
+          border: 1px solid rgba(127, 42, 31, 0.12);
+          color: #564a54;
+          font-size: 0.9rem;
+          font-weight: 700;
+        }
+        .topbar-toggle input {
+          width: 18px;
+          height: 18px;
+          accent-color: #7f2a1f;
+        }
         .save-state {
           padding: 8px 12px;
           border-radius: 999px;
@@ -878,6 +1081,20 @@ export default function EditorClient({ invitation, manifest, manifests, openings
           background: #fffaf9;
           padding: 12px 14px;
           font: inherit;
+        }
+        .bilingual-stack {
+          display: grid;
+          gap: 12px;
+        }
+        .bilingual-subfield {
+          display: grid;
+          gap: 8px;
+        }
+        .bilingual-subfield span {
+          margin: 0;
+          color: #7b6770;
+          font-size: 0.78rem;
+          font-weight: 700;
         }
         .cards-grid {
           display: grid;

@@ -24,6 +24,46 @@ const savePayloadSchema = z.object({
   action: z.enum(['save', 'publish', 'unpublish']).optional(),
 });
 
+function normalizeLocale(value) {
+  return value === 'en' ? 'en' : 'ar';
+}
+
+function buildStoredUiConfig(contentConfig = {}, fallbackLocale = 'ar') {
+  const storedConfig =
+    contentConfig?.__uiConfig && typeof contentConfig.__uiConfig === 'object' ? contentConfig.__uiConfig : {};
+
+  return {
+    bilingualEnabled: Boolean(storedConfig.bilingualEnabled),
+    defaultLocale: normalizeLocale(storedConfig.defaultLocale || fallbackLocale),
+  };
+}
+
+function withStoredUiConfig(contentConfig = {}, fallbackLocale = 'ar') {
+  const uiConfig = buildStoredUiConfig(contentConfig, fallbackLocale);
+
+  return {
+    ...contentConfig,
+    __uiConfig: {
+      ...(contentConfig?.__uiConfig && typeof contentConfig.__uiConfig === 'object' ? contentConfig.__uiConfig : {}),
+      ...uiConfig,
+    },
+  };
+}
+
+function localizedOptionalValue(contentConfig, key, fallback = null) {
+  if (!Object.prototype.hasOwnProperty.call(contentConfig, key)) {
+    return fallback;
+  }
+
+  const value = contentConfig[key];
+  if (typeof value !== 'string') {
+    return value ?? null;
+  }
+
+  const normalized = value.trim();
+  return normalized ? value : null;
+}
+
 async function ensureTemplateBySlug(slug) {
   const manifest = getTemplateManifest(slug);
   if (!manifest) {
@@ -182,13 +222,16 @@ export async function PUT(request, { params }) {
 
     const template = await ensureTemplateBySlug(parsed.templateSlug);
     const opening = await ensureOpeningBySlug(parsed.openingSlug);
-    const legacyStory = buildLegacyStoryFromContentConfig(parsed.contentConfig);
+    const contentConfig = withStoredUiConfig(parsed.contentConfig, invitation.locale || 'ar');
+    const uiConfig = buildStoredUiConfig(contentConfig, invitation.locale || 'ar');
+    const legacyStory = buildLegacyStoryFromContentConfig(contentConfig);
     const nextStatus =
       parsed.action === 'publish'
         ? 'PUBLISHED'
         : parsed.action === 'unpublish'
           ? 'DRAFT'
           : parsed.status || invitation.status || 'DRAFT';
+    const nextLocale = uiConfig.defaultLocale || invitation.locale || 'ar';
 
     const updated = await prisma.invitation.update({
       where: { id: invitation.id },
@@ -197,18 +240,25 @@ export async function PUT(request, { params }) {
         openingId: opening.id,
         status: nextStatus,
         publishedAt: parsed.action === 'publish' ? new Date() : nextStatus === 'PUBLISHED' ? invitation.publishedAt || new Date() : null,
-        groomName: parsed.contentConfig.groomName || invitation.groomName,
-        brideName: parsed.contentConfig.brideName || invitation.brideName,
-        weddingDate: parsed.contentConfig.weddingDate ? new Date(parsed.contentConfig.weddingDate) : invitation.weddingDate,
-        venueName: parsed.contentConfig.venueName || invitation.venueName,
-        venueAddress: parsed.contentConfig.venueAddress || invitation.venueAddress,
-        welcomeMessage: parsed.contentConfig.welcomeMessage || invitation.welcomeMessage,
-        musicUrl: parsed.contentConfig.musicUrl || invitation.musicUrl,
-        contentConfig: parsed.contentConfig,
+        locale: nextLocale,
+        groomName: contentConfig.groomName || invitation.groomName,
+        brideName: contentConfig.brideName || invitation.brideName,
+        groomNameEn: localizedOptionalValue(contentConfig, 'groomName__en', invitation.groomNameEn),
+        brideNameEn: localizedOptionalValue(contentConfig, 'brideName__en', invitation.brideNameEn),
+        weddingDate: contentConfig.weddingDate ? new Date(contentConfig.weddingDate) : invitation.weddingDate,
+        venueName: contentConfig.venueName || invitation.venueName,
+        venueNameEn: localizedOptionalValue(contentConfig, 'venueName__en', invitation.venueNameEn),
+        venueAddress: contentConfig.venueAddress || invitation.venueAddress,
+        venueAddressEn: localizedOptionalValue(contentConfig, 'venueAddress__en', invitation.venueAddressEn),
+        welcomeMessage: contentConfig.welcomeMessage || invitation.welcomeMessage,
+        welcomeMessageEn: localizedOptionalValue(contentConfig, 'welcomeMessage__en', invitation.welcomeMessageEn),
+        musicUrl: contentConfig.musicUrl || invitation.musicUrl,
+        contentConfig,
         themeConfig: parsed.themeConfig,
         sectionConfig: parsed.sectionConfig,
         openingConfig: parsed.openingConfig,
         coupleStory: JSON.stringify(legacyStory),
+        coupleStoryEn: localizedOptionalValue(contentConfig, 'coupleStory__en', invitation.coupleStoryEn),
         customColors: JSON.stringify(parsed.themeConfig || {}),
         customFonts: JSON.stringify(parsed.themeConfig || {}),
         sections: JSON.stringify(parsed.sectionConfig || {}),
@@ -234,7 +284,7 @@ export async function PUT(request, { params }) {
       {
         templateSlug: template.slug,
         openingSlug: opening.slug,
-        contentConfig: parsed.contentConfig,
+        contentConfig,
         themeConfig: parsed.themeConfig,
         sectionConfig: parsed.sectionConfig,
         openingConfig: parsed.openingConfig,
