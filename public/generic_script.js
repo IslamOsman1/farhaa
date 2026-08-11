@@ -577,6 +577,7 @@
     style.id = 'farha-native-editable-style';
     style.textContent = `
       .farha-native-editable-target {
+          pointer-events: auto !important;
         transition: box-shadow 0.18s ease, outline-color 0.18s ease, opacity 0.18s ease;
       }
       .farha-native-editable-target[data-farha-selected="true"] {
@@ -847,16 +848,16 @@
       return false;
     }
 
-    if (node.matches('html, body, iframe, form, input, textarea, select, option, button')) {
+    if (node.matches('html, body, iframe, form, input, textarea, select, option')) {
       return false;
     }
 
-    if (node.closest('form, input, textarea, select, button')) {
+    if (node.closest('form, input, textarea, select')) {
       return false;
     }
 
     const style = window.getComputedStyle(node);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.pointerEvents === 'none') {
+    if (style.display === 'none' || style.visibility === 'hidden') {
       return false;
     }
 
