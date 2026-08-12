@@ -5098,6 +5098,11 @@
     const handleStart = (event) => {
       if (!runtimeState.preview) return;
       const target = event.target;
+      if (target && !target.closest('#farha-editor-dock')) {
+        window.parent.postMessage({
+          type: 'FARHA_CANVAS_DISMISS_MENU',
+        }, '*');
+      }
       const nativeActionNode = target.closest('[data-farha-native-action]');
       const nativeControlNode = target.closest('[data-farha-native-control]');
       const actionNode = target.closest('[data-farha-action]');
@@ -5118,6 +5123,9 @@
           selectTemplateText(null);
           selectNativeElement(null, { silent: true });
           hideSnapGuides();
+          window.parent.postMessage({
+            type: 'FARHA_CANVAS_DISMISS_MENU',
+          }, '*');
           return;
         }
       }
@@ -5834,10 +5842,12 @@
         const ownScrollY = target !== document.body && target !== document.documentElement ? (target.scrollTop || 0) : 0;
         const x = pageX - targetPageLeft + ownScrollX;
         const y = pageY - targetPageTop + ownScrollY;
+        const visualX = e.clientX - rect.left;
+        const visualY = e.clientY - rect.top;
 
         window.parent.postMessage({
           type: 'FARHA_CANVAS_CLICK',
-          payload: { x, y }
+          payload: { x, y, visualX, visualY }
         }, '*');
       };
       document.body.addEventListener('click', runtimeState.canvasClickHandler);

@@ -84,6 +84,18 @@ function toFiniteNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function clampValue(value, min, max) {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+
+  if (max < min) {
+    return min;
+  }
+
+  return Math.min(Math.max(value, min), max);
+}
+
 function normalizeHexColor(value, fallback = '#7f2a1f') {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) {
@@ -1253,6 +1265,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const suppressHistoryRef = useRef(false);
   const activityCounterRef = useRef(0);
   const versionCounterRef = useRef(0);
+  const phoneShellRef = useRef(null);
+  const canvasMenuRef = useRef(null);
 
   const currentManifest = useMemo(
     () => manifests.find((item) => item.slug === draft.templateSlug) || manifests[0],
@@ -1270,6 +1284,52 @@ export default function StudioClient({ session, manifests, openings, inventory }
       || getOpeningBySlug(draft.openingSlug),
     [draft.openingSlug, availableOpenings, openings],
   );
+  const hasClipboardElement = Boolean(normalizeElementClipboardPayload(elementClipboard));
+
+  function buildCanvasClickMenuState(payload) {
+    const shellNode = phoneShellRef.current;
+    const shellRect = shellNode?.getBoundingClientRect();
+    const contentX = Math.max(0, Math.round(toFiniteNumber(payload?.x, 0)));
+    const contentY = Math.max(0, Math.round(toFiniteNumber(payload?.y, 0)));
+    const rawVisualX = toFiniteNumber(payload?.visualX, contentX);
+    const rawVisualY = toFiniteNumber(payload?.visualY, contentY);
+
+    if (!shellRect) {
+      return {
+        x: contentX,
+        y: contentY,
+        visualX: rawVisualX,
+        visualY: rawVisualY,
+        token: Date.now(),
+        forceImage: Boolean(payload?.forceImage),
+      };
+    }
+
+    const menuWidth = hasClipboardElement ? 272 : 188;
+    const menuHeight = 56;
+    const padding = 18;
+    const visualX = clampValue(rawVisualX + 24, padding, Math.max(padding, shellRect.width - padding));
+    const visualY = clampValue(rawVisualY - 16, padding, Math.max(padding, shellRect.height - padding));
+    const positionedX = clampValue(
+      visualX,
+      padding + menuWidth / 2,
+      Math.max(padding + menuWidth / 2, shellRect.width - padding - menuWidth / 2),
+    );
+    const positionedY = clampValue(
+      visualY,
+      padding + menuHeight / 2,
+      Math.max(padding + menuHeight / 2, shellRect.height - padding - menuHeight / 2),
+    );
+
+    return {
+      x: contentX,
+      y: contentY,
+      visualX: positionedX,
+      visualY: positionedY,
+      token: Date.now(),
+      forceImage: Boolean(payload?.forceImage),
+    };
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth > 1180) {
@@ -1723,6 +1783,32 @@ export default function StudioClient({ session, manifests, openings, inventory }
       },
     });
   }, [draft.ui?.addCustomElementMode]);
+
+  useEffect(() => {
+    if (!canvasClickMenu || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    function handlePointerDown(event) {
+      const menuNode = canvasMenuRef.current;
+      if (!menuNode) {
+        setCanvasClickMenu(null);
+        return;
+      }
+
+      const target = event.target;
+      if (target instanceof Node && menuNode.contains(target)) {
+        return;
+      }
+
+      setCanvasClickMenu(null);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [canvasClickMenu]);
 
   function requestNativeElementSelection(item) {
     if (!item?.id) {
@@ -2799,6 +2885,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
           setEditorOpen(true);
           return;
         }
+      } else if (event.data?.type === 'FARHA_CANVAS_DISMISS_MENU') {
+        setCanvasClickMenu(null);
       } else if (event.data?.type === 'FARHA_CANVAS_CLICK') {
         const { x, y } = event.data.payload;
         if (draft.ui?.addCustomElementMode === 'text') {
@@ -2807,7 +2895,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
           return;
         }
         if (draft.ui?.addCustomElementMode === 'image') {
-          setCanvasClickMenu({ x, y, forceImage: true, token: Date.now() });
+          setCanvasClickMenu(buildCanvasClickMenuState({ ...event.data.payload, forceImage: true }));
           return;
         }
         setSelectedNativeElementId(null);
@@ -2815,7 +2903,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         setSelectedTemplateTextPath(null);
         setSelectedTemplateTextLabel('');
         setSelectedTemplateTextValue('');
-        setCanvasClickMenu({ x, y, token: Date.now() });
+        setCanvasClickMenu(buildCanvasClickMenuState(event.data.payload));
       }
     }
     window.addEventListener('message', handleMessage);
@@ -4716,7 +4804,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
         <div className="studio-canvas__frame">
           <div className="studio-phone-stage studio-phone-stage--sticky">
           <div className={`studio-device studio-device--${draft.devicePreview.mode}`}>
-            <div className="studio-phone-shell">
+            <div className="studio-phone-shell" ref={phoneShellRef}>
               <RenderFrame
                   key={`${draft.devicePreview.mode}-${previewReloadToken}`}
                   templateSlug={currentManifest.slug}
@@ -4735,10 +4823,11 @@ export default function StudioClient({ session, manifests, openings, inventory }
               ) : null}
               {canvasClickMenu ? (
                 <div
+                  ref={canvasMenuRef}
                   className="studio-canvas-menu"
                   style={{
-                    top: `${canvasClickMenu.y}px`,
-                    left: `${canvasClickMenu.x}px`,
+                    top: `${canvasClickMenu.visualY ?? canvasClickMenu.y}px`,
+                    left: `${canvasClickMenu.visualX ?? canvasClickMenu.x}px`,
                   }}
                 >
                   <button
@@ -4779,6 +4868,19 @@ export default function StudioClient({ session, manifests, openings, inventory }
                       </button>
                     }
                   />
+                  {hasClipboardElement ? (
+                    <button
+                      type="button"
+                      className="mini-btn studio-canvas-menu__action studio-canvas-menu__paste-trigger"
+                      onClick={() => {
+                        pasteElementClipboardAt({ x: canvasClickMenu.x, y: canvasClickMenu.y });
+                        setCanvasClickMenu(null);
+                      }}
+                      title="لصق العنصر المنسوخ"
+                    >
+                      PASTE
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="mini-btn studio-canvas-menu__close"
