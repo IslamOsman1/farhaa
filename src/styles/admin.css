@@ -1540,6 +1540,113 @@ body {
   color: #1d4ed8;
 }
 
+.admin-packages-editor-grid {
+  align-items: start;
+}
+
+.admin-section-title {
+  margin: 0;
+  font-size: 20px;
+  color: #16233f;
+}
+
+.admin-section-title--sm {
+  font-size: 16px;
+}
+
+.admin-section-subtitle {
+  margin: 6px 0 0;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.admin-field-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.admin-field-card > span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c8aa5;
+}
+
+.admin-field-card--toggles {
+  align-content: center;
+}
+
+.admin-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #16233f;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-checkbox-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: #7f2a1f;
+}
+
+.admin-full-width-btn {
+  width: 100%;
+  min-height: 46px;
+  font-weight: 700;
+}
+
+.admin-addon-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+}
+
+.admin-addon-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-addon-card__head strong,
+.admin-addon-card__head span {
+  display: block;
+}
+
+.admin-addon-card__head strong {
+  color: #16233f;
+  font-size: 15px;
+}
+
+.admin-addon-card__head span {
+  margin-top: 4px;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+}
+
+.admin-addon-card__price {
+  color: #8b5e34;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.admin-addon-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
 @media (max-width: 960px) {
   .admin-layout {
     position: relative;

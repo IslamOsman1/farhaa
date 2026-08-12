@@ -8,8 +8,11 @@ const packageSchema = z.object({
   nameAr: z.string().trim().min(1),
   price: z.coerce.number().nonnegative(),
   currency: z.string().trim().default('EGP'),
+  features: z.string().trim().default('[]'),
   featuresAr: z.string().trim().default('[]'),
   isPopular: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+  sortOrder: z.coerce.number().int().nonnegative().default(0),
 });
 
 export async function POST(request) {
