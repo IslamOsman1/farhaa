@@ -10,6 +10,8 @@ const orderSchema = z.object({
   countryCode: z.string().trim().optional().default(''),
   occasion: z.string().trim().optional().default('زفاف'),
   templateId: z.string().trim().min(1),
+  packageId: z.string().trim().optional().default(''),
+  selectedAddons: z.array(z.string().trim().min(1)).optional().default([]),
 });
 
 async function ensureTemplate(slug) {
@@ -102,6 +104,10 @@ export async function POST(request) {
         templateSlug: template.slug,
         invitationSlug: slug,
         status: 'NEW',
+        metadata: {
+          packageId: payload.packageId || null,
+          selectedAddons: payload.selectedAddons || [],
+        },
       },
     });
 

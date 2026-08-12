@@ -10,6 +10,7 @@ const updatePackageSchema = z.object({
   currency: z.string().trim().min(1).default('EGP'),
   features: z.string().trim().default('[]'),
   featuresAr: z.string().trim().default('[]'),
+  addons: z.string().trim().default('[]'),
   isPopular: z.boolean().default(false),
   isActive: z.boolean().default(true),
   sortOrder: z.coerce.number().int().nonnegative().default(0),

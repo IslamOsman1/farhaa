@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { parsePackageAddons, stringifyPackageAddons } from '@/lib/packages';
 
 const EMPTY_ADDON = {
   nameAr: '',
@@ -42,8 +43,6 @@ export default function EditPackagePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [packages, setPackages] = useState([]);
-  const [addons, setAddons] = useState([]);
-  const [addonsLoading, setAddonsLoading] = useState(true);
   const [addonForm, setAddonForm] = useState(EMPTY_ADDON);
   const [editingAddonId, setEditingAddonId] = useState('');
   const [notice, setNotice] = useState('');
@@ -58,6 +57,7 @@ export default function EditPackagePage() {
     isPopular: false,
     isActive: true,
     sortOrder: 0,
+    addons: [],
   });
 
   const currentPackage = useMemo(
@@ -70,9 +70,9 @@ export default function EditPackagePage() {
     setError('');
 
     try {
-      const res = await fetch('/api/packages');
-      const data = await res.json();
-      setPackages(Array.isArray(data) ? data : []);
+      const res = await fetch('/api/admin/packages');
+      const payload = await res.json();
+      setPackages(payload?.data?.packages || []);
     } catch (fetchError) {
       console.error(fetchError);
       setError('تعذر تحميل بيانات الباقة.');
@@ -81,23 +81,8 @@ export default function EditPackagePage() {
     }
   }
 
-  async function loadAddons() {
-    setAddonsLoading(true);
-
-    try {
-      const res = await fetch('/api/admin/package-addons');
-      const payload = await res.json();
-      setAddons(payload?.data?.addons || []);
-    } catch (fetchError) {
-      console.error(fetchError);
-    } finally {
-      setAddonsLoading(false);
-    }
-  }
-
   useEffect(() => {
     void loadPackageData();
-    void loadAddons();
   }, []);
 
   useEffect(() => {
@@ -113,6 +98,7 @@ export default function EditPackagePage() {
       isPopular: Boolean(currentPackage.isPopular),
       isActive: currentPackage.isActive !== false,
       sortOrder: currentPackage.sortOrder ?? 0,
+      addons: parsePackageAddons(currentPackage.addons || '[]'),
     });
   }, [currentPackage]);
 
@@ -130,6 +116,78 @@ export default function EditPackagePage() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  }
+
+  function resetAddonForm() {
+    setEditingAddonId('');
+    setAddonForm(EMPTY_ADDON);
+  }
+
+  function beginEditAddon(addon) {
+    setEditingAddonId(addon.id);
+    setAddonForm({
+      nameAr: addon.nameAr || '',
+      name: addon.name || '',
+      price: addon.price ?? '',
+      currency: addon.currency || 'EGP',
+      descriptionAr: addon.descriptionAr || '',
+      description: addon.description || '',
+      isActive: addon.isActive !== false,
+    });
+  }
+
+  function saveAddonLocally(event) {
+    event.preventDefault();
+    const nextAddon = {
+      id: editingAddonId || `addon-${Date.now().toString(36)}`,
+      nameAr: addonForm.nameAr.trim(),
+      name: addonForm.name.trim(),
+      price: parseFloat(addonForm.price) || 0,
+      currency: addonForm.currency || 'EGP',
+      descriptionAr: addonForm.descriptionAr || '',
+      description: addonForm.description || '',
+      isActive: addonForm.isActive !== false,
+      sortOrder: editingAddonId
+        ? formData.addons.find((item) => item.id === editingAddonId)?.sortOrder ?? formData.addons.length
+        : formData.addons.length,
+    };
+
+    setFormData((prev) => {
+      const existingIndex = prev.addons.findIndex((item) => item.id === nextAddon.id);
+      if (existingIndex === -1) {
+        return {
+          ...prev,
+          addons: [...prev.addons, nextAddon],
+        };
+      }
+
+      const nextAddons = [...prev.addons];
+      nextAddons[existingIndex] = nextAddon;
+      return {
+        ...prev,
+        addons: nextAddons,
+      };
+    });
+
+    setNotice(editingAddonId ? 'تم تحديث الإضافة داخل الباقة.' : 'تمت إضافة إضافة جديدة للباقة.');
+    setError('');
+    resetAddonForm();
+  }
+
+  function deleteAddonLocally(id) {
+    if (!window.confirm('هل تريد حذف هذه الإضافة من الباقة؟')) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      addons: prev.addons.filter((item) => item.id !== id),
+    }));
+
+    if (editingAddonId === id) {
+      resetAddonForm();
+    }
+
+    setNotice('تم حذف الإضافة من الباقة.');
+    setError('');
   }
 
   async function handleSubmit(event) {
@@ -150,6 +208,7 @@ export default function EditPackagePage() {
           sortOrder: Number(formData.sortOrder) || 0,
           features: JSON.stringify(parseFeaturesText(formData.features)),
           featuresAr: JSON.stringify(parseFeaturesText(formData.featuresAr)),
+          addons: stringifyPackageAddons(formData.addons),
         }),
       });
 
@@ -159,7 +218,7 @@ export default function EditPackagePage() {
         throw new Error(payload?.message || 'تعذر تحديث الباقة.');
       }
 
-      setNotice('تم حفظ تعديلات الباقة.');
+      setNotice('تم حفظ تعديلات الباقة وإضافاتها.');
       await loadPackageData();
     } catch (submitError) {
       console.error(submitError);
@@ -169,94 +228,12 @@ export default function EditPackagePage() {
     }
   }
 
-  function beginEditAddon(addon) {
-    setEditingAddonId(addon.id);
-    setAddonForm({
-      nameAr: addon.nameAr || '',
-      name: addon.name || '',
-      price: addon.price ?? '',
-      currency: addon.currency || 'EGP',
-      descriptionAr: addon.descriptionAr || '',
-      description: addon.description || '',
-      isActive: addon.isActive !== false,
-    });
-  }
-
-  function resetAddonForm() {
-    setEditingAddonId('');
-    setAddonForm(EMPTY_ADDON);
-  }
-
-  async function saveAddon(event) {
-    event.preventDefault();
-    setNotice('');
-    setError('');
-
-    const method = editingAddonId ? 'PUT' : 'POST';
-    const url = editingAddonId
-      ? `/api/admin/package-addons/${editingAddonId}`
-      : '/api/admin/package-addons';
-
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...addonForm,
-          price: parseFloat(addonForm.price),
-        }),
-      });
-
-      const payload = await res.json();
-
-      if (!res.ok || !payload?.success) {
-        throw new Error(payload?.message || 'تعذر حفظ الإضافة.');
-      }
-
-      setNotice(editingAddonId ? 'تم تحديث الإضافة.' : 'تمت إضافة الإضافة.');
-      resetAddonForm();
-      await loadAddons();
-    } catch (submitError) {
-      console.error(submitError);
-      setError(submitError.message || 'تعذر حفظ الإضافة.');
-    }
-  }
-
-  async function deleteAddon(id) {
-    if (!window.confirm('هل تريد حذف هذه الإضافة؟')) return;
-
-    setNotice('');
-    setError('');
-
-    try {
-      const res = await fetch(`/api/admin/package-addons/${id}`, {
-        method: 'DELETE',
-      });
-
-      const payload = await res.json();
-
-      if (!res.ok || !payload?.success) {
-        throw new Error(payload?.message || 'تعذر حذف الإضافة.');
-      }
-
-      if (editingAddonId === id) {
-        resetAddonForm();
-      }
-
-      setNotice('تم حذف الإضافة.');
-      await loadAddons();
-    } catch (submitError) {
-      console.error(submitError);
-      setError(submitError.message || 'تعذر حذف الإضافة.');
-    }
-  }
-
   return (
     <div className="stack-lg">
       <div className="admin-page-header">
         <div>
           <h2>تعديل الباقة</h2>
-          <p>حدّث بيانات الباقة الحالية وأدر الإضافات الاختيارية وأسعارها من نفس الصفحة.</p>
+          <p>كل باقة هنا لها إضافاتها الخاصة فقط، ولن تظهر لأي باقة أخرى.</p>
         </div>
         <div className="inline-actions">
           <Link href="/admin/packages" className="btn btn-outline">رجوع للباقات</Link>
@@ -285,7 +262,7 @@ export default function EditPackagePage() {
             <form className="stack-md" onSubmit={handleSubmit}>
               <div>
                 <h3 className="admin-section-title">بيانات الباقة</h3>
-                <p className="admin-section-subtitle">يمكنك تعديل الاسم والسعر والمزايا وطريقة ظهور الباقة في الرئيسية.</p>
+                <p className="admin-section-subtitle">عدّل بيانات الباقة الأساسية ومميزاتها، ثم احفظ من نفس الصفحة.</p>
               </div>
 
               <div className="admin-grid-2">
@@ -342,7 +319,7 @@ export default function EditPackagePage() {
               </label>
 
               <button type="submit" className="btn btn-primary admin-full-width-btn" disabled={saving}>
-                {saving ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
+                {saving ? 'جارٍ الحفظ...' : 'حفظ الباقة والإضافات'}
               </button>
             </form>
           )}
@@ -350,11 +327,11 @@ export default function EditPackagePage() {
 
         <section className="admin-card card-pad stack-md">
           <div>
-            <h3 className="admin-section-title">قسم الإضافات</h3>
-            <p className="admin-section-subtitle">أنشئ إضافات مدفوعة مستقلة مثل تصوير إضافي أو دعوات ورقية أو شاشة ترحيب خاصة.</p>
+            <h3 className="admin-section-title">إضافات هذه الباقة</h3>
+            <p className="admin-section-subtitle">هذه الإضافات تخص هذه الباقة فقط، ولن تظهر مع أي باقة أخرى في الموقع أو الطلب.</p>
           </div>
 
-          <form className="stack-md" onSubmit={saveAddon}>
+          <form className="stack-md" onSubmit={saveAddonLocally}>
             <div className="admin-grid-2">
               <label className="admin-field-card">
                 <span>اسم الإضافة بالعربي</span>
@@ -410,14 +387,14 @@ export default function EditPackagePage() {
 
           <div className="stack-sm">
             <h4 className="admin-section-title admin-section-title--sm">الإضافات الحالية</h4>
-            {addonsLoading ? (
+            {loading ? (
               <p>جارٍ تحميل الإضافات...</p>
-            ) : addons.length === 0 ? (
+            ) : formData.addons.length === 0 ? (
               <div className="admin-empty-state">
-                <p>لا توجد إضافات مضافة بعد.</p>
+                <p>لا توجد إضافات مضافة لهذه الباقة بعد.</p>
               </div>
             ) : (
-              addons.map((addon) => (
+              formData.addons.map((addon) => (
                 <article key={addon.id} className="admin-addon-card">
                   <div className="admin-addon-card__head">
                     <div>
@@ -443,7 +420,7 @@ export default function EditPackagePage() {
                       type="button"
                       className="btn btn-sm"
                       style={{ background: '#ff4d4f', color: '#fff' }}
-                      onClick={() => deleteAddon(addon.id)}
+                      onClick={() => deleteAddonLocally(addon.id)}
                     >
                       حذف
                     </button>

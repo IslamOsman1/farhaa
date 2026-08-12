@@ -1187,6 +1187,40 @@ h4,
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c7b7b1' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E");
 }
 
+.package-addons-list {
+  margin: -6px 0 28px;
+  padding: 16px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(201, 169, 110, 0.08), rgba(201, 169, 110, 0.03));
+  border: 1px solid rgba(201, 169, 110, 0.16);
+  display: grid;
+  gap: 10px;
+}
+
+.package-addons-list__title {
+  color: var(--brand-burgundy-deep);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.package-addon-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #5d4b46;
+  font-size: 0.96rem;
+}
+
+.package-addon-chip b {
+  color: var(--brand-burgundy-deep);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .how-it-works-section,
 #how-it-works {
   background: transparent;

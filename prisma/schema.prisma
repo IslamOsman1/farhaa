@@ -54,6 +54,7 @@ model Package {
   currency    String   @default("EGP")
   features    String   @default("[]") // JSON
   featuresAr  String   @default("[]") // JSON
+  addons      String   @default("[]") // JSON
   isPopular   Boolean  @default(false)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)

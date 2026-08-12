@@ -10,10 +10,23 @@ const packageSchema = z.object({
   currency: z.string().trim().default('EGP'),
   features: z.string().trim().default('[]'),
   featuresAr: z.string().trim().default('[]'),
+  addons: z.string().trim().default('[]'),
   isPopular: z.boolean().default(false),
   isActive: z.boolean().default(true),
   sortOrder: z.coerce.number().int().nonnegative().default(0),
 });
+
+export async function GET() {
+  try {
+    await requirePermission('packages.manage');
+    const packages = await prisma.package.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    return apiSuccess({ packages });
+  } catch (error) {
+    return apiError(error);
+  }
+}
 
 export async function POST(request) {
   try {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getPackageDisplayAddons } from '@/lib/packages';
 
 const templates = [
   { id: 'classic', name: 'Classic', arabicName: 'كلاسيك', image: '/classic/assets/preloader-poster.jpg' },
@@ -15,92 +16,129 @@ const templates = [
   { id: 'hadeel', name: 'Hadeel', arabicName: 'هديل', image: '/hadeel/assets/poster.jpg' },
   { id: 'wisal', name: 'Wisal', arabicName: 'وِصال', image: '/wisal/assets/poster.jpg' },
   { id: 'vangogh', name: 'Vangogh', arabicName: 'ليلة النجوم', image: '/vangogh/assets/preloader-poster.jpg' },
-  { id: 'blush', name: 'Blush', arabicName: 'وردة', image: '/blush/assets/share.jpg' }
+  { id: 'blush', name: 'Blush', arabicName: 'وردة', image: '/blush/assets/share.jpg' },
 ];
 
-const occasions = [
-  'زفاف', 'حنة', 'عقد قران', 'خطوبة', 'عيد ميلاد', 'مولود جديد'
-];
+const occasions = ['زفاف', 'حنة', 'عقد قران', 'خطوبة', 'عيد ميلاد', 'مولود جديد'];
+
+function formatPackagePrice(price, currency) {
+  const amount = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(Number(price) || 0);
+  const labels = { EGP: 'ج.م', SAR: 'ر.س', USD: 'دولار' };
+  return `${amount} ${labels[currency] || currency || ''}`.trim();
+}
 
 function OrderForm() {
   const searchParams = useSearchParams();
   const tplParam = searchParams.get('tpl');
-
+  const [loading, setLoading] = useState(false);
+  const [packagesLoading, setPackagesLoading] = useState(true);
+  const [packages, setPackages] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     countryCode: '+20',
     occasion: 'زفاف',
-    templateId: tplParam || 'classic'
+    templateId: tplParam || 'classic',
+    packageId: '',
+    selectedAddons: [],
   });
 
-  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    let mounted = true;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    async function loadPackages() {
+      try {
+        const response = await fetch('/api/packages');
+        const data = await response.json();
+        if (!mounted) return;
+        const nextPackages = Array.isArray(data) ? data : [];
+        setPackages(nextPackages);
+        if (nextPackages.length) {
+          setFormData((prev) => ({
+            ...prev,
+            packageId: prev.packageId || nextPackages[0].id,
+          }));
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (mounted) setPackagesLoading(false);
+      }
+    }
+
+    void loadPackages();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const selectedPackage = useMemo(
+    () => packages.find((pkg) => pkg.id === formData.packageId) || null,
+    [packages, formData.packageId],
+  );
+
+  const selectedPackageAddons = useMemo(
+    () => (selectedPackage ? getPackageDisplayAddons(selectedPackage, 'ar') : []),
+    [selectedPackage],
+  );
+
+  function toggleAddon(addonId) {
+    setFormData((prev) => ({
+      ...prev,
+      selectedAddons: prev.selectedAddons.includes(addonId)
+        ? prev.selectedAddons.filter((id) => id !== addonId)
+        : [...prev.selectedAddons, addonId],
+    }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
     setLoading(true);
 
     try {
-      const res = await fetch('/api/orders', {
+      const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
-      
-      const data = await res.json();
-      
-      if (res.ok && data.slug) {
-        // Redirect to the editor
+
+      const data = await response.json();
+
+      if (response.ok && data.slug) {
         window.location.href = `/edit/${data.slug}`;
-      } else {
-        alert(data.error || 'حدث خطأ أثناء الإنشاء');
-        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      alert('حدث خطأ في الاتصال');
+
+      window.alert(data.error || 'حدث خطأ أثناء الإنشاء');
+    } catch (error) {
+      console.error(error);
+      window.alert('حدث خطأ في الاتصال');
+    } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="order-container">
       <div className="order-header">
         <Link href="/" className="logo-text">FARHA</Link>
-        <h1 className="title">اطلب دعوتك – مجاناً</h1>
-        <p className="subtitle">اسمك ورقمك وشكل الدعوة... وخلال دقيقة رابط دعوتك الحقيقية بين إيدك</p>
+        <h1 className="title">اطلب دعوتك</h1>
+        <p className="subtitle">اختر القالب والباقه والإضافات المناسبة، ثم ابدأ التعديل فورًا.</p>
       </div>
 
       <div className="order-card">
-        <div className="badge-offer">
-          جرب قبل ما تدفع أي فلس ✨
-        </div>
-        
-        <div className="steps-text">
-          <span><b>1</b> رابط تحكم سرّي فوراً</span>
-          <span><b>2</b> عدّل كل شيء بنفسك</span>
-          <span><b>3</b> ادفع بس إذا اقتنعت</span>
-        </div>
+        <div className="badge-offer">ابدأ الآن وعدّل قبل الدفع ✨</div>
 
         <form onSubmit={handleSubmit} className="order-form">
           <div className="form-group">
             <label>اسمك</label>
-            <input 
-              type="text" 
-              placeholder="مثلاً: كرار محمد" 
-              required
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
-            />
+            <input type="text" placeholder="مثلاً: كرار محمد" required value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} />
           </div>
 
           <div className="form-group">
             <label>رقم واتسابك</label>
             <div className="phone-input-group">
-              <select 
-                value={formData.countryCode}
-                onChange={e => setFormData({...formData, countryCode: e.target.value})}
-              >
+              <select value={formData.countryCode} onChange={(e) => setFormData((prev) => ({ ...prev, countryCode: e.target.value }))}>
                 <option value="+20">EG +20</option>
                 <option value="+966">SA +966</option>
                 <option value="+971">AE +971</option>
@@ -111,40 +149,75 @@ function OrderForm() {
                 <option value="+973">BH +973</option>
                 <option value="+962">JO +962</option>
               </select>
-              <input 
-                type="tel" 
-                placeholder="100 123 4567" 
-                required
-                value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
-              />
+              <input type="tel" placeholder="100 123 4567" required value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} />
             </div>
           </div>
 
           <div className="form-group">
             <label>ما هي مناسبتك؟</label>
             <div className="occasions-grid">
-              {occasions.map(occ => (
+              {occasions.map((occasion) => (
                 <button
                   type="button"
-                  key={occ}
-                  className={`occ-btn ${formData.occasion === occ ? 'active' : ''}`}
-                  onClick={() => setFormData({...formData, occasion: occ})}
+                  key={occasion}
+                  className={`occ-btn ${formData.occasion === occasion ? 'active' : ''}`}
+                  onClick={() => setFormData((prev) => ({ ...prev, occasion }))}
                 >
-                  {occ}
+                  {occasion}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="form-group">
+            <label>اختر الباقة</label>
+            {packagesLoading ? (
+              <div className="loading-box">جارٍ تحميل الباقات...</div>
+            ) : (
+              <div className="package-picker-grid">
+                {packages.map((pkg) => (
+                  <button
+                    key={pkg.id}
+                    type="button"
+                    className={`package-picker-card ${formData.packageId === pkg.id ? 'active' : ''}`}
+                    onClick={() => setFormData((prev) => ({ ...prev, packageId: pkg.id, selectedAddons: [] }))}
+                  >
+                    <strong>{pkg.nameAr || pkg.name}</strong>
+                    <span>{formatPackagePrice(pkg.price, pkg.currency)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {selectedPackageAddons.length ? (
+            <div className="form-group">
+              <label>إضافات الباقة المختارة</label>
+              <div className="addons-grid">
+                {selectedPackageAddons.map((addon) => (
+                  <button
+                    key={addon.id}
+                    type="button"
+                    className={`addon-card ${formData.selectedAddons.includes(addon.id) ? 'active' : ''}`}
+                    onClick={() => toggleAddon(addon.id)}
+                  >
+                    <strong>{addon.label}</strong>
+                    {addon.descriptionLabel ? <small>{addon.descriptionLabel}</small> : null}
+                    <b>{formatPackagePrice(addon.price, addon.currency)}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="form-group">
             <label>اختر شكل دعوتك</label>
             <div className="templates-scroll">
-              {templates.map(tpl => (
-                <div 
+              {templates.map((tpl) => (
+                <div
                   key={tpl.id}
                   className={`tpl-card ${formData.templateId === tpl.id ? 'active' : ''}`}
-                  onClick={() => setFormData({...formData, templateId: tpl.id})}
+                  onClick={() => setFormData((prev) => ({ ...prev, templateId: tpl.id }))}
                 >
                   <img src={tpl.image} alt={tpl.arabicName} />
                   <span>{formData.templateId === tpl.id ? '✓ ' : ''}{tpl.arabicName}</span>
@@ -154,15 +227,15 @@ function OrderForm() {
           </div>
 
           <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'جاري الإنشاء...' : 'أنشئ دعوتي مجاناً'}
+            {loading ? 'جارٍ الإنشاء...' : 'أنشئ دعوتي الآن'}
           </button>
-          
+
           <p className="footer-note">
-            بلا بطاقة. بلا التزام – دعوتك الحقيقية تصير بين إيدك خلال دقيقة.
+            ستحصل على رابط تعديل مباشر، مع الباقة المختارة والإضافات التي قمت بتحديدها.
           </p>
         </form>
       </div>
-      
+
       <style jsx>{`
         .order-container {
           min-height: 100vh;
@@ -205,7 +278,7 @@ function OrderForm() {
           border-radius: 20px;
           box-shadow: 0 10px 30px rgba(0,0,0,0.05);
           width: 100%;
-          max-width: 600px;
+          max-width: 760px;
           padding: 40px;
           position: relative;
         }
@@ -220,18 +293,6 @@ function OrderForm() {
           position: relative;
           left: 50%;
           transform: translateX(-50%);
-        }
-        .steps-text {
-          display: flex;
-          justify-content: center;
-          gap: 15px;
-          color: #666;
-          font-size: 0.9rem;
-          margin-bottom: 30px;
-          flex-wrap: wrap;
-        }
-        .steps-text b {
-          color: #1a1a1a;
         }
         .form-group {
           margin-bottom: 25px;
@@ -270,28 +331,61 @@ function OrderForm() {
           direction: ltr;
           text-align: right;
         }
-        .occasions-grid {
-          display: flex;
-          flex-wrap: wrap;
+        .occasions-grid,
+        .package-picker-grid,
+        .addons-grid {
+          display: grid;
           gap: 10px;
-          justify-content: flex-start;
-          flex-direction: row;
+        }
+        .occasions-grid {
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        }
+        .package-picker-grid,
+        .addons-grid {
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+        .occ-btn,
+        .package-picker-card,
+        .addon-card {
+          border: 1px solid #e5e7eb;
+          background: #fff;
+          border-radius: 18px;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.2s;
         }
         .occ-btn {
           padding: 10px 20px;
-          border: 1px solid #e5e7eb;
-          background: #fff;
-          border-radius: 999px;
-          cursor: pointer;
-          font-family: inherit;
           font-weight: 500;
           color: #4b5563;
-          transition: all 0.2s;
         }
-        .occ-btn.active {
-          background: #e11d48;
-          color: white;
+        .package-picker-card,
+        .addon-card {
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          text-align: right;
+        }
+        .package-picker-card strong,
+        .addon-card strong {
+          color: #2a2140;
+          font-size: 1rem;
+        }
+        .package-picker-card span,
+        .addon-card b,
+        .addon-card small {
+          color: #6b7280;
+        }
+        .addon-card b {
+          color: #c49a45;
+        }
+        .occ-btn.active,
+        .package-picker-card.active,
+        .addon-card.active {
+          background: #fff7ed;
           border-color: #e11d48;
+          box-shadow: 0 8px 20px rgba(225, 29, 72, 0.08);
         }
         .templates-scroll {
           display: flex;
@@ -299,17 +393,6 @@ function OrderForm() {
           overflow-x: auto;
           padding-bottom: 15px;
           direction: rtl;
-        }
-        .templates-scroll::-webkit-scrollbar {
-          height: 8px;
-        }
-        .templates-scroll::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 4px;
-        }
-        .templates-scroll::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
         }
         .tpl-card {
           min-width: 120px;
@@ -358,11 +441,18 @@ function OrderForm() {
         .submit-btn:hover {
           transform: translateY(-2px);
         }
-        .footer-note {
+        .footer-note,
+        .loading-box {
           text-align: center;
           color: #9ca3af;
-          font-size: 0.85rem;
+          font-size: 0.9rem;
           margin-top: 20px;
+        }
+        .loading-box {
+          padding: 16px;
+          border-radius: 14px;
+          background: #faf7f1;
+          margin-top: 0;
         }
         @media (max-width: 600px) {
           .order-card {
@@ -379,7 +469,7 @@ function OrderForm() {
 
 export default function OrderPage() {
   return (
-    <Suspense fallback={<div style={{padding: '50px', textAlign: 'center'}}>جاري التحميل...</div>}>
+    <Suspense fallback={<div style={{ padding: '50px', textAlign: 'center' }}>جارٍ التحميل...</div>}>
       <OrderForm />
     </Suspense>
   );
