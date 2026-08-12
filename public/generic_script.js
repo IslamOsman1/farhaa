@@ -176,6 +176,7 @@
     manifest: null,
     renderConfig: null,
     preview: false,
+    editorAddMode: '',
     showPromoBar: !initialPromoBarDisabled,
     invitationId: null,
     invitationSlug: null,
@@ -1145,7 +1146,7 @@
       return true;
     }
   
-    function resolveNativeElementTarget(startNode) {
+  function resolveNativeElementTarget(startNode) {
     let current = startNode?.nodeType === 1 ? startNode : startNode?.parentElement;
     while (current && current !== document.body && current !== document.documentElement) {
       if (current.closest('.farha-custom-element')) {
@@ -1160,6 +1161,61 @@
     }
 
     return null;
+  }
+
+  function isCanvasBackgroundTarget(startNode) {
+    const node = startNode?.nodeType === 1 ? startNode : startNode?.parentElement;
+    if (!node) {
+      return true;
+    }
+
+    if (node.closest('.farha-custom-element, .farha-floating-text-editor, #farha-native-overlay, #farha-editor-dock')) {
+      return false;
+    }
+
+    const tagName = (node.tagName || '').toLowerCase();
+    if (
+      ['img', 'picture', 'video', 'svg', 'canvas', 'button', 'a', 'input', 'textarea', 'select', 'option', 'label'].includes(tagName)
+      || node.matches?.('[role="button"], [data-farha-native-action], [data-farha-native-control], [data-farha-action]')
+    ) {
+      return false;
+    }
+
+    if (
+      node.classList?.contains('farha-studio-editable')
+      || node.dataset?.farhaStudioField
+      || node.dataset?.farhaTextPath
+      || node.isContentEditable
+    ) {
+      return false;
+    }
+
+    const directText = Array.from(node.childNodes || [])
+      .filter((child) => child.nodeType === Node.TEXT_NODE)
+      .map((child) => child.textContent || '')
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (directText) {
+      return false;
+    }
+
+    const explicitLabel = (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('alt') || '').trim();
+    if (explicitLabel) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function setEditorAddMode(mode = '') {
+    const normalizedMode = mode === 'text' || mode === 'image' ? mode : '';
+    runtimeState.editorAddMode = normalizedMode;
+    if (normalizedMode) {
+      document.body.dataset.farhaEditorAddMode = normalizedMode;
+    } else {
+      delete document.body.dataset.farhaEditorAddMode;
+    }
   }
 
   function ensureNativeElementBaseState(node) {
@@ -2364,6 +2420,11 @@
           || fallbackBindings
           || {};
         postStudioCatalogs(bindings);
+        return;
+      }
+
+      if (event.data.type === 'FARHA_EDITOR_ADD_MODE') {
+        setEditorAddMode(event.data.payload?.mode || '');
         return;
       }
 
@@ -5043,10 +5104,22 @@
       const wrapper = target.closest('.farha-custom-element');
       const point = getPoint(event);
       const touchCount = event.touches?.length || 0;
+      const addModeActive = Boolean(runtimeState.editorAddMode);
+      const canvasSurface = !wrapper && isCanvasBackgroundTarget(target);
 
       if (nativeControlNode) {
         event.stopPropagation();
         return;
+      }
+
+      if (point && (addModeActive || canvasSurface)) {
+        if (!target.closest('.farha-custom-element, .farha-floating-text-editor, #farha-native-overlay, #farha-editor-dock')) {
+          selectElement(null);
+          selectTemplateText(null);
+          selectNativeElement(null, { silent: true });
+          hideSnapGuides();
+          return;
+        }
       }
 
       if (nativeActionNode) {
@@ -5730,15 +5803,26 @@
 
     if (runtimeState.preview) {
       runtimeState.canvasClickHandler = (e) => {
+        const clickTarget = e.target?.nodeType === 1 ? e.target : e.target?.parentElement;
+        const addModeActive = Boolean(runtimeState.editorAddMode);
+        if (!clickTarget) {
+          return;
+        }
+
         if (
-          e.target.closest('.farha-studio-editable')
-          || e.target.closest('.farha-custom-element')
-          || e.target.closest('[data-farha-native-managed="true"]')
-          || resolveNativeElementTarget(e.target)
-          || e.target.closest('button')
-          || e.target.closest('a')
+          clickTarget.closest('.farha-custom-element, .farha-floating-text-editor, #farha-native-overlay, #farha-editor-dock')
         ) return;
 
+        const shouldTreatAsCanvasClick =
+          addModeActive
+          || isCanvasBackgroundTarget(clickTarget)
+          || !resolveNativeElementTarget(clickTarget);
+        if (!shouldTreatAsCanvasClick) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
         runtimeState.selectedCustomElementId = null;
         selectNativeElement(null, { silent: true });
         const rect = target.getBoundingClientRect();

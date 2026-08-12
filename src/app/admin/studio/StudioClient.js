@@ -1715,6 +1715,15 @@ export default function StudioClient({ session, manifests, openings, inventory }
     });
   }
 
+  useEffect(() => {
+    sendPreviewBridgeMessage({
+      type: 'FARHA_EDITOR_ADD_MODE',
+      payload: {
+        mode: draft.ui?.addCustomElementMode || '',
+      },
+    });
+  }, [draft.ui?.addCustomElementMode]);
+
   function requestNativeElementSelection(item) {
     if (!item?.id) {
       return;
@@ -4734,17 +4743,17 @@ export default function StudioClient({ session, manifests, openings, inventory }
                 >
                   <button
                     type="button"
-                    className="mini-btn"
+                    className="mini-btn studio-canvas-menu__action"
                     onClick={() => {
                       addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
                       setCanvasClickMenu(null);
                     }}
                     title="إضافة نص"
                   >
-                    T
+                    TEXT
                   </button>
                   <MediaPicker
-                    label="+"
+                    label="IMAGE"
                     value=""
                     accept="image"
                     folder="studio-free-elements"
@@ -4763,10 +4772,10 @@ export default function StudioClient({ session, manifests, openings, inventory }
                     trigger={
                       <button
                         type="button"
-                        className="mini-btn studio-canvas-menu__image-trigger"
+                        className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
                         title="إضافة صورة"
                       >
-                        +
+                        IMAGE
                       </button>
                     }
                   />
