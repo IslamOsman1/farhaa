@@ -1232,46 +1232,48 @@
     if (imageNode?.dataset?.farhaNativeBaseObjectFit === undefined) {
       imageNode.dataset.farhaNativeBaseObjectFit = imageNode.style.objectFit || '';
     }
-    const textTarget = getNativeTextEditTarget(node);
-    if (textTarget?.dataset?.farhaNativeBaseText === undefined) {
-      textTarget.dataset.farhaNativeBaseText = textTarget.innerText || textTarget.textContent || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseColor === undefined) {
-      textTarget.dataset.farhaNativeBaseColor = textTarget.style.color || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontFamily === undefined) {
-      textTarget.dataset.farhaNativeBaseFontFamily = textTarget.style.fontFamily || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontSize === undefined) {
-      textTarget.dataset.farhaNativeBaseFontSize = textTarget.style.fontSize || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontWeight === undefined) {
-      textTarget.dataset.farhaNativeBaseFontWeight = textTarget.style.fontWeight || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseFontStyle === undefined) {
-      textTarget.dataset.farhaNativeBaseFontStyle = textTarget.style.fontStyle || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseLineHeight === undefined) {
-      textTarget.dataset.farhaNativeBaseLineHeight = textTarget.style.lineHeight || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseLetterSpacing === undefined) {
-      textTarget.dataset.farhaNativeBaseLetterSpacing = textTarget.style.letterSpacing || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextAlign === undefined) {
-      textTarget.dataset.farhaNativeBaseTextAlign = textTarget.style.textAlign || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextTransform === undefined) {
-      textTarget.dataset.farhaNativeBaseTextTransform = textTarget.style.textTransform || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextDecoration === undefined) {
-      textTarget.dataset.farhaNativeBaseTextDecoration = textTarget.style.textDecoration || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseDirection === undefined) {
-      textTarget.dataset.farhaNativeBaseDirection = textTarget.style.direction || '';
-    }
-    if (textTarget?.dataset?.farhaNativeBaseTextShadow === undefined) {
-      textTarget.dataset.farhaNativeBaseTextShadow = textTarget.style.textShadow || '';
-    }
+    const textTargets = getNativeTextStyleTargets(node);
+    textTargets.forEach((textTarget, index) => {
+      if (index === 0 && textTarget?.dataset?.farhaNativeBaseText === undefined) {
+        textTarget.dataset.farhaNativeBaseText = textTarget.innerText || textTarget.textContent || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseColor === undefined) {
+        textTarget.dataset.farhaNativeBaseColor = textTarget.style.color || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseFontFamily === undefined) {
+        textTarget.dataset.farhaNativeBaseFontFamily = textTarget.style.fontFamily || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseFontSize === undefined) {
+        textTarget.dataset.farhaNativeBaseFontSize = textTarget.style.fontSize || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseFontWeight === undefined) {
+        textTarget.dataset.farhaNativeBaseFontWeight = textTarget.style.fontWeight || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseFontStyle === undefined) {
+        textTarget.dataset.farhaNativeBaseFontStyle = textTarget.style.fontStyle || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseLineHeight === undefined) {
+        textTarget.dataset.farhaNativeBaseLineHeight = textTarget.style.lineHeight || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseLetterSpacing === undefined) {
+        textTarget.dataset.farhaNativeBaseLetterSpacing = textTarget.style.letterSpacing || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseTextAlign === undefined) {
+        textTarget.dataset.farhaNativeBaseTextAlign = textTarget.style.textAlign || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseTextTransform === undefined) {
+        textTarget.dataset.farhaNativeBaseTextTransform = textTarget.style.textTransform || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseTextDecoration === undefined) {
+        textTarget.dataset.farhaNativeBaseTextDecoration = textTarget.style.textDecoration || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseDirection === undefined) {
+        textTarget.dataset.farhaNativeBaseDirection = textTarget.style.direction || '';
+      }
+      if (textTarget?.dataset?.farhaNativeBaseTextShadow === undefined) {
+        textTarget.dataset.farhaNativeBaseTextShadow = textTarget.style.textShadow || '';
+      }
+    });
 
     node.classList.add('farha-native-editable-target');
     node.dataset.farhaNativeManaged = 'true';
@@ -1502,13 +1504,62 @@
     return Boolean(getNativeTextEditTarget(node));
   }
 
-  function applyInlineStyle(target, property, overrideValue, baseValue = '') {
+  function getNativeTextStyleTargets(node) {
+    const textTarget = getNativeTextEditTarget(node);
+    if (!textTarget) {
+      return [];
+    }
+
+    const targets = [textTarget];
+    if (!textTarget.querySelectorAll) {
+      return targets;
+    }
+
+    const descendants = Array.from(textTarget.querySelectorAll('*')).filter((element) => {
+      if (!element || element.nodeType !== 1) {
+        return false;
+      }
+      if (isNativeReplaceableImageNode(element)) {
+        return false;
+      }
+
+      const normalizedText = (element.textContent || '').replace(/\s+/g, ' ').trim();
+      return Boolean(normalizedText);
+    });
+
+    descendants.forEach((element) => {
+      if (!targets.includes(element)) {
+        targets.push(element);
+      }
+    });
+
+    return targets;
+  }
+
+  function toCssPropertyName(property) {
+    return String(property || '').replace(/[A-Z]/g, (character) => `-${character.toLowerCase()}`);
+  }
+
+  function applyInlineStyle(target, property, overrideValue, baseValue = '', options = {}) {
     if (!target) {
       return;
     }
 
+    const cssProperty = toCssPropertyName(property);
     const hasOverride = !(overrideValue == null || overrideValue === '');
-    target.style[property] = hasOverride ? String(overrideValue) : (baseValue || '');
+    const priority = options.important ? 'important' : '';
+
+    if (hasOverride) {
+      target.style.setProperty(cssProperty, String(overrideValue), priority);
+      return;
+    }
+
+    if (baseValue) {
+      target.style.setProperty(cssProperty, String(baseValue), priority);
+      return;
+    }
+
+    target.style.removeProperty(cssProperty);
   }
 
   function applyNativeBoxStylesToNode(node, override = {}) {
@@ -1536,24 +1587,26 @@
   }
 
   function applyNativeTextStylesToNode(node, override = {}) {
-    const textTarget = getNativeTextEditTarget(node);
-    if (!textTarget) {
+    const textTargets = getNativeTextStyleTargets(node);
+    if (!textTargets.length) {
       return;
     }
 
     ensureNativeElementBaseState(node);
-    applyInlineStyle(textTarget, 'color', override?.color, textTarget.dataset.farhaNativeBaseColor || '');
-    applyInlineStyle(textTarget, 'fontFamily', override?.fontFamily, textTarget.dataset.farhaNativeBaseFontFamily || '');
-    applyInlineStyle(textTarget, 'fontSize', override?.fontSize, textTarget.dataset.farhaNativeBaseFontSize || '');
-    applyInlineStyle(textTarget, 'fontWeight', override?.fontWeight, textTarget.dataset.farhaNativeBaseFontWeight || '');
-    applyInlineStyle(textTarget, 'fontStyle', override?.fontStyle, textTarget.dataset.farhaNativeBaseFontStyle || '');
-    applyInlineStyle(textTarget, 'lineHeight', override?.lineHeight, textTarget.dataset.farhaNativeBaseLineHeight || '');
-    applyInlineStyle(textTarget, 'letterSpacing', override?.letterSpacing, textTarget.dataset.farhaNativeBaseLetterSpacing || '');
-    applyInlineStyle(textTarget, 'textAlign', override?.textAlign, textTarget.dataset.farhaNativeBaseTextAlign || '');
-    applyInlineStyle(textTarget, 'textTransform', override?.textTransform, textTarget.dataset.farhaNativeBaseTextTransform || '');
-    applyInlineStyle(textTarget, 'textDecoration', override?.textDecoration, textTarget.dataset.farhaNativeBaseTextDecoration || '');
-    applyInlineStyle(textTarget, 'direction', override?.direction, textTarget.dataset.farhaNativeBaseDirection || '');
-    applyInlineStyle(textTarget, 'textShadow', override?.textShadow, textTarget.dataset.farhaNativeBaseTextShadow || '');
+    textTargets.forEach((textTarget) => {
+      applyInlineStyle(textTarget, 'color', override?.color, textTarget.dataset.farhaNativeBaseColor || '', { important: true });
+      applyInlineStyle(textTarget, 'fontFamily', override?.fontFamily, textTarget.dataset.farhaNativeBaseFontFamily || '', { important: true });
+      applyInlineStyle(textTarget, 'fontSize', override?.fontSize, textTarget.dataset.farhaNativeBaseFontSize || '', { important: true });
+      applyInlineStyle(textTarget, 'fontWeight', override?.fontWeight, textTarget.dataset.farhaNativeBaseFontWeight || '', { important: true });
+      applyInlineStyle(textTarget, 'fontStyle', override?.fontStyle, textTarget.dataset.farhaNativeBaseFontStyle || '', { important: true });
+      applyInlineStyle(textTarget, 'lineHeight', override?.lineHeight, textTarget.dataset.farhaNativeBaseLineHeight || '', { important: true });
+      applyInlineStyle(textTarget, 'letterSpacing', override?.letterSpacing, textTarget.dataset.farhaNativeBaseLetterSpacing || '', { important: true });
+      applyInlineStyle(textTarget, 'textAlign', override?.textAlign, textTarget.dataset.farhaNativeBaseTextAlign || '', { important: true });
+      applyInlineStyle(textTarget, 'textTransform', override?.textTransform, textTarget.dataset.farhaNativeBaseTextTransform || '', { important: true });
+      applyInlineStyle(textTarget, 'textDecoration', override?.textDecoration, textTarget.dataset.farhaNativeBaseTextDecoration || '', { important: true });
+      applyInlineStyle(textTarget, 'direction', override?.direction, textTarget.dataset.farhaNativeBaseDirection || '', { important: true });
+      applyInlineStyle(textTarget, 'textShadow', override?.textShadow, textTarget.dataset.farhaNativeBaseTextShadow || '', { important: true });
+    });
   }
 
   function getNativeElementSelectionMeta(node) {
