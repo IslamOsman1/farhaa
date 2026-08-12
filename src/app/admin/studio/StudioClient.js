@@ -4287,6 +4287,40 @@ export default function StudioClient({ session, manifests, openings, inventory }
                       ) : null}
                     </div>
 
+                    {selectedTemplateTextStyleTarget ? (
+                      <div className="studio-form-grid">
+                        <label className="studio-field">
+                          <span>لون النص</span>
+                          <input
+                            type="color"
+                            value={normalizeHexColor(selectedTemplateTextStyleTarget.color, '#7f2a1f')}
+                            onChange={(event) =>
+                              patchNativeElement(selectedNativeElementId, {
+                                color: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label className="studio-field">
+                          <span>نوع الخط</span>
+                          <select
+                            value={selectedTemplateTextStyleTarget.fontFamily || ''}
+                            onChange={(event) =>
+                              patchNativeElement(selectedNativeElementId, {
+                                fontFamily: event.target.value,
+                              })
+                            }
+                          >
+                            <option value="">خط القالب</option>
+                            {fontLibraryOptions.map((font) => (
+                              <option key={font.id || font.family} value={font.family}>
+                                {font.nameAr || font.family}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    ) : null}
                     <p className="studio-help-text">
                       اضغط على العنصر الزخرفي أو الصورة الأصلية داخل المحاكي لتحديدها، ثم اسحبها مباشرة. ويمكنك أيضًا فتح نافذة القص البصري لضبط الصورة داخل إطار مخصص بدل الاعتماد على السحب داخل المعاينة فقط.
                     </p>

@@ -148,6 +148,29 @@
     '#da3wa-music',
   ].join(', ');
 
+  const FALLBACK_OVERLAY_FONT_LIBRARY = [
+    { id: 'tajawal', family: 'Tajawal', nameAr: 'تجوال', nameEn: 'Tajawal' },
+    { id: 'cairo', family: 'Cairo', nameAr: 'القاهرة', nameEn: 'Cairo' },
+    { id: 'noto-kufi-arabic', family: 'Noto Kufi Arabic', nameAr: 'نوتو كوفي', nameEn: 'Noto Kufi Arabic' },
+    { id: 'noto-naskh-arabic', family: 'Noto Naskh Arabic', nameAr: 'نوتو نسخ', nameEn: 'Noto Naskh Arabic' },
+    { id: 'amiri', family: 'Amiri', nameAr: 'أميري', nameEn: 'Amiri' },
+    { id: 'aref-ruqaa', family: 'Aref Ruqaa', nameAr: 'عرف رقعة', nameEn: 'Aref Ruqaa' },
+    { id: 'reem-kufi', family: 'Reem Kufi', nameAr: 'ريم كوفي', nameEn: 'Reem Kufi' },
+    { id: 'el-messiri', family: 'El Messiri', nameAr: 'المسيري', nameEn: 'El Messiri' },
+    { id: 'changa', family: 'Changa', nameAr: 'تشانغا', nameEn: 'Changa' },
+    { id: 'marhey', family: 'Marhey', nameAr: 'مرحي', nameEn: 'Marhey' },
+    { id: 'playfair-display', family: 'Playfair Display', nameAr: 'بلايفير', nameEn: 'Playfair Display' },
+    { id: 'cormorant-garamond', family: 'Cormorant Garamond', nameAr: 'كورمورانت جاراموند', nameEn: 'Cormorant Garamond' },
+    { id: 'cinzel-decorative', family: 'Cinzel Decorative', nameAr: 'سينزل ديكور', nameEn: 'Cinzel Decorative' },
+    { id: 'great-vibes', family: 'Great Vibes', nameAr: 'جريت فايبز', nameEn: 'Great Vibes' },
+    { id: 'dm-serif-display', family: 'DM Serif Display', nameAr: 'دي إم سيريف', nameEn: 'DM Serif Display' },
+    { id: 'abril-fatface', family: 'Abril Fatface', nameAr: 'أبريل فاتفايس', nameEn: 'Abril Fatface' },
+    { id: 'bodoni-moda', family: 'Bodoni Moda', nameAr: 'بودوني مودا', nameEn: 'Bodoni Moda' },
+    { id: 'prata', family: 'Prata', nameAr: 'براتا', nameEn: 'Prata' },
+    { id: 'bellefair', family: 'Bellefair', nameAr: 'بيليفير', nameEn: 'Bellefair' },
+    { id: 'libre-baskerville', family: 'Libre Baskerville', nameAr: 'ليبر باسكرفيل', nameEn: 'Libre Baskerville' },
+  ];
+
   const runtimeState = {
     templateSlug: '',
     manifest: null,
@@ -178,6 +201,8 @@
     nativeOverlayRaf: 0,
     editorDock: null,
     editorDockHandler: null,
+    fontLibrary: FALLBACK_OVERLAY_FONT_LIBRARY,
+    fontLibraryPromise: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -302,6 +327,7 @@
       : runtimeState.invitationSlug;
 
     ensureSharedFontLibraryStyles();
+    void loadSharedFontLibrary();
     hideLegacyTemplateBars();
     setupNativeOpeningGuard();
     if (initialOpeningDisabled) {
@@ -352,6 +378,129 @@
     link.href = '/api/public/font-library/styles';
     link.dataset.farhaFontLibraryStyles = 'true';
     document.head.appendChild(link);
+  }
+
+  function normalizeOverlayFontLibrary(rawFonts) {
+    const source = Array.isArray(rawFonts) && rawFonts.length ? rawFonts : FALLBACK_OVERLAY_FONT_LIBRARY;
+    const seen = new Set();
+
+    return source
+      .map((entry, index) => {
+        const family = String(entry?.family || '').trim();
+        if (!family || seen.has(family)) {
+          return null;
+        }
+
+        seen.add(family);
+        return {
+          id: String(entry?.id || `font-${index}`),
+          family,
+          nameAr: String(entry?.nameAr || family).trim(),
+          nameEn: String(entry?.nameEn || family).trim(),
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function getOverlayFontLabel(font) {
+    if (!font) {
+      return '';
+    }
+
+    const nameAr = String(font.nameAr || '').trim();
+    const nameEn = String(font.nameEn || '').trim();
+    if (nameAr && nameEn && nameAr !== nameEn) {
+      return `${nameAr} / ${nameEn}`;
+    }
+    return nameAr || nameEn || String(font.family || '').trim();
+  }
+
+  async function loadSharedFontLibrary() {
+    if (runtimeState.fontLibraryPromise) {
+      return runtimeState.fontLibraryPromise;
+    }
+
+    runtimeState.fontLibraryPromise = fetch('/api/public/font-library', { cache: 'no-store' })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || 'Failed to load font library');
+        }
+
+        const nextFonts = normalizeOverlayFontLibrary(payload?.data?.all);
+        if (nextFonts.length) {
+          runtimeState.fontLibrary = nextFonts;
+        }
+        return runtimeState.fontLibrary;
+      })
+      .catch(() => runtimeState.fontLibrary)
+      .finally(() => {
+        runtimeState.fontLibraryPromise = null;
+        queueNativeOverlaySync();
+      });
+
+    return runtimeState.fontLibraryPromise;
+  }
+
+  function cssColorToHex(value, fallback = '#7f2a1f') {
+    const candidate = String(value || '').trim();
+    if (!candidate || typeof document === 'undefined' || !document.body) {
+      return fallback;
+    }
+
+    const probe = document.createElement('span');
+    probe.style.color = '';
+    probe.style.color = candidate;
+    if (!probe.style.color) {
+      return fallback;
+    }
+
+    probe.style.display = 'none';
+    document.body.appendChild(probe);
+    const resolved = window.getComputedStyle(probe).color || '';
+    probe.remove();
+
+    const match = resolved.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (!match) {
+      return fallback;
+    }
+
+    return `#${[match[1], match[2], match[3]]
+      .map((item) => Number(item).toString(16).padStart(2, '0'))
+      .join('')}`;
+  }
+
+  function populateNativeOverlayFontSelect(select, currentValue = '') {
+    if (!select) {
+      return;
+    }
+
+    const fonts = normalizeOverlayFontLibrary(runtimeState.fontLibrary);
+    const normalizedValue = String(currentValue || '').trim();
+    select.innerHTML = '';
+
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'الخط الأصلي';
+    select.appendChild(defaultOption);
+
+    fonts.forEach((font) => {
+      const option = document.createElement('option');
+      option.value = font.family;
+      option.textContent = getOverlayFontLabel(font);
+      option.style.fontFamily = `'${font.family}', sans-serif`;
+      select.appendChild(option);
+    });
+
+    if (normalizedValue && !fonts.some((font) => font.family === normalizedValue)) {
+      const customOption = document.createElement('option');
+      customOption.value = normalizedValue;
+      customOption.textContent = normalizedValue;
+      customOption.style.fontFamily = normalizedValue;
+      select.appendChild(customOption);
+    }
+
+    select.value = normalizedValue;
   }
 
   function applyTextOverrides(rawOverrides) {
@@ -718,6 +867,45 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .farha-native-overlay__field {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        height: 38px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: rgba(255, 247, 244, 0.96);
+        box-shadow: inset 0 0 0 1px rgba(127, 42, 31, 0.12);
+        pointer-events: auto;
+      }
+      .farha-native-overlay__field[data-visible="true"] {
+        display: inline-flex;
+      }
+      .farha-native-overlay__field-label {
+        color: #7f2a1f;
+        font: 800 10px/1 Tajawal, sans-serif;
+        white-space: nowrap;
+      }
+      .farha-native-overlay__color {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        cursor: pointer;
+      }
+      .farha-native-overlay__select {
+        max-width: 190px;
+        min-width: 112px;
+        height: 30px;
+        border: none;
+        background: transparent;
+        color: #7f2a1f;
+        font: 700 11px/1.2 Tajawal, sans-serif;
+        outline: none;
+        cursor: pointer;
+      }
       .farha-native-overlay__btn,
       .farha-native-overlay__handle {
         display: inline-flex;
@@ -769,6 +957,16 @@
         left: -14px;
         right: auto;
         cursor: grab;
+      }
+      @media (max-width: 640px) {
+        .farha-native-overlay__toolbar {
+          max-width: min(94vw, 92vw);
+          border-radius: 28px;
+        }
+        .farha-native-overlay__select {
+          max-width: 126px;
+          min-width: 94px;
+        }
       }
       #farha-snap-guides {
         position: fixed;
@@ -1632,6 +1830,69 @@
         <button type="button" class="farha-native-overlay__handle" data-farha-native-action="scale" aria-label="تكبير أو تصغير العنصر">+</button>
       `;
       document.body.appendChild(overlay);
+
+      const toolbar = overlay.querySelector('[data-farha-native-role="toolbar"]');
+      if (toolbar) {
+        const colorField = document.createElement('label');
+        colorField.className = 'farha-native-overlay__field';
+        colorField.dataset.farhaNativeRole = 'color-field';
+        colorField.dataset.visible = 'false';
+        colorField.innerHTML = `
+          <span class="farha-native-overlay__field-label">لون</span>
+          <input type="color" class="farha-native-overlay__color" data-farha-native-control="color" aria-label="لون الخط" value="#7f2a1f" />
+        `;
+
+        const fontField = document.createElement('label');
+        fontField.className = 'farha-native-overlay__field';
+        fontField.dataset.farhaNativeRole = 'font-field';
+        fontField.dataset.visible = 'false';
+        fontField.innerHTML = `
+          <span class="farha-native-overlay__field-label">خط</span>
+          <select class="farha-native-overlay__select" data-farha-native-control="fontFamily" aria-label="نوع الخط"></select>
+        `;
+
+        toolbar.appendChild(colorField);
+        toolbar.appendChild(fontField);
+      }
+
+      const handleControlChange = (event) => {
+        const control = event.target?.closest?.('[data-farha-native-control]');
+        if (!control) {
+          return;
+        }
+
+        const selectedId = runtimeState.selectedNativeElementId;
+        const selectedNode = selectedId ? findNativeElementById(selectedId) : null;
+        if (!selectedId || !selectedNode || !isNativeTextEditableNode(selectedNode)) {
+          return;
+        }
+
+        event.stopPropagation();
+
+        const baseOverride = runtimeState.nativeElementOverrides?.[selectedId] || {
+          label: getNativeElementLabel(selectedNode),
+          selector: getNativeElementSelectorHint(selectedNode) || selectedId,
+          kind: getNativeElementKind(selectedNode),
+        };
+        const controlName = control.dataset.farhaNativeControl;
+        const nextOverride = {
+          ...baseOverride,
+        };
+
+        if (controlName === 'color') {
+          nextOverride.color = String(control.value || '').trim();
+        } else if (controlName === 'fontFamily') {
+          nextOverride.fontFamily = String(control.value || '').trim();
+        } else {
+          return;
+        }
+
+        applyLocalNativeOverride(selectedId, selectedNode, nextOverride);
+        persistNativeUpdate(selectedId, selectedNode, nextOverride);
+      };
+
+      overlay.addEventListener('input', handleControlChange, true);
+      overlay.addEventListener('change', handleControlChange, true);
     }
 
     if (!runtimeState.nativeOverlaySyncHandler) {
@@ -1787,6 +2048,11 @@
     const editButton = overlay.querySelector('[data-farha-native-action="edit"]');
     const replaceButton = overlay.querySelector('[data-farha-native-action="replace"]');
     const cropButton = overlay.querySelector('[data-farha-native-action="crop-toggle"]');
+    const colorField = overlay.querySelector('[data-farha-native-role="color-field"]');
+    const fontField = overlay.querySelector('[data-farha-native-role="font-field"]');
+    const colorInput = overlay.querySelector('[data-farha-native-control="color"]');
+    const fontSelect = overlay.querySelector('[data-farha-native-control="fontFamily"]');
+    const canStyleText = isNativeTextEditableNode(selectedNode);
 
     overlay.dataset.visible = 'true';
     overlay.style.pointerEvents = 'none';
@@ -1816,6 +2082,25 @@
       const canCrop = isNativeReplaceableImageNode(selectedNode);
       cropButton.style.display = canCrop ? 'inline-flex' : 'none';
       cropButton.dataset.active = canCrop && selectedNode.dataset.farhaCropMode === 'true' ? 'true' : 'false';
+    }
+    if (colorField) {
+      colorField.dataset.visible = canStyleText ? 'true' : 'false';
+    }
+    if (fontField) {
+      fontField.dataset.visible = canStyleText ? 'true' : 'false';
+    }
+    if (canStyleText) {
+      if (colorInput) {
+        colorInput.value = cssColorToHex(currentOverride.color || getNativeElementSelectionMeta(selectedNode).color || '#7f2a1f');
+      }
+      if (fontSelect) {
+        populateNativeOverlayFontSelect(fontSelect, currentOverride.fontFamily || getNativeElementSelectionMeta(selectedNode).fontFamily || '');
+      }
+      void loadSharedFontLibrary().then(() => {
+        if (document.getElementById('farha-native-overlay') === overlay) {
+          populateNativeOverlayFontSelect(fontSelect, currentOverride.fontFamily || getNativeElementSelectionMeta(selectedNode).fontFamily || '');
+        }
+      });
     }
   }
 
@@ -4700,10 +4985,16 @@
       if (!runtimeState.preview) return;
       const target = event.target;
       const nativeActionNode = target.closest('[data-farha-native-action]');
+      const nativeControlNode = target.closest('[data-farha-native-control]');
       const actionNode = target.closest('[data-farha-action]');
       const wrapper = target.closest('.farha-custom-element');
       const point = getPoint(event);
       const touchCount = event.touches?.length || 0;
+
+      if (nativeControlNode) {
+        event.stopPropagation();
+        return;
+      }
 
       if (nativeActionNode) {
         const selectedId = runtimeState.selectedNativeElementId;
