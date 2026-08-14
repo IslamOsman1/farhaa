@@ -1,9 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/admin-session';
-import { getAllTemplateManifests, OPENING_LIBRARY } from '@/lib/template-system';
+import { getAllTemplateManifests } from '@/lib/template-system';
 import { scanTemplateStudioInventory } from '@/lib/studio-inventory';
 import { buildStudioDraftFromSession } from '@/lib/studio';
+import { getMergedOpenings } from '@/lib/template-records';
 import StudioClient from '../StudioClient';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,7 @@ export default async function StudioSessionPage({ params }) {
   if (!currentManifest) {
     return notFound();
   }
+  const openings = await getMergedOpenings();
 
   const hydratedSession = {
     ...JSON.parse(JSON.stringify(session)),
@@ -46,8 +48,8 @@ export default async function StudioSessionPage({ params }) {
     <StudioClient
       session={hydratedSession}
       manifests={manifests}
-      openings={OPENING_LIBRARY}
-      inventory={scanTemplateStudioInventory()}
+      openings={openings}
+      inventory={scanTemplateStudioInventory({ openings })}
     />
   );
 }

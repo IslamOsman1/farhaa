@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { requirePermission } from '@/lib/admin-session';
 import { getAllTemplateManifests } from '@/lib/template-system';
 import { scanTemplateStudioInventory } from '@/lib/studio-inventory';
+import { getMergedOpenings } from '@/lib/template-records';
 import StudioTemplateChooser from '../StudioTemplateChooser';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,8 @@ export default async function NewStudioSessionPage() {
   }
 
   const templates = getAllTemplateManifests();
-  const inventory = scanTemplateStudioInventory();
+  const openings = await getMergedOpenings();
+  const inventory = scanTemplateStudioInventory({ openings });
 
   return <StudioTemplateChooser templates={templates} inventory={inventory} />;
 }

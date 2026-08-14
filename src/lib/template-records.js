@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { getOpeningBySlug, getTemplateManifest } from '@/lib/template-system';
+import { getOpeningBySlug, getTemplateManifest, OPENING_LIBRARY } from '@/lib/template-system';
 
 export async function ensureTemplateBySlug(slug) {
   const manifest = getTemplateManifest(slug);
@@ -78,4 +78,47 @@ export async function ensureOpeningBySlug(slug) {
       status: 'ACTIVE',
     },
   });
+}
+
+function normalizeMergedOpening(opening) {
+  return {
+    ...opening,
+    isActive: opening.isActive ?? true,
+    isDefault: opening.isDefault ?? false,
+    sortOrder: opening.sortOrder ?? 0,
+    compatibleTemplates:
+      opening.compatibleTemplates
+      || opening.compatibilityRules?.allowedTemplateSlugs
+      || [],
+    compatibilityRules: opening.compatibilityRules || {},
+    defaultConfig: opening.defaultConfig || {},
+    textConfig: opening.textConfig || {},
+    mediaConfig: opening.mediaConfig || {},
+    themeConfig: opening.themeConfig || {},
+  };
+}
+
+export async function getMergedOpenings() {
+  const storedOpenings = await prisma.opening.findMany({
+    orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
+  });
+
+  const storedMap = new Map(storedOpenings.map((opening) => [opening.slug, opening]));
+
+  const merged = [
+    ...OPENING_LIBRARY.map((opening) => {
+      const stored = storedMap.get(opening.slug);
+      return normalizeMergedOpening(
+        stored || {
+          ...opening,
+          compatibleTemplates: opening.compatibilityRules?.allowedTemplateSlugs || [],
+        },
+      );
+    }),
+    ...storedOpenings
+      .filter((opening) => !OPENING_LIBRARY.some((libraryOpening) => libraryOpening.slug === opening.slug))
+      .map((opening) => normalizeMergedOpening(opening)),
+  ];
+
+  return merged;
 }

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/admin-session';
 import { scanTemplateStudioInventory } from '@/lib/studio-inventory';
+import { getMergedOpenings } from '@/lib/template-records';
 import StudioSessionsGrid from './StudioSessionsGrid';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,7 @@ export default async function AdminStudioPage() {
     redirect('/admin/login');
   }
 
-  const [sessions, inventory] = await Promise.all([
+  const [sessions, openings] = await Promise.all([
     prisma.studioSession.findMany({
       orderBy: { updatedAt: 'desc' },
       include: {
@@ -23,8 +24,9 @@ export default async function AdminStudioPage() {
       },
       take: 24,
     }),
-    Promise.resolve(scanTemplateStudioInventory()),
+    getMergedOpenings(),
   ]);
+  const inventory = scanTemplateStudioInventory({ openings });
 
   return (
     <div className="stack-lg">

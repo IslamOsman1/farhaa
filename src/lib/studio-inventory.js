@@ -50,7 +50,8 @@ function classifyFile(file) {
   return 'file';
 }
 
-export function scanTemplateStudioInventory() {
+export function scanTemplateStudioInventory(options = {}) {
+  const openingsSource = Array.isArray(options.openings) && options.openings.length ? options.openings : OPENING_LIBRARY;
   const publicRoot = path.join(process.cwd(), 'public');
   const files = walkDirectory(publicRoot);
   const manifests = getAllTemplateManifests();
@@ -106,10 +107,10 @@ export function scanTemplateStudioInventory() {
       audio: audio.length,
       fonts: fonts.length,
       codeFiles: codeFiles.length,
-      openings: OPENING_LIBRARY.length,
+      openings: openingsSource.length,
     },
     templates,
-    openings: OPENING_LIBRARY.map((opening) => ({
+    openings: openingsSource.map((opening) => ({
       slug: opening.slug,
       name: opening.name,
       nameAr: opening.nameAr,
