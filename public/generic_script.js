@@ -3738,8 +3738,9 @@
     const overlay = document.createElement('div');
     overlay.id = 'farha-interactive-opening';
     overlay.innerHTML = `
-      ${videoUrl ? `<video class="fio-video" src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} autoplay muted loop playsinline></video>` : ''}
+      ${videoUrl ? `<video class="fio-video" src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} muted playsinline preload="auto"></video>` : ''}
       <div class="fio-scrim"></div>
+      ${(interactionMode === 'knock' || interactionMode === 'tap-anywhere') ? '<button type="button" class="fio-hitarea" aria-label="التفاعل مع الافتتاحية"></button>' : ''}
       <div class="fio-card">
         ${kicker ? `<div class="fio-mark">${kicker}</div>` : ''}
         ${title ? `<h2 class="fio-title">${title}</h2>` : ''}
@@ -3747,7 +3748,7 @@
         ${interactionMode === 'knock'
           ? `<div class="fio-knocks">${Array.from({ length: requiredKnocks }).map(() => '<span class="fio-knock-dot"></span>').join('')}</div>`
           : ''}
-        <button type="button" class="fio-action">${interactionMode === 'knock' ? 'دقّ الآن' : buttonLabel}</button>
+        ${interactionMode === 'tap-button' ? `<button type="button" class="fio-action">${buttonLabel}</button>` : ''}
       </div>
     `;
 
@@ -3772,15 +3773,28 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        opacity: 0;
+        transition: opacity .35s ease;
+      }
+      #farha-interactive-opening[data-video-playing="true"] .fio-video {
+        opacity: 1;
       }
       #farha-interactive-opening .fio-scrim {
         position: absolute;
         inset: 0;
         background: radial-gradient(circle at top, rgba(255,255,255,.16), transparent 26%), linear-gradient(180deg, rgba(21,12,11,.2), rgba(21,12,11,.7));
       }
+      #farha-interactive-opening .fio-hitarea {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+      }
       #farha-interactive-opening .fio-card {
         position: relative;
-        z-index: 1;
+        z-index: 3;
         padding: 32px 28px;
         min-width: 280px;
         text-align: center;
@@ -3842,8 +3856,10 @@
     document.head.appendChild(style);
     document.body.appendChild(overlay);
 
+    overlay.dataset.videoPlaying = 'false';
     let knocks = 0;
     const dots = Array.from(overlay.querySelectorAll('.fio-knock-dot'));
+    const videoNode = overlay.querySelector('.fio-video');
     const dismiss = () => {
       overlay.remove();
       if (style.parentNode) {
@@ -3853,6 +3869,32 @@
     const finish = () => {
       overlay.style.animation = 'farhaInteractiveFadeOut 0.9s ease forwards';
       window.setTimeout(dismiss, 950);
+    };
+    const startVideoThenFinish = () => {
+      if (!videoNode) {
+        finish();
+        return;
+      }
+
+      overlay.dataset.videoPlaying = 'true';
+      try {
+        videoNode.currentTime = 0;
+      } catch {}
+      const fallbackTimer = window.setTimeout(
+        finish,
+        Math.max(Number(config.overlayDurationMs || 2200), 3200),
+      );
+      videoNode.onended = () => {
+        window.clearTimeout(fallbackTimer);
+        finish();
+      };
+      const playPromise = videoNode.play?.();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          window.clearTimeout(fallbackTimer);
+          finish();
+        });
+      }
     };
     const trigger = () => {
       if (interactionMode === 'knock') {
@@ -3864,22 +3906,17 @@
           return;
         }
       }
-      finish();
+      startVideoThenFinish();
     };
 
-    overlay.querySelector('.fio-action').addEventListener('click', trigger);
+    overlay.querySelector('.fio-action')?.addEventListener('click', trigger);
+    overlay.querySelector('.fio-hitarea')?.addEventListener('click', trigger);
 
-    if (interactionMode === 'knock' || interactionMode === 'tap-anywhere') {
-      overlay.addEventListener('pointerdown', (event) => {
-        if (event.target.closest('.fio-action')) {
-          return;
-        }
-        trigger();
-      });
+    if (interactionMode === 'knock' || interactionMode === 'tap-anywhere' || interactionMode === 'tap-button') {
       return;
     }
 
-    setTimeout(finish, Math.max(Number(config.overlayDurationMs || 2200), 900));
+    window.setTimeout(startVideoThenFinish, 600);
   }
 
   function hijackRsvpForms(forceRebind) {

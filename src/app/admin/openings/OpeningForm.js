@@ -540,6 +540,8 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   const [previewDevice, setPreviewDevice] = useState('mobile');
   const [previewReplayToken, setPreviewReplayToken] = useState(0);
   const [previewKnockCount, setPreviewKnockCount] = useState(0);
+  const [previewVideoStarted, setPreviewVideoStarted] = useState(false);
+  const [previewVideoToken, setPreviewVideoToken] = useState(0);
 
   useEffect(() => {
     let ignore = false;
@@ -704,6 +706,8 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     setPreviewOpened(false);
     setPreviewReplayToken(0);
     setPreviewKnockCount(0);
+    setPreviewVideoStarted(false);
+    setPreviewVideoToken(0);
   }, [
     form.name,
     form.nameAr,
@@ -721,8 +725,64 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     resolvedPreviewTemplateSlug,
   ]);
 
+  useEffect(() => {
+    if (!previewVideoStarted || previewOpened || !openingPreview.previewVideo) {
+      return undefined;
+    }
+
+    const fallbackTimeout = window.setTimeout(
+      () => setPreviewOpened(true),
+      Math.max(Number(openingPreview.durationMs || 0), 3200),
+    );
+
+    return () => window.clearTimeout(fallbackTimeout);
+  }, [openingPreview.durationMs, openingPreview.previewVideo, previewOpened, previewVideoStarted]);
+
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function resetCustomPreview() {
+    setPreviewOpened(false);
+    setPreviewKnockCount(0);
+    setPreviewVideoStarted(false);
+    setPreviewVideoToken((current) => current + 1);
+  }
+
+  function completeCustomPreviewOpening() {
+    if (openingPreview.previewVideo) {
+      setPreviewVideoStarted(true);
+      setPreviewVideoToken((current) => current + 1);
+      return;
+    }
+
+    setPreviewOpened(true);
+  }
+
+  function handleCustomPreviewInteraction() {
+    if (previewOpened || previewVideoStarted) {
+      return;
+    }
+
+    if (openingPreview.interactionMode === 'knock') {
+      setPreviewKnockCount((current) => {
+        const next = Math.min(current + 1, openingPreview.requiredKnocks);
+        if (next >= openingPreview.requiredKnocks) {
+          window.setTimeout(() => {
+            completeCustomPreviewOpening();
+          }, 120);
+        }
+        return next;
+      });
+      return;
+    }
+
+    if (openingPreview.interactionMode === 'tap-anywhere' || openingPreview.interactionMode === 'tap-button') {
+      completeCustomPreviewOpening();
+      return;
+    }
+
+    completeCustomPreviewOpening();
   }
 
   function updateConfigField(configKey, fieldKey, value) {
@@ -865,7 +925,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                   return;
                 }
 
-                setPreviewOpened((current) => !current);
+                resetCustomPreview();
               }}
             >
               {usesExactTemplateOpeningPreview
@@ -983,16 +1043,25 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                       >
                         {openingPreview.previewVideo ? (
                           <video
-                            className="opening-preview-video"
+                            key={`preview-video-${previewVideoToken}-${previewVideoStarted ? 'started' : 'idle'}`}
+                            className={`opening-preview-video${previewVideoStarted ? ' is-active' : ''}`}
                             src={openingPreview.previewVideo}
                             poster={openingPreview.previewImage || openingPreview.posterImage || ''}
-                            autoPlay
+                            autoPlay={previewVideoStarted}
                             muted
-                            loop
                             playsInline
+                            onEnded={() => setPreviewOpened(true)}
                           />
                         ) : null}
                         <div className="opening-preview-overlay__scrim" />
+                        {(openingPreview.interactionMode === 'knock' || openingPreview.interactionMode === 'tap-anywhere') && !previewVideoStarted ? (
+                          <button
+                            type="button"
+                            className="opening-preview-hit-area"
+                            onClick={handleCustomPreviewInteraction}
+                            aria-label={openingPreview.interactionMode === 'knock' ? 'انقر على الشاشة لإضافة دقة' : 'انقر على الشاشة لفتح الافتتاحية'}
+                          />
+                        ) : null}
                         <div className="opening-preview-overlay__content">
                           <span
                             className="opening-preview-eyebrow"
@@ -1032,28 +1101,15 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                               {openingPreview.poem}
                             </p>
                           ) : null}
-                          <button
-                            type="button"
-                            className="opening-preview-button"
-                            onClick={() => {
-                              if (openingPreview.interactionMode === 'knock') {
-                                setPreviewKnockCount((current) => {
-                                  const next = current + 1;
-                                  if (next >= openingPreview.requiredKnocks) {
-                                    setPreviewOpened(true);
-                                  }
-                                  return Math.min(next, openingPreview.requiredKnocks);
-                                });
-                                return;
-                              }
-
-                              setPreviewOpened(true);
-                            }}
-                          >
-                            {openingPreview.interactionMode === 'knock'
-                              ? `دقة ${Math.min(previewKnockCount + 1, openingPreview.requiredKnocks)}`
-                              : openingPreview.buttonLabel}
-                          </button>
+                          {openingPreview.interactionMode === 'tap-button' ? (
+                            <button
+                              type="button"
+                              className="opening-preview-button"
+                              onClick={handleCustomPreviewInteraction}
+                            >
+                              {openingPreview.buttonLabel}
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     ) : null}
