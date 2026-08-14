@@ -28,6 +28,26 @@ function tryParseJson(text, fallback = {}) {
   }
 }
 
+function updateJsonConfigField(text, key, value) {
+  const parsed = tryParseJson(text, {});
+  const next = { ...parsed };
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed) {
+      next[key] = value;
+    } else {
+      delete next[key];
+    }
+  } else if (value == null) {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+
+  return toJsonString(next);
+}
+
 function buildInitialForm(opening) {
   return {
     name: opening?.name || '',
@@ -88,11 +108,39 @@ function pickFirstFilled(...values) {
   return '';
 }
 
+function findFirstStringDeep(value) {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findFirstStringDeep(item);
+      if (found) {
+        return found;
+      }
+    }
+    return '';
+  }
+
+  if (value && typeof value === 'object') {
+    for (const item of Object.values(value)) {
+      const found = findFirstStringDeep(item);
+      if (found) {
+        return found;
+      }
+    }
+  }
+
+  return '';
+}
+
 function buildOpeningPreview(form) {
   const textConfig = tryParseJson(form.textConfig);
   const themeConfig = tryParseJson(form.themeConfig);
   const mediaConfig = tryParseJson(form.mediaConfig);
   const defaultConfig = tryParseJson(form.defaultConfig);
+  const fallbackText = findFirstStringDeep(textConfig);
 
   return {
     eyebrow: pickFirstFilled(
@@ -106,14 +154,17 @@ function buildOpeningPreview(form) {
       textConfig.openingNames,
       textConfig.title,
       textConfig.heading,
+      textConfig.name,
       form.nameAr,
       form.name,
+      fallbackText,
       'اسم الافتتاحية',
     ),
     description: pickFirstFilled(
       textConfig.openingHint,
       textConfig.subtitle,
       textConfig.description,
+      textConfig.message,
       form.descriptionAr,
       form.description,
       'اكتب النص هنا لتشاهد شكل الافتتاحية بشكل تقريبي.',
@@ -148,13 +199,27 @@ function buildOpeningPreview(form) {
     previewVideo: pickFirstFilled(
       mediaConfig.previewVideo,
       mediaConfig.videoUrl,
+      mediaConfig.backgroundVideo,
       form.previewVideo,
+    ),
+    previewImage: pickFirstFilled(
+      mediaConfig.previewImage,
+      mediaConfig.backgroundImage,
+      mediaConfig.coverImage,
+      form.previewImage,
+      form.thumbnail,
     ),
     transition: form.transition || 'fade',
     durationMs: Number(form.durationMs) || Number(defaultConfig.overlayDurationMs) || 2000,
     autoplay: form.autoplay,
     requiresUserInteraction: form.requiresUserInteraction,
     allowSkip: defaultConfig.allowSkip !== false,
+    debugSource: {
+      title: pickFirstFilled(textConfig.openingNames, textConfig.title, textConfig.heading, textConfig.name, fallbackText),
+      description: pickFirstFilled(textConfig.openingHint, textConfig.subtitle, textConfig.description, textConfig.message),
+      image: pickFirstFilled(mediaConfig.previewImage, mediaConfig.backgroundImage, mediaConfig.coverImage, form.previewImage, form.thumbnail),
+      video: pickFirstFilled(mediaConfig.previewVideo, mediaConfig.videoUrl, mediaConfig.backgroundVideo, form.previewVideo),
+    },
   };
 }
 
@@ -293,6 +358,12 @@ const COPY_GROUPS = [
   { key: 'behavior', label: 'الحركة والتأثير', description: 'نسخ المدة والانتقال وإعدادات السلوك', configKey: 'defaultConfig' },
 ];
 
+const FORM_TABS = [
+  { key: 'basic', label: 'البيانات الأساسية' },
+  { key: 'media', label: 'الوسائط والمعاينة' },
+  { key: 'behavior', label: 'التوافق والسلوك' },
+];
+
 export default function OpeningForm({ mode = 'create', opening = null, templateOptions = [] }) {
   const router = useRouter();
   const [form, setForm] = useState(() => buildInitialForm(opening));
@@ -309,6 +380,8 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   const [loadingOpenings, setLoadingOpenings] = useState(true);
   const [copyMessage, setCopyMessage] = useState('');
   const [previewOpened, setPreviewOpened] = useState(false);
+  const [showAdvancedConfigs, setShowAdvancedConfigs] = useState(mode === 'edit');
+  const [activeFormTab, setActiveFormTab] = useState('basic');
   const [previewTemplateSlug, setPreviewTemplateSlug] = useState(
     templateOptions[0]?.slug || '',
   );
@@ -360,6 +433,8 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     [copyCandidates, copySource],
   );
   const openingPreview = useMemo(() => buildOpeningPreview(form), [form]);
+  const parsedTextConfig = useMemo(() => tryParseJson(form.textConfig, {}), [form.textConfig]);
+  const parsedMediaConfig = useMemo(() => tryParseJson(form.mediaConfig, {}), [form.mediaConfig]);
   const compatiblePreviewTemplates = useMemo(() => {
     if (!form.compatibleTemplates.length) {
       return templateOptions;
@@ -399,8 +474,34 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     });
   }, [livePreviewInvitation, previewTemplate]);
 
+  useEffect(() => {
+    setPreviewOpened(false);
+  }, [
+    form.name,
+    form.nameAr,
+    form.description,
+    form.descriptionAr,
+    form.previewImage,
+    form.previewVideo,
+    form.thumbnail,
+    form.transition,
+    form.durationMs,
+    form.textConfig,
+    form.themeConfig,
+    form.mediaConfig,
+    form.defaultConfig,
+    resolvedPreviewTemplateSlug,
+  ]);
+
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateConfigField(configKey, fieldKey, value) {
+    setForm((current) => ({
+      ...current,
+      [configKey]: updateJsonConfigField(current[configKey], fieldKey, value),
+    }));
   }
 
   function updateCopyOption(key, value) {
@@ -603,8 +704,17 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
             </div>
 
             <div className="opening-preview-note-card">
+              <strong>ما الذي يقرأه المحاكي الآن؟</strong>
+              <span>العنوان المعروض: {openingPreview.title || 'غير موجود بعد'}</span>
+              <span>النص المعروض: {openingPreview.description || 'غير موجود بعد'}</span>
+              <span>مصدر الصورة: {openingPreview.debugSource.image ? 'تم العثور على صورة' : 'لا توجد صورة مستخدمة'}</span>
+              <span>مصدر الفيديو: {openingPreview.debugSource.video ? 'تم العثور على فيديو' : 'لا يوجد فيديو مستخدم'}</span>
+            </div>
+
+            <div className="opening-preview-note-card">
               <strong>طريقة العرض</strong>
               <span>المشهد الظاهر هو القالب الحقيقي في الخلفية، والافتتاحية فوقه بشكل مباشر.</span>
+              <span>أي تعديل في النص أو الصورة أو الفيديو يعيد الافتتاحية للظهور تلقائيًا.</span>
               <span>اضغط زر الفتح لتشاهد الانتقال إلى محتوى الدعوة داخل نفس القالب.</span>
             </div>
           </div>
@@ -635,6 +745,17 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                           : `linear-gradient(160deg, ${openingPreview.surfaceColor} 0%, #e7d1bb 100%)`,
                       }}
                     >
+                      {openingPreview.previewVideo ? (
+                        <video
+                          className="opening-preview-video"
+                          src={openingPreview.previewVideo}
+                          poster={openingPreview.previewImage || openingPreview.posterImage || ''}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                        />
+                      ) : null}
                       <div className="opening-preview-overlay__scrim" />
                       <div className="opening-preview-overlay__content">
                         <span
@@ -679,6 +800,63 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="admin-card card-pad opening-section-card">
+        <div className="opening-section-head">
+          <div>
+            <h3 className="admin-section-title admin-section-title--sm">الحقول المباشرة</h3>
+            <p className="admin-section-subtitle">
+              عدّل عنوان الافتتاحية والنص وزر الفتح والصورة والفيديو بشكل مباشر، وسيظهر التغيير فورًا داخل المحاكي.
+            </p>
+          </div>
+        </div>
+
+        <div className="opening-direct-fields-grid">
+          <label className="field-block">
+            <span>عنوان الافتتاحية</span>
+            <input
+              value={parsedTextConfig.openingNames || parsedTextConfig.title || ''}
+              onChange={(event) => updateConfigField('textConfig', 'openingNames', event.target.value)}
+              placeholder="مثال: باب الفرحة"
+            />
+          </label>
+          <label className="field-block opening-field-full">
+            <span>النص الفرعي</span>
+            <textarea
+              rows={3}
+              value={parsedTextConfig.openingHint || parsedTextConfig.subtitle || ''}
+              onChange={(event) => updateConfigField('textConfig', 'openingHint', event.target.value)}
+              placeholder="اكتب النص الذي يظهر داخل الافتتاحية"
+            />
+          </label>
+          <label className="field-block">
+            <span>زر الفتح</span>
+            <input
+              value={parsedTextConfig.openButtonLabel || parsedTextConfig.buttonLabel || ''}
+              onChange={(event) => updateConfigField('textConfig', 'openButtonLabel', event.target.value)}
+              placeholder="مثال: افتح الدعوة"
+            />
+          </label>
+          <label className="field-block">
+            <span>فيديو الافتتاحية</span>
+            <MediaPicker
+              value={parsedMediaConfig.previewVideo || parsedMediaConfig.videoUrl || parsedMediaConfig.backgroundVideo || ''}
+              accept="video"
+              folder="openings"
+              onChange={(value) => updateConfigField('mediaConfig', 'previewVideo', value)}
+            />
+          </label>
+          <label className="field-block opening-field-full">
+            <span>صورة الخلفية</span>
+            <MediaPicker
+              value={parsedMediaConfig.backgroundImage || parsedMediaConfig.coverImage || parsedMediaConfig.previewImage || ''}
+              accept="image"
+              folder="openings"
+              onChange={(value) => updateConfigField('mediaConfig', 'backgroundImage', value)}
+            />
+          </label>
         </div>
       </section>
 
@@ -743,15 +921,28 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
         </div>
       </section>
 
-      <div className="opening-main-grid">
-        <section className="admin-card card-pad opening-section-card">
-          <div className="opening-section-head">
-            <div>
-              <h3 className="admin-section-title admin-section-title--sm">البيانات الأساسية</h3>
-              <p className="admin-section-subtitle">الاسم والوصف والنوع والهوية الأساسية للافتتاحية.</p>
-            </div>
+      <section className="admin-card card-pad opening-tabs-panel">
+        <div className="opening-section-head">
+          <div>
+            <h3 className="admin-section-title admin-section-title--sm">بيانات الافتتاحية</h3>
+            <p className="admin-section-subtitle">تنقل سريع بين الأقسام الأساسية بدل التمرير داخل بطاقات طويلة.</p>
           </div>
+        </div>
 
+        <div className="opening-form-tabs">
+          {FORM_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={`opening-form-tab${activeFormTab === tab.key ? ' is-active' : ''}`}
+              onClick={() => setActiveFormTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeFormTab === 'basic' ? (
           <div className="opening-fields-grid">
             <label className="field-block">
               <span>الاسم</span>
@@ -787,16 +978,9 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               <textarea rows={3} value={form.descriptionAr} onChange={(event) => updateField('descriptionAr', event.target.value)} />
             </label>
           </div>
-        </section>
+        ) : null}
 
-        <section className="admin-card card-pad opening-section-card">
-          <div className="opening-section-head">
-            <div>
-              <h3 className="admin-section-title admin-section-title--sm">الوسائط والمعاينة</h3>
-              <p className="admin-section-subtitle">اختر صورة مصغرة ووسائط المعاينة التي تظهر في المكتبة والإدارة.</p>
-            </div>
-          </div>
-
+        {activeFormTab === 'media' ? (
           <div className="opening-fields-grid">
             <label className="field-block">
               <span>الصورة المصغرة</span>
@@ -815,16 +999,9 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               <input dir="ltr" value={form.previewMediaUrl} onChange={(event) => updateField('previewMediaUrl', event.target.value)} />
             </label>
           </div>
-        </section>
+        ) : null}
 
-        <section className="admin-card card-pad opening-section-card">
-          <div className="opening-section-head">
-            <div>
-              <h3 className="admin-section-title admin-section-title--sm">الحركة والسلوك</h3>
-              <p className="admin-section-subtitle">المدة والانتقال والتشغيل التلقائي وسلوك التفاعل.</p>
-            </div>
-          </div>
-
+        {activeFormTab === 'behavior' ? (
           <div className="opening-fields-grid">
             <label className="field-block">
               <span>المدة بالمللي ثانية</span>
@@ -870,46 +1047,46 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               <span>الترتيب</span>
               <input type="number" value={form.sortOrder} onChange={(event) => updateField('sortOrder', event.target.value)} />
             </label>
-          </div>
-        </section>
 
-        <section className="admin-card card-pad opening-section-card">
-          <div className="opening-section-head">
-            <div>
-              <h3 className="admin-section-title admin-section-title--sm">توافق القوالب</h3>
-              <p className="admin-section-subtitle">حدد القوالب التي يمكنها استخدام هذه الافتتاحية.</p>
+            <div className="opening-field-full">
+              <div className="opening-section-head opening-section-head--compact">
+                <div>
+                  <h4 className="admin-section-title admin-section-title--sm">توافق القوالب</h4>
+                  <p className="admin-section-subtitle">حدد القوالب التي يمكنها استخدام هذه الافتتاحية.</p>
+                </div>
+                <span className="opening-chip">{form.compatibleTemplates.length || 0} محدد</span>
+              </div>
+
+              <div className="opening-template-grid">
+                {templateOptions.map((template) => {
+                  const checked = form.compatibleTemplates.includes(template.slug);
+
+                  return (
+                    <label key={template.slug} className={`opening-template-card${checked ? ' is-selected' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) =>
+                          updateField(
+                            'compatibleTemplates',
+                            event.target.checked
+                              ? [...form.compatibleTemplates, template.slug]
+                              : form.compatibleTemplates.filter((slug) => slug !== template.slug),
+                          )
+                        }
+                      />
+                      <div>
+                        <strong>{template.nameAr}</strong>
+                        <span>{template.slug}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-            <span className="opening-chip">{form.compatibleTemplates.length || 0} محدد</span>
           </div>
-
-          <div className="opening-template-grid">
-            {templateOptions.map((template) => {
-              const checked = form.compatibleTemplates.includes(template.slug);
-
-              return (
-                <label key={template.slug} className={`opening-template-card${checked ? ' is-selected' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(event) =>
-                      updateField(
-                        'compatibleTemplates',
-                        event.target.checked
-                          ? [...form.compatibleTemplates, template.slug]
-                          : form.compatibleTemplates.filter((slug) => slug !== template.slug),
-                      )
-                    }
-                  />
-                  <div>
-                    <strong>{template.nameAr}</strong>
-                    <span>{template.slug}</span>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
-        </section>
-      </div>
+        ) : null}
+      </section>
 
       <section className="opening-config-section">
         <div className="opening-section-head">
@@ -919,49 +1096,62 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               يمكنك التحكم الدقيق في النصوص والثيم والوسائط والسلوك. النسخ من افتتاحية موجودة سيملأ هذه الحقول تلقائيًا.
             </p>
           </div>
+          <button
+            type="button"
+            className={`mini-btn ${showAdvancedConfigs ? 'active' : ''}`}
+            onClick={() => setShowAdvancedConfigs((current) => !current)}
+          >
+            {showAdvancedConfigs ? 'إخفاء الإعدادات المتقدمة' : 'إظهار الإعدادات المتقدمة'}
+          </button>
         </div>
 
-        <div className="opening-config-grid">
-          <section className="admin-card card-pad opening-config-card">
-            <div className="opening-config-card__head">
-              <div>
-                <h4>Default Config</h4>
-                <span>{summarizeConfig(form.defaultConfig)}</span>
+        {showAdvancedConfigs ? (
+          <div className="opening-config-grid">
+            <section className="admin-card card-pad opening-config-card">
+              <div className="opening-config-card__head">
+                <div>
+                  <h4>Default Config</h4>
+                  <span>{summarizeConfig(form.defaultConfig)}</span>
+                </div>
               </div>
-            </div>
-            <textarea rows={11} dir="ltr" value={form.defaultConfig} onChange={(event) => updateField('defaultConfig', event.target.value)} />
-          </section>
+              <textarea rows={11} dir="ltr" value={form.defaultConfig} onChange={(event) => updateField('defaultConfig', event.target.value)} />
+            </section>
 
-          <section className="admin-card card-pad opening-config-card">
-            <div className="opening-config-card__head">
-              <div>
-                <h4>Text Config</h4>
-                <span>{summarizeConfig(form.textConfig)}</span>
+            <section className="admin-card card-pad opening-config-card">
+              <div className="opening-config-card__head">
+                <div>
+                  <h4>Text Config</h4>
+                  <span>{summarizeConfig(form.textConfig)}</span>
+                </div>
               </div>
-            </div>
-            <textarea rows={11} dir="ltr" value={form.textConfig} onChange={(event) => updateField('textConfig', event.target.value)} />
-          </section>
+              <textarea rows={11} dir="ltr" value={form.textConfig} onChange={(event) => updateField('textConfig', event.target.value)} />
+            </section>
 
-          <section className="admin-card card-pad opening-config-card">
-            <div className="opening-config-card__head">
-              <div>
-                <h4>Media Config</h4>
-                <span>{summarizeConfig(form.mediaConfig)}</span>
+            <section className="admin-card card-pad opening-config-card">
+              <div className="opening-config-card__head">
+                <div>
+                  <h4>Media Config</h4>
+                  <span>{summarizeConfig(form.mediaConfig)}</span>
+                </div>
               </div>
-            </div>
-            <textarea rows={11} dir="ltr" value={form.mediaConfig} onChange={(event) => updateField('mediaConfig', event.target.value)} />
-          </section>
+              <textarea rows={11} dir="ltr" value={form.mediaConfig} onChange={(event) => updateField('mediaConfig', event.target.value)} />
+            </section>
 
-          <section className="admin-card card-pad opening-config-card">
-            <div className="opening-config-card__head">
-              <div>
-                <h4>Theme Config</h4>
-                <span>{summarizeConfig(form.themeConfig)}</span>
+            <section className="admin-card card-pad opening-config-card">
+              <div className="opening-config-card__head">
+                <div>
+                  <h4>Theme Config</h4>
+                  <span>{summarizeConfig(form.themeConfig)}</span>
+                </div>
               </div>
-            </div>
-            <textarea rows={11} dir="ltr" value={form.themeConfig} onChange={(event) => updateField('themeConfig', event.target.value)} />
-          </section>
-        </div>
+              <textarea rows={11} dir="ltr" value={form.themeConfig} onChange={(event) => updateField('themeConfig', event.target.value)} />
+            </section>
+          </div>
+        ) : (
+          <div className="admin-alert info">
+            الحقول المباشرة تكفي لمعظم الاستخدامات. افتح الإعدادات المتقدمة فقط إذا كنت تحتاج تعديل JSON يدويًا.
+          </div>
+        )}
       </section>
     </form>
   );
