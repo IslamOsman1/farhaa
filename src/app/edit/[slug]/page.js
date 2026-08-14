@@ -2,13 +2,13 @@ import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import EditorClient from './EditorClient';
 import { requireAdminSession } from '@/lib/admin-session';
+import { getMergedOpenings } from '@/lib/template-records';
 import {
   buildInvitationRenderConfig,
   getAllTemplateManifests,
   getOpeningBySlug,
   getTemplateManifest,
   normalizeInvitationData,
-  OPENING_LIBRARY,
 } from '@/lib/template-system';
 
 export const dynamic = 'force-dynamic';
@@ -44,6 +44,7 @@ export default async function EditInvitationPage({ params }) {
 
   const normalized = normalizeInvitationData(invitation);
   const opening = invitation.opening || getOpeningBySlug('native-template');
+  const openings = await getMergedOpenings();
   const renderConfig = buildInvitationRenderConfig({
     invitation,
     manifest,
@@ -56,7 +57,7 @@ export default async function EditInvitationPage({ params }) {
       invitation={JSON.parse(JSON.stringify(invitation))}
       manifest={manifest}
       manifests={getAllTemplateManifests()}
-      openings={OPENING_LIBRARY}
+      openings={openings}
       normalized={normalized}
       initialRenderConfig={renderConfig}
     />

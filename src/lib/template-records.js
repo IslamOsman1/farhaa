@@ -46,35 +46,47 @@ export async function ensureTemplateBySlug(slug) {
 }
 
 export async function ensureOpeningBySlug(slug) {
-  const opening = getOpeningBySlug(slug);
+  const libraryOpening = OPENING_LIBRARY.find((item) => item.slug === slug);
+
+  if (!libraryOpening) {
+    const storedOpening = await prisma.opening.findUnique({
+      where: { slug },
+    });
+
+    if (!storedOpening) {
+      throw new Error(`Unknown opening slug: ${slug}`);
+    }
+
+    return storedOpening;
+  }
 
   return prisma.opening.upsert({
-    where: { slug: opening.slug },
+    where: { slug: libraryOpening.slug },
     update: {
-      name: opening.name,
-      nameAr: opening.nameAr,
-      description: opening.description,
-      descriptionAr: opening.descriptionAr,
-      type: opening.type,
-      thumbnail: opening.thumbnail,
-      defaultConfig: opening.defaultConfig,
-      compatibilityRules: opening.compatibilityRules,
-      isActive: opening.isActive,
-      sortOrder: opening.sortOrder,
+      name: libraryOpening.name,
+      nameAr: libraryOpening.nameAr,
+      description: libraryOpening.description,
+      descriptionAr: libraryOpening.descriptionAr,
+      type: libraryOpening.type,
+      thumbnail: libraryOpening.thumbnail,
+      defaultConfig: libraryOpening.defaultConfig,
+      compatibilityRules: libraryOpening.compatibilityRules,
+      isActive: libraryOpening.isActive,
+      sortOrder: libraryOpening.sortOrder,
       status: 'ACTIVE',
     },
     create: {
-      slug: opening.slug,
-      name: opening.name,
-      nameAr: opening.nameAr,
-      description: opening.description,
-      descriptionAr: opening.descriptionAr,
-      type: opening.type,
-      thumbnail: opening.thumbnail,
-      defaultConfig: opening.defaultConfig,
-      compatibilityRules: opening.compatibilityRules,
-      isActive: opening.isActive,
-      sortOrder: opening.sortOrder,
+      slug: libraryOpening.slug,
+      name: libraryOpening.name,
+      nameAr: libraryOpening.nameAr,
+      description: libraryOpening.description,
+      descriptionAr: libraryOpening.descriptionAr,
+      type: libraryOpening.type,
+      thumbnail: libraryOpening.thumbnail,
+      defaultConfig: libraryOpening.defaultConfig,
+      compatibilityRules: libraryOpening.compatibilityRules,
+      isActive: libraryOpening.isActive,
+      sortOrder: libraryOpening.sortOrder,
       status: 'ACTIVE',
     },
   });

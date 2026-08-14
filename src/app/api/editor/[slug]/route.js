@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { requireAdminSession } from '@/lib/admin-session';
+import { ensureOpeningBySlug } from '@/lib/template-records';
 import {
   buildLegacyStoryFromContentConfig,
   buildInvitationRenderConfig,
@@ -100,41 +101,6 @@ async function ensureTemplateBySlug(slug) {
       defaultSectionConfig: manifest.defaultValues.sections,
       compatibleOpenings: manifest.openingCompatibility,
       validationStatus: manifest.capabilities.requiresNativeAdapter ? 'NEEDS_NATIVE_ADAPTER' : 'VALIDATED',
-    },
-  });
-}
-
-async function ensureOpeningBySlug(slug) {
-  const opening = getOpeningBySlug(slug);
-
-  return prisma.opening.upsert({
-    where: { slug: opening.slug },
-    update: {
-      name: opening.name,
-      nameAr: opening.nameAr,
-      description: opening.description,
-      descriptionAr: opening.descriptionAr,
-      type: opening.type,
-      thumbnail: opening.thumbnail,
-      defaultConfig: opening.defaultConfig,
-      compatibilityRules: opening.compatibilityRules,
-      isActive: opening.isActive,
-      sortOrder: opening.sortOrder,
-      status: 'ACTIVE',
-    },
-    create: {
-      slug: opening.slug,
-      name: opening.name,
-      nameAr: opening.nameAr,
-      description: opening.description,
-      descriptionAr: opening.descriptionAr,
-      type: opening.type,
-      thumbnail: opening.thumbnail,
-      defaultConfig: opening.defaultConfig,
-      compatibilityRules: opening.compatibilityRules,
-      isActive: opening.isActive,
-      sortOrder: opening.sortOrder,
-      status: 'ACTIVE',
     },
   });
 }
