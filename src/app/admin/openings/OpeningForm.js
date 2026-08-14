@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MediaPicker from '@/components/admin/MediaPicker';
+import RenderFrame from '@/components/invitation/RenderFrame';
+import { buildInvitationRenderConfig } from '@/lib/template-system';
 
 function toJsonString(value) {
   return JSON.stringify(value || {}, null, 2);
@@ -156,6 +158,96 @@ function buildOpeningPreview(form) {
   };
 }
 
+function buildLivePreviewInvitation(manifest, form, openingPreview) {
+  const defaultValues = manifest?.defaultValues || {};
+  const defaultTheme = defaultValues.theme || {};
+  const defaultSections = defaultValues.sections || {};
+  const textConfig = tryParseJson(form.textConfig);
+  const themeConfig = tryParseJson(form.themeConfig);
+  const mediaConfig = tryParseJson(form.mediaConfig);
+  const defaultConfig = tryParseJson(form.defaultConfig);
+
+  const groomName = pickFirstFilled(textConfig.groomName, 'أحمد');
+  const brideName = pickFirstFilled(textConfig.brideName, 'سارة');
+  const venueName = pickFirstFilled(textConfig.venueName, 'قاعة FARHA');
+  const venueAddress = pickFirstFilled(textConfig.venueAddress, 'الرياض - طريق الملك');
+  const heroImage = pickFirstFilled(
+    mediaConfig.heroImage,
+    mediaConfig.backgroundImage,
+    form.previewImage,
+    form.thumbnail,
+  );
+  const venueImage = pickFirstFilled(
+    mediaConfig.venueImage,
+    mediaConfig.posterImage,
+    form.thumbnail,
+    form.previewImage,
+  );
+  const musicUrl = pickFirstFilled(mediaConfig.musicUrl, form.previewMediaUrl);
+  const sampleDate = '2027-02-14T20:00:00.000Z';
+
+  return {
+    id: 'opening-live-preview',
+    slug: `opening-live-preview-${manifest.slug}`,
+    locale: 'ar',
+    groomName,
+    brideName,
+    weddingDate: sampleDate,
+    venueName,
+    venueAddress,
+    welcomeMessage: openingPreview.description,
+    musicUrl,
+    contentConfig: {
+      ...defaultValues,
+      groomName,
+      brideName,
+      welcomeMessage: openingPreview.description,
+      verseText: openingPreview.poem || defaultValues.verseText || '',
+      invitationText: pickFirstFilled(
+        textConfig.invitationText,
+        form.descriptionAr,
+        form.description,
+        defaultValues.invitationText || '',
+      ),
+      venueName,
+      venueAddress,
+      weddingDate: sampleDate,
+      venueImage,
+      musicUrl,
+      'images.hero': heroImage,
+      'images.background': pickFirstFilled(
+        mediaConfig.backgroundImage,
+        form.previewImage,
+        form.thumbnail,
+      ),
+      'images.venue': venueImage,
+      galleryImages: Array.isArray(defaultValues.galleryImages) ? defaultValues.galleryImages : [],
+      program: Array.isArray(defaultValues.program) ? defaultValues.program : [],
+      notes: Array.isArray(defaultValues.notes) ? defaultValues.notes : [],
+    },
+    themeConfig: {
+      ...defaultTheme,
+      ...themeConfig,
+    },
+    sectionConfig: {
+      hero: true,
+      details: true,
+      timeline: true,
+      gallery: true,
+      rsvp: true,
+      calendar: true,
+      ...defaultSections,
+    },
+    openingConfig: {
+      allowSkip: defaultConfig.allowSkip !== false,
+      ...(defaultConfig.sourceTemplateSlug ? { sourceTemplateSlug: defaultConfig.sourceTemplateSlug } : {}),
+    },
+    customElements: [],
+    nativeElementOverrides: {},
+    textOverrides: {},
+  };
+}
+
 function validateOpeningForm(form) {
   const issues = [];
 
@@ -217,6 +309,10 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   const [loadingOpenings, setLoadingOpenings] = useState(true);
   const [copyMessage, setCopyMessage] = useState('');
   const [previewOpened, setPreviewOpened] = useState(false);
+  const [previewTemplateSlug, setPreviewTemplateSlug] = useState(
+    templateOptions[0]?.slug || '',
+  );
+  const [previewDevice, setPreviewDevice] = useState('mobile');
 
   useEffect(() => {
     let ignore = false;
@@ -264,6 +360,44 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     [copyCandidates, copySource],
   );
   const openingPreview = useMemo(() => buildOpeningPreview(form), [form]);
+  const compatiblePreviewTemplates = useMemo(() => {
+    if (!form.compatibleTemplates.length) {
+      return templateOptions;
+    }
+
+    return templateOptions.filter((template) => form.compatibleTemplates.includes(template.slug));
+  }, [form.compatibleTemplates, templateOptions]);
+  const resolvedPreviewTemplateSlug = useMemo(() => {
+    if (compatiblePreviewTemplates.some((template) => template.slug === previewTemplateSlug)) {
+      return previewTemplateSlug;
+    }
+
+    return compatiblePreviewTemplates[0]?.slug || templateOptions[0]?.slug || '';
+  }, [compatiblePreviewTemplates, previewTemplateSlug, templateOptions]);
+  const previewTemplate = useMemo(
+    () => templateOptions.find((template) => template.slug === resolvedPreviewTemplateSlug) || templateOptions[0] || null,
+    [resolvedPreviewTemplateSlug, templateOptions],
+  );
+  const livePreviewInvitation = useMemo(
+    () => (previewTemplate ? buildLivePreviewInvitation(previewTemplate, form, openingPreview) : null),
+    [form, openingPreview, previewTemplate],
+  );
+  const livePreviewRenderConfig = useMemo(() => {
+    if (!previewTemplate || !livePreviewInvitation) {
+      return null;
+    }
+
+    return buildInvitationRenderConfig({
+      invitation: livePreviewInvitation,
+      manifest: previewTemplate,
+      opening: {
+        slug: 'no-opening',
+        type: 'none',
+        defaultConfig: { allowSkip: true },
+      },
+      preview: true,
+    });
+  }, [livePreviewInvitation, previewTemplate]);
 
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -405,7 +539,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
           <div>
             <h3 className="admin-section-title admin-section-title--sm">محاكي الافتتاحية</h3>
             <p className="admin-section-subtitle">
-              معاينة سريعة ومبسطة توضح شكل النصوص، الخلفية، الحركة، وزر الفتح قبل الحفظ.
+              معاينة مباشرة على قالب حقيقي، حتى ترى شكل الافتتاحية فوق الدعوة نفسها قبل حفظها وربطها بالقوالب.
             </p>
           </div>
           <div className="opening-preview-actions">
@@ -415,89 +549,53 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               className="mini-btn"
               onClick={() => setPreviewOpened((current) => !current)}
             >
-              {previewOpened ? 'إعادة إغلاق المحاكي' : 'محاكاة فتح الافتتاحية'}
+              {previewOpened ? 'إعادة الافتتاحية' : 'فتح الافتتاحية'}
             </button>
           </div>
         </div>
 
         <div className="opening-preview-layout">
-          <div className="opening-preview-phone">
-            <div className="opening-preview-device">
-              <div className="opening-preview-screen">
-                <div
-                  className={`opening-preview-canvas transition-${String(openingPreview.transition).toLowerCase().replace(/\s+/g, '-')}`}
-                  style={{
-                    '--opening-preview-primary': openingPreview.primaryColor,
-                    '--opening-preview-accent': openingPreview.accentColor,
-                    '--opening-preview-surface': openingPreview.surfaceColor,
-                    '--opening-preview-duration': `${openingPreview.durationMs}ms`,
-                    backgroundImage: openingPreview.backgroundImage
-                      ? `linear-gradient(180deg, rgba(15, 23, 42, 0.3), rgba(15, 23, 42, 0.68)), url(${openingPreview.backgroundImage})`
-                      : `linear-gradient(160deg, ${openingPreview.surfaceColor} 0%, #f3e5d8 100%)`,
-                  }}
-                >
-                  <div className={`opening-preview-overlay${previewOpened ? ' is-opened' : ''}`}>
-                    <span
-                      className="opening-preview-eyebrow"
-                      style={{ fontFamily: openingPreview.bodyFont }}
-                    >
-                      {openingPreview.eyebrow}
-                    </span>
-                    <h4
-                      className="opening-preview-title"
-                      style={{ fontFamily: openingPreview.headingFont }}
-                    >
-                      {openingPreview.title}
-                    </h4>
-                    <p
-                      className="opening-preview-description"
-                      style={{ fontFamily: openingPreview.bodyFont }}
-                    >
-                      {openingPreview.description}
-                    </p>
-                    {openingPreview.poem ? (
-                      <p
-                        className="opening-preview-poem"
-                        style={{ fontFamily: openingPreview.bodyFont }}
-                      >
-                        {openingPreview.poem}
-                      </p>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="opening-preview-button"
-                      onClick={() => setPreviewOpened(true)}
-                    >
-                      {openingPreview.buttonLabel}
-                    </button>
-                  </div>
-
-                  <div className="opening-preview-invitation-card">
-                    {openingPreview.posterImage ? (
-                      <div
-                        className="opening-preview-poster"
-                        style={{ backgroundImage: `url(${openingPreview.posterImage})` }}
-                      />
-                    ) : null}
-                    <strong style={{ fontFamily: openingPreview.headingFont }}>
-                      {form.nameAr || form.name || 'عنوان الدعوة'}
-                    </strong>
-                    <span style={{ fontFamily: openingPreview.bodyFont }}>
-                      {form.descriptionAr || form.description || 'بعد فتح الافتتاحية يظهر محتوى الدعوة هنا.'}
-                    </span>
-                    <small>
-                      {openingPreview.autoplay ? 'تشغيل تلقائي' : 'تشغيل يدوي'} •{' '}
-                      {openingPreview.requiresUserInteraction ? 'يتطلب تفاعل' : 'مرن للمستخدم'}
-                    </small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="opening-preview-notes">
             <div className="opening-preview-note-card">
-              <strong>ملخص المحاكاة</strong>
+              <strong>خيارات المعاينة المباشرة</strong>
+              <label className="field-block">
+                <span>القالب الذي ستشاهد عليه الافتتاحية</span>
+                <select
+                  value={resolvedPreviewTemplateSlug}
+                  onChange={(event) => {
+                    setPreviewTemplateSlug(event.target.value);
+                    setPreviewOpened(false);
+                  }}
+                >
+                  {compatiblePreviewTemplates.map((template) => (
+                    <option key={template.slug} value={template.slug}>
+                      {template.nameAr}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="opening-preview-device-switches">
+                {[
+                  { key: 'mobile', label: 'هاتف' },
+                  { key: 'tablet', label: 'تابلت' },
+                  { key: 'desktop', label: 'سطح مكتب' },
+                ].map((device) => (
+                  <button
+                    key={device.key}
+                    type="button"
+                    className={`mini-btn ${previewDevice === device.key ? 'active' : ''}`}
+                    onClick={() => setPreviewDevice(device.key)}
+                  >
+                    {device.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="opening-preview-note-card">
+              <strong>ملخص مباشر</strong>
+              <span>القالب الحالي: {previewTemplate?.nameAr || 'غير محدد'}</span>
               <span>المدة المتوقعة: {openingPreview.durationMs} ms</span>
               <span>الانتقال: {openingPreview.transition}</span>
               <span>الخلفية: {openingPreview.backgroundImage ? 'موجودة' : 'لون فقط'}</span>
@@ -505,9 +603,80 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
             </div>
 
             <div className="opening-preview-note-card">
-              <strong>ماذا يعرض المحاكي؟</strong>
-              <span>يعرض شكل تقريبي للواجهة وليس تنفيذًا حرفيًا لكل قالب.</span>
-              <span>أفضل استخدام له هو مقارنة النصوص والثيم والصورة والحركة بسرعة.</span>
+              <strong>طريقة العرض</strong>
+              <span>المشهد الظاهر هو القالب الحقيقي في الخلفية، والافتتاحية فوقه بشكل مباشر.</span>
+              <span>اضغط زر الفتح لتشاهد الانتقال إلى محتوى الدعوة داخل نفس القالب.</span>
+            </div>
+          </div>
+
+          <div className="opening-preview-phone">
+            <div className={`opening-preview-device opening-preview-device--${previewDevice}`}>
+              <div className="opening-preview-screen">
+                {livePreviewRenderConfig && previewTemplate ? (
+                  <div className="opening-live-preview-stage">
+                    <RenderFrame
+                      key={`${previewTemplate.slug}-${previewDevice}`}
+                      templateSlug={previewTemplate.slug}
+                      renderConfig={livePreviewRenderConfig}
+                      manifest={previewTemplate}
+                      className="opening-live-preview-frame-wrap"
+                      frameClassName="opening-live-preview-frame"
+                    />
+
+                    <div
+                      className={`opening-preview-overlay opening-preview-overlay--live transition-${String(openingPreview.transition).toLowerCase().replace(/\s+/g, '-')}${previewOpened ? ' is-opened' : ''}`}
+                      style={{
+                        '--opening-preview-primary': openingPreview.primaryColor,
+                        '--opening-preview-accent': openingPreview.accentColor,
+                        '--opening-preview-surface': openingPreview.surfaceColor,
+                        '--opening-preview-duration': `${openingPreview.durationMs}ms`,
+                        backgroundImage: openingPreview.backgroundImage
+                          ? `linear-gradient(180deg, rgba(15, 23, 42, 0.38), rgba(15, 23, 42, 0.76)), url(${openingPreview.backgroundImage})`
+                          : `linear-gradient(160deg, ${openingPreview.surfaceColor} 0%, #e7d1bb 100%)`,
+                      }}
+                    >
+                      <div className="opening-preview-overlay__scrim" />
+                      <div className="opening-preview-overlay__content">
+                        <span
+                          className="opening-preview-eyebrow"
+                          style={{ fontFamily: openingPreview.bodyFont }}
+                        >
+                          {openingPreview.eyebrow}
+                        </span>
+                        <h4
+                          className="opening-preview-title"
+                          style={{ fontFamily: openingPreview.headingFont }}
+                        >
+                          {openingPreview.title}
+                        </h4>
+                        <p
+                          className="opening-preview-description"
+                          style={{ fontFamily: openingPreview.bodyFont }}
+                        >
+                          {openingPreview.description}
+                        </p>
+                        {openingPreview.poem ? (
+                          <p
+                            className="opening-preview-poem"
+                            style={{ fontFamily: openingPreview.bodyFont }}
+                          >
+                            {openingPreview.poem}
+                          </p>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="opening-preview-button"
+                          onClick={() => setPreviewOpened(true)}
+                        >
+                          {openingPreview.buttonLabel}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="opening-preview-empty">لا توجد معاينة متاحة الآن.</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
