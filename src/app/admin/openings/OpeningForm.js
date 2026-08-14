@@ -313,6 +313,29 @@ function buildLivePreviewInvitation(manifest, form, openingPreview) {
   };
 }
 
+function buildPreviewOpeningDefinition(form) {
+  const defaultConfig = tryParseJson(form.defaultConfig, {});
+  const sourceTemplateSlug =
+    pickFirstFilled(
+      defaultConfig.sourceTemplateSlug,
+      String(form.slug || '').startsWith('template-opening:') ? String(form.slug).split(':')[1] : '',
+    ) || undefined;
+
+  return {
+    slug: String(form.slug || 'opening-live-preview'),
+    type: String(form.type || 'minimal-fade'),
+    name: String(form.name || ''),
+    nameAr: String(form.nameAr || ''),
+    description: String(form.description || ''),
+    descriptionAr: String(form.descriptionAr || ''),
+    thumbnail: String(form.thumbnail || ''),
+    previewImage: String(form.previewImage || ''),
+    previewVideo: String(form.previewVideo || ''),
+    defaultConfig,
+    sourceTemplateSlug,
+  };
+}
+
 function validateOpeningForm(form) {
   const issues = [];
 
@@ -386,6 +409,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     templateOptions[0]?.slug || '',
   );
   const [previewDevice, setPreviewDevice] = useState('mobile');
+  const [previewReplayToken, setPreviewReplayToken] = useState(0);
 
   useEffect(() => {
     let ignore = false;
@@ -435,6 +459,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   const openingPreview = useMemo(() => buildOpeningPreview(form), [form]);
   const parsedTextConfig = useMemo(() => tryParseJson(form.textConfig, {}), [form.textConfig]);
   const parsedMediaConfig = useMemo(() => tryParseJson(form.mediaConfig, {}), [form.mediaConfig]);
+  const previewOpeningDefinition = useMemo(() => buildPreviewOpeningDefinition(form), [form]);
   const compatiblePreviewTemplates = useMemo(() => {
     if (!form.compatibleTemplates.length) {
       return templateOptions;
@@ -457,6 +482,12 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     () => (previewTemplate ? buildLivePreviewInvitation(previewTemplate, form, openingPreview) : null),
     [form, openingPreview, previewTemplate],
   );
+  const usesExactTemplateOpeningPreview = useMemo(
+    () =>
+      previewOpeningDefinition.type === 'template-opening'
+      && Boolean(previewOpeningDefinition.sourceTemplateSlug),
+    [previewOpeningDefinition],
+  );
   const livePreviewRenderConfig = useMemo(() => {
     if (!previewTemplate || !livePreviewInvitation) {
       return null;
@@ -465,17 +496,20 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     return buildInvitationRenderConfig({
       invitation: livePreviewInvitation,
       manifest: previewTemplate,
-      opening: {
-        slug: 'no-opening',
-        type: 'none',
-        defaultConfig: { allowSkip: true },
-      },
+      opening: usesExactTemplateOpeningPreview
+        ? previewOpeningDefinition
+        : {
+            slug: 'no-opening',
+            type: 'none',
+            defaultConfig: { allowSkip: true },
+          },
       preview: true,
     });
-  }, [livePreviewInvitation, previewTemplate]);
+  }, [livePreviewInvitation, previewOpeningDefinition, previewTemplate, usesExactTemplateOpeningPreview]);
 
   useEffect(() => {
     setPreviewOpened(false);
+    setPreviewReplayToken(0);
   }, [
     form.name,
     form.nameAr,
@@ -644,13 +678,26 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
             </p>
           </div>
           <div className="opening-preview-actions">
-            <span className="opening-chip">{openingPreview.transition}</span>
+            <span className="opening-chip">
+              {usesExactTemplateOpeningPreview ? 'معاينة مطابقة للقالب' : openingPreview.transition}
+            </span>
             <button
               type="button"
               className="mini-btn"
-              onClick={() => setPreviewOpened((current) => !current)}
+              onClick={() => {
+                if (usesExactTemplateOpeningPreview) {
+                  setPreviewReplayToken((current) => current + 1);
+                  return;
+                }
+
+                setPreviewOpened((current) => !current);
+              }}
             >
-              {previewOpened ? 'إعادة الافتتاحية' : 'فتح الافتتاحية'}
+              {usesExactTemplateOpeningPreview
+                ? 'إعادة تشغيل الافتتاحية'
+                : previewOpened
+                  ? 'إعادة الافتتاحية'
+                  : 'فتح الافتتاحية'}
             </button>
           </div>
         </div>
@@ -697,6 +744,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
             <div className="opening-preview-note-card">
               <strong>ملخص مباشر</strong>
               <span>القالب الحالي: {previewTemplate?.nameAr || 'غير محدد'}</span>
+              <span>نوع المعاينة: {usesExactTemplateOpeningPreview ? 'افتتاحية القالب الحقيقية' : 'معاينة تقريبية مخصصة'}</span>
               <span>المدة المتوقعة: {openingPreview.durationMs} ms</span>
               <span>الانتقال: {openingPreview.transition}</span>
               <span>الخلفية: {openingPreview.backgroundImage ? 'موجودة' : 'لون فقط'}</span>
@@ -709,13 +757,25 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               <span>النص المعروض: {openingPreview.description || 'غير موجود بعد'}</span>
               <span>مصدر الصورة: {openingPreview.debugSource.image ? 'تم العثور على صورة' : 'لا توجد صورة مستخدمة'}</span>
               <span>مصدر الفيديو: {openingPreview.debugSource.video ? 'تم العثور على فيديو' : 'لا يوجد فيديو مستخدم'}</span>
+              {usesExactTemplateOpeningPreview ? (
+                <span>مصدر تأثير الفتح: {previewOpeningDefinition.sourceTemplateSlug}</span>
+              ) : null}
             </div>
 
             <div className="opening-preview-note-card">
               <strong>طريقة العرض</strong>
-              <span>المشهد الظاهر هو القالب الحقيقي في الخلفية، والافتتاحية فوقه بشكل مباشر.</span>
-              <span>أي تعديل في النص أو الصورة أو الفيديو يعيد الافتتاحية للظهور تلقائيًا.</span>
-              <span>اضغط زر الفتح لتشاهد الانتقال إلى محتوى الدعوة داخل نفس القالب.</span>
+              {usesExactTemplateOpeningPreview ? (
+                <>
+                  <span>المحاكي يستخدم نفس طريقة الفتح الأصلية من القالب المصدر مثل الخبطات أو الضغط أو المشهد الأصلي.</span>
+                  <span>إذا اخترت تأثيرًا من قالب مثل `باب` فستشاهد افتتاحية `باب` الحقيقية فوق القالب الحالي.</span>
+                </>
+              ) : (
+                <>
+                  <span>المشهد الظاهر هو القالب الحقيقي في الخلفية، والافتتاحية فوقه بشكل مباشر.</span>
+                  <span>أي تعديل في النص أو الصورة أو الفيديو يعيد الافتتاحية للظهور تلقائيًا.</span>
+                  <span>اضغط زر الفتح لتشاهد الانتقال إلى محتوى الدعوة داخل نفس القالب.</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -725,7 +785,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                 {livePreviewRenderConfig && previewTemplate ? (
                   <div className="opening-live-preview-stage">
                     <RenderFrame
-                      key={`${previewTemplate.slug}-${previewDevice}`}
+                      key={`${previewTemplate.slug}-${previewDevice}-${previewReplayToken}-${usesExactTemplateOpeningPreview ? previewOpeningDefinition.sourceTemplateSlug || 'native' : 'overlay'}`}
                       templateSlug={previewTemplate.slug}
                       renderConfig={livePreviewRenderConfig}
                       manifest={previewTemplate}
@@ -733,66 +793,68 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                       frameClassName="opening-live-preview-frame"
                     />
 
-                    <div
-                      className={`opening-preview-overlay opening-preview-overlay--live transition-${String(openingPreview.transition).toLowerCase().replace(/\s+/g, '-')}${previewOpened ? ' is-opened' : ''}`}
-                      style={{
-                        '--opening-preview-primary': openingPreview.primaryColor,
-                        '--opening-preview-accent': openingPreview.accentColor,
-                        '--opening-preview-surface': openingPreview.surfaceColor,
-                        '--opening-preview-duration': `${openingPreview.durationMs}ms`,
-                        backgroundImage: openingPreview.backgroundImage
-                          ? `linear-gradient(180deg, rgba(15, 23, 42, 0.38), rgba(15, 23, 42, 0.76)), url(${openingPreview.backgroundImage})`
-                          : `linear-gradient(160deg, ${openingPreview.surfaceColor} 0%, #e7d1bb 100%)`,
-                      }}
-                    >
-                      {openingPreview.previewVideo ? (
-                        <video
-                          className="opening-preview-video"
-                          src={openingPreview.previewVideo}
-                          poster={openingPreview.previewImage || openingPreview.posterImage || ''}
-                          autoPlay
-                          muted
-                          loop
-                          playsInline
-                        />
-                      ) : null}
-                      <div className="opening-preview-overlay__scrim" />
-                      <div className="opening-preview-overlay__content">
-                        <span
-                          className="opening-preview-eyebrow"
-                          style={{ fontFamily: openingPreview.bodyFont }}
-                        >
-                          {openingPreview.eyebrow}
-                        </span>
-                        <h4
-                          className="opening-preview-title"
-                          style={{ fontFamily: openingPreview.headingFont }}
-                        >
-                          {openingPreview.title}
-                        </h4>
-                        <p
-                          className="opening-preview-description"
-                          style={{ fontFamily: openingPreview.bodyFont }}
-                        >
-                          {openingPreview.description}
-                        </p>
-                        {openingPreview.poem ? (
-                          <p
-                            className="opening-preview-poem"
+                    {!usesExactTemplateOpeningPreview ? (
+                      <div
+                        className={`opening-preview-overlay opening-preview-overlay--live transition-${String(openingPreview.transition).toLowerCase().replace(/\s+/g, '-')}${previewOpened ? ' is-opened' : ''}`}
+                        style={{
+                          '--opening-preview-primary': openingPreview.primaryColor,
+                          '--opening-preview-accent': openingPreview.accentColor,
+                          '--opening-preview-surface': openingPreview.surfaceColor,
+                          '--opening-preview-duration': `${openingPreview.durationMs}ms`,
+                          backgroundImage: openingPreview.backgroundImage
+                            ? `linear-gradient(180deg, rgba(15, 23, 42, 0.38), rgba(15, 23, 42, 0.76)), url(${openingPreview.backgroundImage})`
+                            : `linear-gradient(160deg, ${openingPreview.surfaceColor} 0%, #e7d1bb 100%)`,
+                        }}
+                      >
+                        {openingPreview.previewVideo ? (
+                          <video
+                            className="opening-preview-video"
+                            src={openingPreview.previewVideo}
+                            poster={openingPreview.previewImage || openingPreview.posterImage || ''}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                          />
+                        ) : null}
+                        <div className="opening-preview-overlay__scrim" />
+                        <div className="opening-preview-overlay__content">
+                          <span
+                            className="opening-preview-eyebrow"
                             style={{ fontFamily: openingPreview.bodyFont }}
                           >
-                            {openingPreview.poem}
+                            {openingPreview.eyebrow}
+                          </span>
+                          <h4
+                            className="opening-preview-title"
+                            style={{ fontFamily: openingPreview.headingFont }}
+                          >
+                            {openingPreview.title}
+                          </h4>
+                          <p
+                            className="opening-preview-description"
+                            style={{ fontFamily: openingPreview.bodyFont }}
+                          >
+                            {openingPreview.description}
                           </p>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="opening-preview-button"
-                          onClick={() => setPreviewOpened(true)}
-                        >
-                          {openingPreview.buttonLabel}
-                        </button>
+                          {openingPreview.poem ? (
+                            <p
+                              className="opening-preview-poem"
+                              style={{ fontFamily: openingPreview.bodyFont }}
+                            >
+                              {openingPreview.poem}
+                            </p>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="opening-preview-button"
+                            onClick={() => setPreviewOpened(true)}
+                          >
+                            {openingPreview.buttonLabel}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="opening-preview-empty">لا توجد معاينة متاحة الآن.</div>
