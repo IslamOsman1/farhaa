@@ -255,18 +255,13 @@ function buildOpeningPreview(form) {
       textConfig.openingEyebrow,
       textConfig.eyebrow,
       textConfig.openingKicker,
-      form.nameAr,
-      form.name,
     ),
     title: pickFirstFilled(
       textConfig.openingNames,
       textConfig.title,
       textConfig.heading,
       textConfig.name,
-      form.nameAr,
-      form.name,
       fallbackText,
-      'اسم الافتتاحية',
     ),
     description: pickFirstFilled(
       textConfig.openingHint,
@@ -1063,18 +1058,22 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                           />
                         ) : null}
                         <div className="opening-preview-overlay__content">
-                          <span
-                            className="opening-preview-eyebrow"
-                            style={{ fontFamily: openingPreview.bodyFont }}
-                          >
-                            {openingPreview.eyebrow}
-                          </span>
-                          <h4
-                            className="opening-preview-title"
-                            style={{ fontFamily: openingPreview.headingFont }}
-                          >
-                            {openingPreview.title}
-                          </h4>
+                          {openingPreview.eyebrow ? (
+                            <span
+                              className="opening-preview-eyebrow"
+                              style={{ fontFamily: openingPreview.bodyFont }}
+                            >
+                              {openingPreview.eyebrow}
+                            </span>
+                          ) : null}
+                          {openingPreview.title ? (
+                            <h4
+                              className="opening-preview-title"
+                              style={{ fontFamily: openingPreview.headingFont }}
+                            >
+                              {openingPreview.title}
+                            </h4>
+                          ) : null}
                           <p
                             className="opening-preview-description"
                             style={{ fontFamily: openingPreview.bodyFont }}

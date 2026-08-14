@@ -1915,8 +1915,8 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top, rgba(255,255,255,0.18), transparent 28%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.55));
+    radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 26%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.22));
 }
 
 .opening-preview-overlay__content {
@@ -1928,7 +1928,6 @@ body {
   gap: 12px;
   padding: 28px;
   text-align: center;
-  backdrop-filter: blur(3px);
   z-index: 1;
 }
 
@@ -1964,7 +1963,6 @@ body {
   opacity: 0;
   pointer-events: none;
   transform: scale(1.04);
-  filter: blur(8px);
 }
 
 .opening-preview-overlay--live.transition-slide-up.is-opened {
