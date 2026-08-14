@@ -274,6 +274,37 @@ function buildLivePreviewInvitation(manifest, form, openingPreview) {
         form.description,
         defaultValues.invitationText || '',
       ),
+      openingKicker: pickFirstFilled(
+        textConfig.openingKicker,
+        textConfig.eyebrow,
+        textConfig.openingEyebrow,
+      ),
+      openingNames: openingPreview.title,
+      openingHint: openingPreview.description,
+      openButtonLabel: openingPreview.buttonLabel,
+      openingVideo: pickFirstFilled(
+        mediaConfig.openingVideo,
+        mediaConfig.previewVideo,
+        mediaConfig.videoUrl,
+        mediaConfig.backgroundVideo,
+        form.previewVideo,
+      ),
+      openingPoster: pickFirstFilled(
+        mediaConfig.openingPoster,
+        mediaConfig.backgroundImage,
+        mediaConfig.coverImage,
+        mediaConfig.previewImage,
+        form.previewImage,
+        form.thumbnail,
+      ),
+      openingBackgroundImage: pickFirstFilled(
+        mediaConfig.openingPoster,
+        mediaConfig.backgroundImage,
+        mediaConfig.coverImage,
+        mediaConfig.previewImage,
+        form.previewImage,
+        form.thumbnail,
+      ),
       venueName,
       venueAddress,
       weddingDate: sampleDate,
@@ -375,7 +406,7 @@ function buildApiValidationMessage(result) {
 }
 
 const COPY_GROUPS = [
-  { key: 'text', label: 'النصوص', description: 'نسخ محتوى النصوص وعناوين الواجهة', configKey: 'textConfig' },
+  { key: 'text', label: 'محتوى النصوص', description: 'نسخ العنوان والنصوص المكتوبة نفسها', configKey: 'textConfig' },
   { key: 'theme', label: 'شكل النصوص والثيم', description: 'نسخ الألوان والخطوط والمظهر العام', configKey: 'themeConfig' },
   { key: 'media', label: 'الوسائط', description: 'نسخ الصور وروابط الوسائط وإعداداتها', configKey: 'mediaConfig' },
   { key: 'behavior', label: 'الحركة والتأثير', description: 'نسخ المدة والانتقال وإعدادات السلوك', configKey: 'defaultConfig' },
@@ -394,7 +425,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   const [error, setError] = useState('');
   const [copySource, setCopySource] = useState('');
   const [copyOptions, setCopyOptions] = useState({
-    text: true,
+    text: false,
     theme: true,
     media: false,
     behavior: true,
@@ -567,7 +598,10 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     }
 
     if (copyOptions.behavior) {
-      updates.defaultConfig = toJsonString(selectedSourceOpening.defaultConfig);
+      updates.defaultConfig = toJsonString({
+        ...tryParseJson(form.defaultConfig, {}),
+        ...(selectedSourceOpening.defaultConfig || {}),
+      });
       updates.durationMs = selectedSourceOpening.durationMs || 2000;
       updates.transition = selectedSourceOpening.transition || 'fade';
       updates.autoplay = selectedSourceOpening.autoplay ?? false;
@@ -576,7 +610,11 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     }
 
     setForm((current) => ({ ...current, ...updates }));
-    setCopyMessage(`تم تجهيز إعدادات التأثير من "${selectedSourceOpening.nameAr || selectedSourceOpening.name}".`);
+    setCopyMessage(
+      copyOptions.behavior && selectedSourceOpening.type === 'template-opening'
+        ? `تم ربط طريقة الفتح من "${selectedSourceOpening.nameAr || selectedSourceOpening.name}" مع الحفاظ على فيديوك وصورتك الحالية.`
+        : `تم تجهيز إعدادات التأثير من "${selectedSourceOpening.nameAr || selectedSourceOpening.name}".`,
+    );
   }
 
   async function submitForm(event) {
@@ -907,7 +945,10 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               value={parsedMediaConfig.previewVideo || parsedMediaConfig.videoUrl || parsedMediaConfig.backgroundVideo || ''}
               accept="video"
               folder="openings"
-              onChange={(value) => updateConfigField('mediaConfig', 'previewVideo', value)}
+              onChange={(value) => {
+                updateConfigField('mediaConfig', 'previewVideo', value);
+                updateField('previewVideo', value);
+              }}
             />
           </label>
           <label className="field-block opening-field-full">
@@ -916,7 +957,10 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
               value={parsedMediaConfig.backgroundImage || parsedMediaConfig.coverImage || parsedMediaConfig.previewImage || ''}
               accept="image"
               folder="openings"
-              onChange={(value) => updateConfigField('mediaConfig', 'backgroundImage', value)}
+              onChange={(value) => {
+                updateConfigField('mediaConfig', 'backgroundImage', value);
+                updateField('previewImage', value);
+              }}
             />
           </label>
         </div>

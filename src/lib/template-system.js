@@ -1433,9 +1433,58 @@ export function normalizeInvitationData(invitation) {
   };
 }
 
+function firstFilledString(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return '';
+}
+
+function buildOpeningFieldOverrides(opening) {
+  const textConfig =
+    opening?.textConfig && typeof opening.textConfig === 'object' && !Array.isArray(opening.textConfig)
+      ? opening.textConfig
+      : {};
+  const mediaConfig =
+    opening?.mediaConfig && typeof opening.mediaConfig === 'object' && !Array.isArray(opening.mediaConfig)
+      ? opening.mediaConfig
+      : {};
+
+  const openingVideo = firstFilledString(
+    mediaConfig.openingVideo,
+    mediaConfig.previewVideo,
+    mediaConfig.videoUrl,
+    mediaConfig.backgroundVideo,
+    opening?.previewVideo,
+  );
+  const openingPoster = firstFilledString(
+    mediaConfig.openingPoster,
+    mediaConfig.backgroundImage,
+    mediaConfig.coverImage,
+    mediaConfig.previewImage,
+    opening?.previewImage,
+    opening?.thumbnail,
+  );
+
+  return {
+    ...textConfig,
+    ...(openingVideo ? { openingVideo } : {}),
+    ...(openingPoster
+      ? {
+          openingPoster,
+          openingBackgroundImage: openingPoster,
+        }
+      : {}),
+  };
+}
+
 export function buildInvitationRenderConfig({ invitation, manifest, opening, preview = false }) {
   const normalized = normalizeInvitationData(invitation);
   const selectedOpening = opening || getOpeningBySlug(invitation?.opening?.slug || invitation?.openingId || 'native-template');
+  const openingFieldOverrides = buildOpeningFieldOverrides(selectedOpening);
   const sourceTemplateSlug =
     selectedOpening.sourceTemplateSlug
     || selectedOpening.defaultConfig?.sourceTemplateSlug
@@ -1465,6 +1514,7 @@ export function buildInvitationRenderConfig({ invitation, manifest, opening, pre
     fields: {
       ...manifest.defaultValues,
       ...normalized.contentConfig,
+      ...openingFieldOverrides,
       weddingDate: dateValue,
     },
     sections: normalized.sectionConfig,
