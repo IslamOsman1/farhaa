@@ -156,6 +156,44 @@ function buildOpeningPreview(form) {
   };
 }
 
+function validateOpeningForm(form) {
+  const issues = [];
+
+  if (!String(form.name || '').trim()) {
+    issues.push('أدخل اسم الافتتاحية.');
+  }
+
+  if (!String(form.nameAr || '').trim()) {
+    issues.push('أدخل الاسم العربي للافتتاحية.');
+  }
+
+  const slug = String(form.slug || '').trim();
+  if (!slug) {
+    issues.push('أدخل قيمة الـ slug.');
+  } else if (!/^[a-z0-9-]+$/.test(slug)) {
+    issues.push('الـ slug يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطة فقط.');
+  }
+
+  return issues;
+}
+
+function buildApiValidationMessage(result) {
+  const fieldErrors = result?.validationErrors?.fieldErrors;
+  if (!fieldErrors || typeof fieldErrors !== 'object') {
+    return result?.message || 'تعذر حفظ الافتتاحية.';
+  }
+
+  const messages = Object.values(fieldErrors)
+    .flat()
+    .filter(Boolean);
+
+  if (!messages.length) {
+    return result?.message || 'تعذر حفظ الافتتاحية.';
+  }
+
+  return messages.join(' ');
+}
+
 const COPY_GROUPS = [
   { key: 'text', label: 'النصوص', description: 'نسخ محتوى النصوص وعناوين الواجهة', configKey: 'textConfig' },
   { key: 'theme', label: 'شكل النصوص والثيم', description: 'نسخ الألوان والخطوط والمظهر العام', configKey: 'themeConfig' },
@@ -274,12 +312,30 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
 
   async function submitForm(event) {
     event.preventDefault();
-    setSaving(true);
     setError('');
+
+    const validationIssues = validateOpeningForm(form);
+    if (validationIssues.length) {
+      setError(validationIssues.join(' '));
+      return;
+    }
+
+    setSaving(true);
 
     try {
       const payload = {
         ...form,
+        name: String(form.name || '').trim(),
+        nameAr: String(form.nameAr || '').trim(),
+        slug: String(form.slug || '').trim().toLowerCase(),
+        description: String(form.description || '').trim(),
+        descriptionAr: String(form.descriptionAr || '').trim(),
+        type: String(form.type || '').trim(),
+        thumbnail: String(form.thumbnail || '').trim(),
+        previewImage: String(form.previewImage || '').trim(),
+        previewVideo: String(form.previewVideo || '').trim(),
+        previewMediaUrl: String(form.previewMediaUrl || '').trim(),
+        transition: String(form.transition || '').trim(),
         sortOrder: Number(form.sortOrder || 0),
         durationMs: form.durationMs ? Number(form.durationMs) : null,
         defaultConfig: parseJson(form.defaultConfig),
@@ -298,7 +354,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.message || 'تعذر حفظ الافتتاحية.');
+        throw new Error(buildApiValidationMessage(result));
       }
 
       router.push('/admin/openings');
