@@ -620,6 +620,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   const openingPreview = useMemo(() => buildOpeningPreview(form), [form]);
   const parsedTextConfig = useMemo(() => tryParseJson(form.textConfig, {}), [form.textConfig]);
   const parsedMediaConfig = useMemo(() => tryParseJson(form.mediaConfig, {}), [form.mediaConfig]);
+  const parsedDefaultConfig = useMemo(() => tryParseJson(form.defaultConfig, {}), [form.defaultConfig]);
   const previewOpeningDefinition = useMemo(() => buildPreviewOpeningDefinition(form), [form]);
   const compatiblePreviewTemplates = useMemo(() => {
     if (!form.compatibleTemplates.length) {
@@ -643,11 +644,42 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     () => (previewTemplate ? buildLivePreviewInvitation(previewTemplate, form, openingPreview) : null),
     [form, openingPreview, previewTemplate],
   );
+  const hasCustomOpeningVisuals = useMemo(
+    () =>
+      Boolean(
+        pickFirstFilled(
+          parsedMediaConfig.openingVideo,
+          parsedMediaConfig.previewVideo,
+          parsedMediaConfig.videoUrl,
+          parsedMediaConfig.backgroundVideo,
+          parsedMediaConfig.openingPoster,
+          parsedMediaConfig.backgroundImage,
+          parsedMediaConfig.coverImage,
+          parsedMediaConfig.previewImage,
+          form.previewVideo,
+          form.previewImage,
+          form.thumbnail,
+        ),
+      ),
+    [form.previewImage, form.previewVideo, form.thumbnail, parsedMediaConfig],
+  );
+  const hasCustomBehaviorOverlay = useMemo(
+    () =>
+      Boolean(
+        pickFirstFilled(
+          parsedDefaultConfig.interactionMode,
+          parsedDefaultConfig.interactionHint,
+        ),
+      ) || Number(parsedDefaultConfig.requiredKnocks || 0) > 0,
+    [parsedDefaultConfig],
+  );
   const usesExactTemplateOpeningPreview = useMemo(
     () =>
       previewOpeningDefinition.type === 'template-opening'
-      && Boolean(previewOpeningDefinition.sourceTemplateSlug),
-    [previewOpeningDefinition],
+      && Boolean(previewOpeningDefinition.sourceTemplateSlug)
+      && !hasCustomOpeningVisuals
+      && !hasCustomBehaviorOverlay,
+    [hasCustomBehaviorOverlay, hasCustomOpeningVisuals, previewOpeningDefinition],
   );
   const livePreviewRenderConfig = useMemo(() => {
     if (!previewTemplate || !livePreviewInvitation) {
