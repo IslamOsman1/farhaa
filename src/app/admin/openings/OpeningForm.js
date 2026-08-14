@@ -48,6 +48,114 @@ function updateJsonConfigField(text, key, value) {
   return toJsonString(next);
 }
 
+function stripTemplateOpeningKeys(config = {}) {
+  const next = { ...config };
+  delete next.sourceTemplateSlug;
+  return next;
+}
+
+function resolveBehaviorPreset(opening) {
+  const slug = String(
+    opening?.sourceTemplateSlug
+    || opening?.defaultConfig?.sourceTemplateSlug
+    || opening?.slug
+    || ''
+  ).toLowerCase();
+
+  if (slug.includes('bab')) {
+    return {
+      interactionMode: 'knock',
+      requiredKnocks: 3,
+      interactionHint: 'دقوا على الافتتاحية ثلاث دقات ليفتح المحتوى',
+    };
+  }
+
+  if (slug.includes('disney') || slug.includes('classic')) {
+    return {
+      interactionMode: 'tap-button',
+      interactionHint: 'اضغط لفتح الافتتاحية',
+    };
+  }
+
+  return {
+    interactionMode: 'tap-button',
+    interactionHint: 'اضغط لفتح الافتتاحية',
+  };
+}
+
+const BEHAVIOR_LIBRARY = [
+  {
+    id: 'knock-3',
+    label: 'ثلاث خبطات',
+    description: 'يفتح المحتوى بعد ثلاث دقات متتالية على الافتتاحية.',
+    type: 'shared-overlay',
+    transition: 'fade',
+    durationMs: 2000,
+    autoplay: false,
+    requiresUserInteraction: true,
+    defaultConfig: {
+      allowSkip: true,
+      interactionMode: 'knock',
+      requiredKnocks: 3,
+      interactionHint: 'دقوا على الافتتاحية ثلاث دقات ليفتح المحتوى',
+    },
+  },
+  {
+    id: 'tap-button',
+    label: 'اضغط للفتح',
+    description: 'يظهر زر واضح لفتح الافتتاحية ثم الدخول إلى الدعوة.',
+    type: 'shared-overlay',
+    transition: 'fade',
+    durationMs: 2000,
+    autoplay: false,
+    requiresUserInteraction: true,
+    defaultConfig: {
+      allowSkip: true,
+      interactionMode: 'tap-button',
+      interactionHint: 'اضغط لفتح الافتتاحية',
+    },
+  },
+  {
+    id: 'tap-anywhere',
+    label: 'اضغط في أي مكان',
+    description: 'يفتح المحتوى عند الضغط في أي مكان على الشاشة.',
+    type: 'shared-overlay',
+    transition: 'fade',
+    durationMs: 1800,
+    autoplay: false,
+    requiresUserInteraction: true,
+    defaultConfig: {
+      allowSkip: true,
+      interactionMode: 'tap-anywhere',
+      interactionHint: 'اضغط في أي مكان لفتح الافتتاحية',
+    },
+  },
+  {
+    id: 'auto-open',
+    label: 'فتح تلقائي',
+    description: 'تظهر الافتتاحية لفترة قصيرة ثم تنتقل تلقائيًا إلى الدعوة.',
+    type: 'shared-overlay',
+    transition: 'fade',
+    durationMs: 2200,
+    autoplay: true,
+    requiresUserInteraction: false,
+    defaultConfig: {
+      allowSkip: true,
+      interactionMode: 'auto',
+      overlayDurationMs: 2200,
+      interactionHint: 'جاري فتح الافتتاحية...',
+    },
+  },
+];
+
+function getBehaviorOptionMeta(behavior, examples = []) {
+  return {
+    label: behavior.label,
+    description: behavior.description,
+    examplesLabel: examples.length ? examples.slice(0, 2).join('، ') : '',
+  };
+}
+
 function buildInitialForm(opening) {
   return {
     name: opening?.name || '',
@@ -214,6 +322,9 @@ function buildOpeningPreview(form) {
     autoplay: form.autoplay,
     requiresUserInteraction: form.requiresUserInteraction,
     allowSkip: defaultConfig.allowSkip !== false,
+    interactionMode: pickFirstFilled(defaultConfig.interactionMode, form.requiresUserInteraction ? 'tap-button' : 'auto'),
+    requiredKnocks: Number(defaultConfig.requiredKnocks) || 3,
+    interactionHint: pickFirstFilled(defaultConfig.interactionHint, textConfig.openingHint),
     debugSource: {
       title: pickFirstFilled(textConfig.openingNames, textConfig.title, textConfig.heading, textConfig.name, fallbackText),
       description: pickFirstFilled(textConfig.openingHint, textConfig.subtitle, textConfig.description, textConfig.message),
@@ -405,13 +516,6 @@ function buildApiValidationMessage(result) {
   return messages.join(' ');
 }
 
-const COPY_GROUPS = [
-  { key: 'text', label: 'محتوى النصوص', description: 'نسخ العنوان والنصوص المكتوبة نفسها', configKey: 'textConfig' },
-  { key: 'theme', label: 'شكل النصوص والثيم', description: 'نسخ الألوان والخطوط والمظهر العام', configKey: 'themeConfig' },
-  { key: 'media', label: 'الوسائط', description: 'نسخ الصور وروابط الوسائط وإعداداتها', configKey: 'mediaConfig' },
-  { key: 'behavior', label: 'الحركة والتأثير', description: 'نسخ المدة والانتقال وإعدادات السلوك', configKey: 'defaultConfig' },
-];
-
 const FORM_TABS = [
   { key: 'basic', label: 'البيانات الأساسية' },
   { key: 'media', label: 'الوسائط والمعاينة' },
@@ -424,12 +528,6 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [copySource, setCopySource] = useState('');
-  const [copyOptions, setCopyOptions] = useState({
-    text: false,
-    theme: true,
-    media: false,
-    behavior: true,
-  });
   const [availableOpenings, setAvailableOpenings] = useState([]);
   const [loadingOpenings, setLoadingOpenings] = useState(true);
   const [copyMessage, setCopyMessage] = useState('');
@@ -441,6 +539,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   );
   const [previewDevice, setPreviewDevice] = useState('mobile');
   const [previewReplayToken, setPreviewReplayToken] = useState(0);
+  const [previewKnockCount, setPreviewKnockCount] = useState(0);
 
   useEffect(() => {
     let ignore = false;
@@ -478,14 +577,45 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   }, []);
 
   const currentOpeningId = opening?.id || '';
-  const copyCandidates = useMemo(
-    () => availableOpenings.filter((item) => item.id !== currentOpeningId && item.slug !== form.slug),
+  const behaviorExamplesById = useMemo(
+    () => availableOpenings.reduce((accumulator, item) => {
+      if (item.id === currentOpeningId || item.slug === form.slug) {
+        return accumulator;
+      }
+
+      const preset = resolveBehaviorPreset(item);
+      let behaviorId = 'tap-button';
+      if (preset.interactionMode === 'knock' && Number(preset.requiredKnocks || 0) === 3) {
+        behaviorId = 'knock-3';
+      } else if (preset.interactionMode === 'tap-anywhere') {
+        behaviorId = 'tap-anywhere';
+      } else if (preset.interactionMode === 'auto') {
+        behaviorId = 'auto-open';
+      }
+
+      if (!accumulator[behaviorId]) {
+        accumulator[behaviorId] = [];
+      }
+
+      const sourceName = item.nameAr || item.name || item.slug;
+      if (sourceName && !accumulator[behaviorId].includes(sourceName)) {
+        accumulator[behaviorId].push(sourceName);
+      }
+
+      return accumulator;
+    }, {}),
     [availableOpenings, currentOpeningId, form.slug],
   );
-
-  const selectedSourceOpening = useMemo(
-    () => copyCandidates.find((item) => item.id === copySource || item.slug === copySource) || null,
-    [copyCandidates, copySource],
+  const behaviorOptions = useMemo(
+    () => BEHAVIOR_LIBRARY.map((behavior) => ({
+      ...behavior,
+      examples: behaviorExamplesById[behavior.id] || [],
+    })),
+    [behaviorExamplesById],
+  );
+  const selectedBehaviorOption = useMemo(
+    () => behaviorOptions.find((item) => item.id === copySource) || null,
+    [behaviorOptions, copySource],
   );
   const openingPreview = useMemo(() => buildOpeningPreview(form), [form]);
   const parsedTextConfig = useMemo(() => tryParseJson(form.textConfig, {}), [form.textConfig]);
@@ -541,6 +671,7 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
   useEffect(() => {
     setPreviewOpened(false);
     setPreviewReplayToken(0);
+    setPreviewKnockCount(0);
   }, [
     form.name,
     form.nameAr,
@@ -569,52 +700,26 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
     }));
   }
 
-  function updateCopyOption(key, value) {
-    setCopyOptions((current) => ({ ...current, [key]: value }));
-  }
-
   function applyOpeningEffects() {
-    if (!selectedSourceOpening) {
-      setCopyMessage('اختر افتتاحية أولًا حتى يمكن نسخ التأثير منها.');
+    if (!selectedBehaviorOption) {
+      setCopyMessage('اختر سلوك فتح أولًا حتى يمكن تطبيقه.');
       return;
     }
 
     const updates = {};
-
-    if (copyOptions.text) {
-      updates.textConfig = toJsonString(selectedSourceOpening.textConfig);
-    }
-
-    if (copyOptions.theme) {
-      updates.themeConfig = toJsonString(selectedSourceOpening.themeConfig);
-    }
-
-    if (copyOptions.media) {
-      updates.mediaConfig = toJsonString(selectedSourceOpening.mediaConfig);
-      updates.thumbnail = selectedSourceOpening.thumbnail || '';
-      updates.previewImage = selectedSourceOpening.previewImage || '';
-      updates.previewVideo = selectedSourceOpening.previewVideo || '';
-      updates.previewMediaUrl = selectedSourceOpening.previewMediaUrl || '';
-    }
-
-    if (copyOptions.behavior) {
-      updates.defaultConfig = toJsonString({
-        ...tryParseJson(form.defaultConfig, {}),
-        ...(selectedSourceOpening.defaultConfig || {}),
-      });
-      updates.durationMs = selectedSourceOpening.durationMs || 2000;
-      updates.transition = selectedSourceOpening.transition || 'fade';
-      updates.autoplay = selectedSourceOpening.autoplay ?? false;
-      updates.requiresUserInteraction = selectedSourceOpening.requiresUserInteraction ?? false;
-      updates.type = selectedSourceOpening.type || form.type;
-    }
+    const currentDefaultConfig = tryParseJson(form.defaultConfig, {});
+    updates.defaultConfig = toJsonString({
+      ...stripTemplateOpeningKeys(currentDefaultConfig),
+      ...stripTemplateOpeningKeys(selectedBehaviorOption.defaultConfig || {}),
+    });
+    updates.durationMs = selectedBehaviorOption.durationMs || 2000;
+    updates.transition = selectedBehaviorOption.transition || 'fade';
+    updates.autoplay = selectedBehaviorOption.autoplay ?? false;
+    updates.requiresUserInteraction = selectedBehaviorOption.requiresUserInteraction ?? false;
+    updates.type = selectedBehaviorOption.type || 'shared-overlay';
 
     setForm((current) => ({ ...current, ...updates }));
-    setCopyMessage(
-      copyOptions.behavior && selectedSourceOpening.type === 'template-opening'
-        ? `تم ربط طريقة الفتح من "${selectedSourceOpening.nameAr || selectedSourceOpening.name}" مع الحفاظ على فيديوك وصورتك الحالية.`
-        : `تم تجهيز إعدادات التأثير من "${selectedSourceOpening.nameAr || selectedSourceOpening.name}".`,
-    );
+    setCopyMessage(`تم تطبيق سلوك "${selectedBehaviorOption.label}" مع الحفاظ على فيديوك وصورتك الحالية.`);
   }
 
   async function submitForm(event) {
@@ -873,8 +978,20 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                             className="opening-preview-description"
                             style={{ fontFamily: openingPreview.bodyFont }}
                           >
-                            {openingPreview.description}
+                            {openingPreview.interactionMode === 'knock'
+                              ? openingPreview.interactionHint || openingPreview.description
+                              : openingPreview.description}
                           </p>
+                          {openingPreview.interactionMode === 'knock' ? (
+                            <div className="opening-preview-knocks" aria-hidden="true">
+                              {Array.from({ length: openingPreview.requiredKnocks }).map((_, index) => (
+                                <span
+                                  key={`knock-${index}`}
+                                  className={`opening-preview-knock-dot${index < previewKnockCount ? ' is-hit' : ''}`}
+                                />
+                              ))}
+                            </div>
+                          ) : null}
                           {openingPreview.poem ? (
                             <p
                               className="opening-preview-poem"
@@ -886,9 +1003,24 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
                           <button
                             type="button"
                             className="opening-preview-button"
-                            onClick={() => setPreviewOpened(true)}
+                            onClick={() => {
+                              if (openingPreview.interactionMode === 'knock') {
+                                setPreviewKnockCount((current) => {
+                                  const next = current + 1;
+                                  if (next >= openingPreview.requiredKnocks) {
+                                    setPreviewOpened(true);
+                                  }
+                                  return Math.min(next, openingPreview.requiredKnocks);
+                                });
+                                return;
+                              }
+
+                              setPreviewOpened(true);
+                            }}
                           >
-                            {openingPreview.buttonLabel}
+                            {openingPreview.interactionMode === 'knock'
+                              ? `دقة ${Math.min(previewKnockCount + 1, openingPreview.requiredKnocks)}`
+                              : openingPreview.buttonLabel}
                           </button>
                         </div>
                       </div>
@@ -971,9 +1103,9 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
       <section className="opening-copy-panel admin-card card-pad">
         <div className="opening-section-head">
           <div>
-            <h3 className="admin-section-title admin-section-title--sm">استيراد تأثير من افتتاحية موجودة</h3>
+            <h3 className="admin-section-title admin-section-title--sm">اختيار سلوك الفتح</h3>
             <p className="admin-section-subtitle">
-              استخدم افتتاحية سابقة كبداية سريعة، ثم عدّل عليها بدل كتابة الإعدادات من الصفر.
+              اختر طريقة الفتح فقط مثل ثلاث خبطات أو اضغط للفتح، بينما تبقى الصورة والفيديو والنصوص الخاصة بك كما هي.
             </p>
           </div>
           {copyMessage ? <span className="opening-copy-badge">{copyMessage}</span> : null}
@@ -981,48 +1113,34 @@ export default function OpeningForm({ mode = 'create', opening = null, templateO
 
         <div className="opening-copy-grid">
           <label className="field-block">
-            <span>الافتتاحية المصدر</span>
+            <span>سلوك الفتح</span>
             <select value={copySource} onChange={(event) => setCopySource(event.target.value)}>
-              <option value="">{loadingOpenings ? 'جارٍ تحميل الافتتاحيات...' : 'اختر افتتاحية موجودة'}</option>
-              {copyCandidates.map((item) => (
-                <option key={item.id || item.slug} value={item.id || item.slug}>
-                  {item.nameAr || item.name} - {item.type}
+              <option value="">{loadingOpenings ? 'جارٍ تحميل سلوكيات الفتح...' : 'اختر سلوك فتح'}</option>
+              {behaviorOptions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {getBehaviorOptionMeta(item, item.examples).label}
+                  {getBehaviorOptionMeta(item, item.examples).examplesLabel ? ` - ${getBehaviorOptionMeta(item, item.examples).examplesLabel}` : ''}
                 </option>
               ))}
             </select>
           </label>
 
-          <div className="opening-copy-options">
-            {COPY_GROUPS.map((item) => (
-              <label key={item.key} className="opening-copy-option">
-                <input
-                  type="checkbox"
-                  checked={copyOptions[item.key]}
-                  onChange={(event) => updateCopyOption(item.key, event.target.checked)}
-                />
-                <div>
-                  <strong>{item.label}</strong>
-                  <span>{item.description}</span>
-                </div>
-              </label>
-            ))}
-          </div>
-
           <div className="opening-copy-preview">
-            {selectedSourceOpening ? (
+            {selectedBehaviorOption ? (
               <>
-                <strong>{selectedSourceOpening.nameAr || selectedSourceOpening.name}</strong>
-                <span>النوع: {selectedSourceOpening.type}</span>
-                <span>الانتقال: {selectedSourceOpening.transition || 'fade'}</span>
-                <span>المدة: {selectedSourceOpening.durationMs || 2000} ms</span>
+                <strong>{getBehaviorOptionMeta(selectedBehaviorOption, selectedBehaviorOption.examples).label}</strong>
+                <span>الوصف: {getBehaviorOptionMeta(selectedBehaviorOption, selectedBehaviorOption.examples).description}</span>
+                <span>أمثلة مشابهة: {getBehaviorOptionMeta(selectedBehaviorOption, selectedBehaviorOption.examples).examplesLabel || 'مكتبة مستقلة بدون تكرار'}</span>
+                <span>الانتقال: {selectedBehaviorOption.transition || 'fade'}</span>
+                <span>المدة: {selectedBehaviorOption.durationMs || 2000} ms</span>
               </>
             ) : (
-              <span>اختر افتتاحية لعرض ملخص سريع قبل النسخ.</span>
+              <span>اختر سلوك فتح لعرض ملخص سريع قبل تطبيقه.</span>
             )}
           </div>
 
           <button type="button" className="mini-btn opening-copy-btn" onClick={applyOpeningEffects}>
-            تطبيق التأثير المختار
+            تطبيق سلوك الفتح
           </button>
         </div>
       </section>

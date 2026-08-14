@@ -2004,6 +2004,29 @@ body {
   color: rgba(255,255,255,0.74);
 }
 
+.opening-preview-knocks {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.opening-preview-knock-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.82);
+  background: transparent;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.24);
+  transition: transform .2s ease, background .2s ease, border-color .2s ease;
+}
+
+.opening-preview-knock-dot.is-hit {
+  background: rgba(217, 178, 111, 0.95);
+  border-color: rgba(217, 178, 111, 0.95);
+  transform: scale(1.16);
+}
+
 .opening-preview-button {
   min-width: 150px;
   min-height: 44px;

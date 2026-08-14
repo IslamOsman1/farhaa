@@ -3510,9 +3510,9 @@
       return;
     }
 
-    if (opening.slug === 'minimal-fade') {
+    if (opening.slug === 'minimal-fade' || opening.type === 'shared-overlay') {
       hideNativeOpeningLayers();
-      showMinimalFadeOverlay(opening.config || {});
+      showInteractiveOpeningOverlay(opening.config || {});
     }
   }
 
@@ -3717,6 +3717,169 @@
 
     overlay.querySelector('.fmo-skip').addEventListener('click', dismiss);
     setTimeout(dismiss, Math.max(Number(config.overlayDurationMs || 2200), 900));
+  }
+
+  function showInteractiveOpeningOverlay(config) {
+    if (document.getElementById('farha-interactive-opening')) return;
+
+    const fields = runtimeState.renderConfig?.fields || {};
+    const theme = runtimeState.renderConfig?.theme || {};
+    const interactionMode = String(config.interactionMode || (config.requiresUserInteraction ? 'tap-button' : 'auto'));
+    const requiredKnocks = Math.max(Number(config.requiredKnocks || 3), 1);
+    const title = String(fields.openingNames || fields.groomName || '').trim();
+    const hint = String(fields.openingHint || config.interactionHint || 'اضغط لفتح الافتتاحية').trim();
+    const kicker = String(fields.openingKicker || '').trim();
+    const buttonLabel = String(fields.openButtonLabel || 'فتح الدعوة').trim();
+    const videoUrl = String(fields.openingVideo || '').trim();
+    const posterUrl = String(fields.openingPoster || fields.openingBackgroundImage || fields['images.background'] || '').trim();
+    const primaryColor = String(theme.primaryColor || '#7f2a1f').trim();
+    const accentColor = String(theme.accentColor || '#d9b26f').trim();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'farha-interactive-opening';
+    overlay.innerHTML = `
+      ${videoUrl ? `<video class="fio-video" src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} autoplay muted loop playsinline></video>` : ''}
+      <div class="fio-scrim"></div>
+      <div class="fio-card">
+        ${kicker ? `<div class="fio-mark">${kicker}</div>` : ''}
+        ${title ? `<h2 class="fio-title">${title}</h2>` : ''}
+        <p class="fio-text">${hint}</p>
+        ${interactionMode === 'knock'
+          ? `<div class="fio-knocks">${Array.from({ length: requiredKnocks }).map(() => '<span class="fio-knock-dot"></span>').join('')}</div>`
+          : ''}
+        <button type="button" class="fio-action">${interactionMode === 'knock' ? 'دقّ الآن' : buttonLabel}</button>
+      </div>
+    `;
+
+    const style = document.createElement('style');
+    style.id = 'farha-interactive-opening-style';
+    style.textContent = `
+      #farha-interactive-opening {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: ${posterUrl
+          ? `linear-gradient(180deg, rgba(21,12,11,.34), rgba(21,12,11,.76)), url("${posterUrl}") center/cover no-repeat`
+          : 'radial-gradient(circle at top, rgba(195,154,88,.25), rgba(21,12,11,.92))'};
+        color: #fffaf6;
+      }
+      #farha-interactive-opening .fio-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #farha-interactive-opening .fio-scrim {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top, rgba(255,255,255,.16), transparent 26%), linear-gradient(180deg, rgba(21,12,11,.2), rgba(21,12,11,.7));
+      }
+      #farha-interactive-opening .fio-card {
+        position: relative;
+        z-index: 1;
+        padding: 32px 28px;
+        min-width: 280px;
+        text-align: center;
+        border-radius: 24px;
+        background: rgba(255,255,255,.08);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,.18);
+        box-shadow: 0 24px 48px rgba(0,0,0,.25);
+      }
+      #farha-interactive-opening .fio-mark {
+        font: 700 13px "Tajawal", sans-serif;
+        color: rgba(255,255,255,.86);
+      }
+      #farha-interactive-opening .fio-title {
+        margin: 12px 0 0;
+        font: 800 34px "Tajawal", sans-serif;
+      }
+      #farha-interactive-opening .fio-text {
+        margin: 14px 0 0;
+        font: 600 15px "Tajawal", sans-serif;
+      }
+      #farha-interactive-opening .fio-knocks {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      #farha-interactive-opening .fio-knock-dot {
+        width: 13px;
+        height: 13px;
+        border-radius: 999px;
+        border: 1.6px solid rgba(253,247,231,.85);
+        background: transparent;
+        transition: background .2s ease, border-color .2s ease, transform .2s ease;
+      }
+      #farha-interactive-opening .fio-knock-dot.is-hit {
+        background: ${accentColor};
+        border-color: ${accentColor};
+        transform: scale(1.18);
+      }
+      #farha-interactive-opening .fio-action {
+        margin-top: 18px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, ${primaryColor}, ${accentColor});
+        color: #fff;
+        font: inherit;
+        font-weight: 800;
+      }
+      @keyframes farhaInteractiveFadeOut {
+        to {
+          opacity: 0;
+          visibility: hidden;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
+
+    let knocks = 0;
+    const dots = Array.from(overlay.querySelectorAll('.fio-knock-dot'));
+    const dismiss = () => {
+      overlay.remove();
+      if (style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
+    };
+    const finish = () => {
+      overlay.style.animation = 'farhaInteractiveFadeOut 0.9s ease forwards';
+      window.setTimeout(dismiss, 950);
+    };
+    const trigger = () => {
+      if (interactionMode === 'knock') {
+        knocks += 1;
+        if (dots[knocks - 1]) {
+          dots[knocks - 1].classList.add('is-hit');
+        }
+        if (knocks < requiredKnocks) {
+          return;
+        }
+      }
+      finish();
+    };
+
+    overlay.querySelector('.fio-action').addEventListener('click', trigger);
+
+    if (interactionMode === 'knock' || interactionMode === 'tap-anywhere') {
+      overlay.addEventListener('pointerdown', (event) => {
+        if (event.target.closest('.fio-action')) {
+          return;
+        }
+        trigger();
+      });
+      return;
+    }
+
+    setTimeout(finish, Math.max(Number(config.overlayDurationMs || 2200), 900));
   }
 
   function hijackRsvpForms(forceRebind) {
