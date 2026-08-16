@@ -2361,9 +2361,10 @@
     if (!runtimeState.preview) return;
 
     queryAll('.farha-studio-editable, .farha-custom-element__text').forEach((node) => {
-      node.style.userSelect = 'text';
-      node.style.webkitUserSelect = 'text';
+      node.style.userSelect = 'none';
+      node.style.webkitUserSelect = 'none';
       node.style.pointerEvents = 'auto';
+      node.style.cursor = node.classList.contains('farha-custom-element__text') ? 'grab' : 'move';
     });
     syncTemplateTextSelection();
   }
@@ -2426,6 +2427,10 @@
     target.classList.remove('farha-studio-editing');
     target.contentEditable = 'false';
     target.removeAttribute('data-farha-editing');
+    target.style.userSelect = 'none';
+    target.style.webkitUserSelect = 'none';
+    target.style.webkitTouchCallout = 'none';
+    target.style.cursor = target.classList.contains('farha-custom-element__text') ? 'grab' : 'move';
     runtimeState.activeTextEditor = null;
   }
 
@@ -2443,6 +2448,10 @@
     target.spellcheck = false;
     target.setAttribute('data-farha-editing', 'true');
     target.setAttribute('dir', target.getAttribute('dir') || 'auto');
+    target.style.userSelect = 'text';
+    target.style.webkitUserSelect = 'text';
+    target.style.webkitTouchCallout = 'default';
+    target.style.cursor = 'text';
     if ((target.innerText || '') !== initialValue) {
       target.innerText = initialValue;
     }
@@ -4985,10 +4994,11 @@
         el.contentEditable = 'false';
         el.spellcheck = false;
         el.setAttribute('tabindex', '0');
-        el.style.userSelect = 'text';
-        el.style.webkitUserSelect = 'text';
+        el.style.userSelect = 'none';
+        el.style.webkitUserSelect = 'none';
+        el.style.cursor = 'move';
         el.style.touchAction = 'manipulation';
-        el.style.webkitTouchCallout = 'default';
+        el.style.webkitTouchCallout = 'none';
         el.dataset.farhaLocked = isTextPathLocked(fieldKey) ? 'true' : 'false';
 
         if (!el.dataset.farhaInlineBound) {
@@ -6663,9 +6673,9 @@
       wrapper.style.top = `${el.y || 0}px`;
       wrapper.style.display = el.hidden ? 'none' : 'block';
       wrapper.style.pointerEvents = el.hidden ? 'none' : 'auto';
-      wrapper.style.touchAction = el.type === 'text' ? 'manipulation' : 'none';
-      wrapper.style.userSelect = el.type === 'text' ? 'text' : 'none';
-      wrapper.style.webkitUserSelect = el.type === 'text' ? 'text' : 'none';
+      wrapper.style.touchAction = el.type === 'text' ? 'none' : 'none';
+      wrapper.style.userSelect = runtimeState.preview ? 'none' : (el.type === 'text' ? 'text' : 'none');
+      wrapper.style.webkitUserSelect = runtimeState.preview ? 'none' : (el.type === 'text' ? 'text' : 'none');
       wrapper.style.cursor = runtimeState.preview ? (el.locked ? 'not-allowed' : 'default') : 'inherit';
       wrapper.style.maxWidth = 'calc(100% - 12px)';
       wrapper.style.opacity = String(clamp(toPxNumber(el.opacity, 1), 0.05, 1));
@@ -6746,12 +6756,12 @@
         inner.style.padding = '6px 8px';
         inner.style.background = 'rgba(255,255,255,0.14)';
         inner.style.borderRadius = '12px';
-        inner.style.cursor = 'text';
+        inner.style.cursor = runtimeState.preview ? (el.locked ? 'not-allowed' : 'grab') : 'text';
         inner.style.outline = 'none';
-        inner.style.userSelect = 'text';
-        inner.style.webkitUserSelect = 'text';
-        inner.style.touchAction = 'manipulation';
-        inner.style.webkitTouchCallout = 'default';
+        inner.style.userSelect = runtimeState.preview ? 'none' : 'text';
+        inner.style.webkitUserSelect = runtimeState.preview ? 'none' : 'text';
+        inner.style.touchAction = runtimeState.preview ? 'none' : 'manipulation';
+        inner.style.webkitTouchCallout = runtimeState.preview ? 'none' : 'default';
 
         if (runtimeState.preview) {
           inner.contentEditable = 'false';

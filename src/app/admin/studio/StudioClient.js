@@ -1295,6 +1295,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     const contentY = Math.max(0, Math.round(toFiniteNumber(payload?.y, 0)));
     const rawVisualX = toFiniteNumber(payload?.visualX, contentX);
     const rawVisualY = toFiniteNumber(payload?.visualY, contentY);
+    const forceImage = Boolean(payload?.forceImage);
+    const expanded = Boolean(payload?.expanded || forceImage);
 
     if (!shellRect) {
       return {
@@ -1303,12 +1305,13 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         visualX: rawVisualX,
         visualY: rawVisualY,
         token: Date.now(),
-        forceImage: Boolean(payload?.forceImage),
+        forceImage,
+        expanded,
       };
     }
 
-    const menuWidth = hasClipboardElement ? 272 : 188;
-    const menuHeight = 56;
+    const menuWidth = expanded ? (hasClipboardElement ? 272 : 188) : 58;
+    const menuHeight = expanded ? 56 : 58;
     const padding = 18;
     const visualX = clampValue(rawVisualX + 24, padding, Math.max(padding, shellRect.width - padding));
     const visualY = clampValue(rawVisualY - 16, padding, Math.max(padding, shellRect.height - padding));
@@ -1329,7 +1332,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       visualX: positionedX,
       visualY: positionedY,
       token: Date.now(),
-      forceImage: Boolean(payload?.forceImage),
+      forceImage,
+      expanded,
     };
   }
 
@@ -4949,7 +4953,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
               {canvasClickMenu ? (
                 <div
                   ref={canvasMenuRef}
-                  className="studio-canvas-menu"
+                  className={`studio-canvas-menu${canvasClickMenu.expanded ? ' is-expanded' : ' is-collapsed'}`}
                   style={{
                     top: `${canvasClickMenu.visualY ?? canvasClickMenu.y}px`,
                     left: `${canvasClickMenu.visualX ?? canvasClickMenu.x}px`,
@@ -4957,63 +4961,85 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 >
                   <button
                     type="button"
-                    className="mini-btn studio-canvas-menu__action"
+                    className="mini-btn studio-canvas-menu__plus"
                     onClick={() => {
-                      addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
-                      setCanvasClickMenu(null);
+                      setCanvasClickMenu((current) => (
+                        current
+                          ? buildCanvasClickMenuState({
+                            ...current,
+                            expanded: !current.expanded,
+                          })
+                          : current
+                      ));
                     }}
-                    title="إضافة نص"
+                    title={canvasClickMenu.expanded ? 'إغلاق خيارات الإضافة' : 'إضافة عنصر'}
+                    aria-label={canvasClickMenu.expanded ? 'إغلاق خيارات الإضافة' : 'إضافة عنصر'}
                   >
-                    نص
+                    +
                   </button>
-                  <MediaPicker
-                    label="صورة"
-                    value=""
-                    accept="image"
-                    folder="studio-free-elements"
-                    autoOpenToken={canvasClickMenu.forceImage ? canvasClickMenu.token : undefined}
-                    onOpenChange={(open) => {
-                      if (!open && canvasClickMenu.forceImage) {
-                        setCanvasClickMenu(null);
-                      }
-                    }}
-                    onChange={(url) => {
-                      if (url) {
-                        addCustomElement('image', { x: canvasClickMenu.x, y: canvasClickMenu.y }, url);
-                        setCanvasClickMenu(null);
-                      }
-                    }}
-                    trigger={
+                  {canvasClickMenu.expanded ? (
+                    <>
                       <button
                         type="button"
-                        className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
-                        title="إضافة صورة"
+                        className="mini-btn studio-canvas-menu__action"
+                        onClick={() => {
+                          addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
+                          setCanvasClickMenu(null);
+                        }}
+                        title="إضافة نص"
                       >
-                        صورة
+                        نص
                       </button>
-                    }
-                  />
-                  {hasClipboardElement ? (
-                    <button
-                      type="button"
-                      className="mini-btn studio-canvas-menu__action studio-canvas-menu__paste-trigger"
-                      onClick={() => {
-                        pasteElementClipboardAt({ x: canvasClickMenu.x, y: canvasClickMenu.y });
-                        setCanvasClickMenu(null);
-                      }}
-                      title="لصق العنصر المنسوخ"
-                    >
-                      لصق
-                    </button>
+                      <MediaPicker
+                        label="صورة"
+                        value=""
+                        accept="image"
+                        folder="studio-free-elements"
+                        autoOpenToken={canvasClickMenu.forceImage ? canvasClickMenu.token : undefined}
+                        onOpenChange={(open) => {
+                          if (!open && canvasClickMenu.forceImage) {
+                            setCanvasClickMenu(null);
+                          }
+                        }}
+                        onChange={(url) => {
+                          if (url) {
+                            addCustomElement('image', { x: canvasClickMenu.x, y: canvasClickMenu.y }, url);
+                            setCanvasClickMenu(null);
+                          }
+                        }}
+                        trigger={(
+                          <button
+                            type="button"
+                            className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
+                            title="إضافة صورة"
+                          >
+                            صورة
+                          </button>
+                        )}
+                      />
+                      {hasClipboardElement ? (
+                        <button
+                          type="button"
+                          className="mini-btn studio-canvas-menu__action studio-canvas-menu__paste-trigger"
+                          onClick={() => {
+                            pasteElementClipboardAt({ x: canvasClickMenu.x, y: canvasClickMenu.y });
+                            setCanvasClickMenu(null);
+                          }}
+                          title="لصق العنصر المنسوخ"
+                        >
+                          لصق
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="mini-btn studio-canvas-menu__close"
+                        onClick={() => setCanvasClickMenu(null)}
+                        title="إغلاق"
+                      >
+                        ×
+                      </button>
+                    </>
                   ) : null}
-                  <button
-                    type="button"
-                    className="mini-btn studio-canvas-menu__close"
-                    onClick={() => setCanvasClickMenu(null)}
-                    title="إغلاق"
-                  >
-                    ✕
-                  </button>
                 </div>
               ) : null}
               </div>
