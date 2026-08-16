@@ -843,47 +843,30 @@
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        justify-content: flex-start;
-        gap: 8px;
-        padding: 10px;
-        border-radius: 24px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 248, 244, 0.96) 100%);
-        box-shadow: 0 20px 46px rgba(15, 23, 42, 0.18);
-        border: 1px solid rgba(127, 42, 31, 0.14);
+        gap: 6px;
+        padding: 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+        border: 1px solid rgba(127, 42, 31, 0.12);
         pointer-events: auto;
         transform: translateY(calc(-100% - 10px));
-        max-width: min(92vw, 720px);
-        direction: rtl;
-        backdrop-filter: blur(14px);
+        max-width: min(92vw, 560px);
       }
       .farha-native-overlay__toolbar[data-inside="true"] {
         transform: translateY(10px);
       }
-      .farha-native-overlay__meta {
-        display: grid;
-        gap: 4px;
-        min-width: 0;
-        padding: 2px 4px 2px 2px;
-      }
       .farha-native-overlay__label {
         display: inline-flex;
         align-items: center;
-        max-width: 180px;
+        max-width: 160px;
         min-width: 0;
-        padding: 0 12px;
-        height: 34px;
+        padding: 0 10px;
+        height: 36px;
         border-radius: 999px;
         background: rgba(127, 42, 31, 0.08);
         color: #7f2a1f;
-        font: 800 13px/1.1 Tajawal, sans-serif;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .farha-native-overlay__hint {
-        color: #6b7280;
-        font: 700 10px/1.2 Tajawal, sans-serif;
-        padding-inline: 6px;
+        font: 700 13px/1.1 Tajawal, sans-serif;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -892,7 +875,7 @@
         display: none;
         align-items: center;
         gap: 8px;
-        height: 40px;
+        height: 38px;
         padding: 0 10px;
         border-radius: 999px;
         background: rgba(255, 247, 244, 0.96);
@@ -932,23 +915,17 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 40px;
-        height: 40px;
+        width: 38px;
+        height: 38px;
         border: none;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.96);
+        background: rgba(255, 255, 255, 0.98);
         color: #7f2a1f;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
-        font: 800 12px/1 Tajawal, sans-serif;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+        font: 800 13px/1 Tajawal, sans-serif;
         cursor: pointer;
         touch-action: none;
         user-select: none;
-        transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, color 0.16s ease;
-      }
-      .farha-native-overlay__btn:hover,
-      .farha-native-overlay__handle:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
       }
       .farha-native-overlay__btn[data-locked="true"] {
         background: #7f2a1f;
@@ -960,21 +937,20 @@
       }
       .farha-native-overlay__btn--wide {
         width: auto;
-        min-width: 62px;
-        padding: 0 14px;
+        min-width: 56px;
+        padding: 0 12px;
         font-size: 11px;
-        letter-spacing: 0;
+        letter-spacing: .02em;
       }
       .farha-native-overlay__btn--danger {
         color: #b42318;
-        background: #fff1f2;
       }
       .farha-native-overlay__handle {
         position: absolute;
         right: -14px;
         bottom: -14px;
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
         background: #7f2a1f;
         color: #fff;
         font-size: 16px;
@@ -989,21 +965,11 @@
       @media (max-width: 640px) {
         .farha-native-overlay__toolbar {
           max-width: min(94vw, 92vw);
-          border-radius: 22px;
-          gap: 6px;
-          padding: 8px;
-        }
-        .farha-native-overlay__meta {
-          width: 100%;
+          border-radius: 28px;
         }
         .farha-native-overlay__select {
           max-width: 126px;
           min-width: 94px;
-        }
-        .farha-native-overlay__btn--wide {
-          min-width: 54px;
-          padding: 0 12px;
-          font-size: 10px;
         }
       }
       #farha-snap-guides {
@@ -1958,17 +1924,17 @@
       overlay.innerHTML = `
         <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
           <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="تحريك العنصر">تحريك</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="استبدال الصورة">استبدال</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-text" aria-label="إضافة نص هنا">نص</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-image" aria-label="إضافة صورة هنا">صورة</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="حذف العنصر">حذف</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="تحرير النص">تحرير</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="قص الصورة">قص</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="duplicate" aria-label="تكرار العنصر">تكرار</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="copy" aria-label="نسخ العنصر">نسخ</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="paste" aria-label="لصق عنصر">لصق</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="hide" aria-label="إخفاء العنصر">إخفاء</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="Move element">MOVE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="Replace image">REPLACE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-text" aria-label="Add text here">+ TEXT</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-image" aria-label="Add image here">+ IMG</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="Delete element">X</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="Edit text">EDIT</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="Crop image">CROP</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="duplicate" aria-label="Duplicate element">DUP</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="copy" aria-label="Copy element">COPY</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="paste" aria-label="Paste element">PASTE</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="hide" aria-label="Hide element">HIDE</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
         </div>
@@ -2511,95 +2477,6 @@
           label: getStudioFieldLabel(path),
           preserveNativeSelection: true,
         });
-        return;
-      }
-
-      if (event.data.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
-        const nextId = event.data.payload?.id;
-        if (!nextId) {
-          return;
-        }
-
-        const node = findNativeElementById(nextId);
-        if (!node) {
-          return;
-        }
-
-        const currentOverride = runtimeState.nativeElementOverrides?.[nextId] || {};
-        const nextOverride = {
-          ...currentOverride,
-          label: event.data.payload?.label || currentOverride.label || getNativeElementLabel(node),
-          selector: event.data.payload?.selector || currentOverride.selector || getNativeElementSelectorHint(node) || nextId,
-          kind: event.data.payload?.kind || currentOverride.kind || getNativeElementKind(node),
-          ...(event.data.payload?.updates || {}),
-        };
-
-        runtimeState.nativeElementOverrides = {
-          ...(runtimeState.nativeElementOverrides || {}),
-          [nextId]: nextOverride,
-        };
-
-        applyNativeOverrideToNode(node, nextOverride);
-        queueNativeOverlaySync();
-        return;
-      }
-
-      if (event.data.type === 'FARHA_THEME_UPDATE') {
-        const nextTheme = event.data.payload?.theme;
-        if (!nextTheme || typeof nextTheme !== 'object' || Array.isArray(nextTheme)) {
-          return;
-        }
-
-        runtimeState.renderConfig = {
-          ...(runtimeState.renderConfig || {}),
-          theme: {
-            ...((runtimeState.renderConfig && runtimeState.renderConfig.theme) || {}),
-            ...nextTheme,
-          },
-        };
-        ensureSharedFontLibraryStyles();
-        applyTheme(runtimeState.renderConfig.theme || {});
-        return;
-      }
-
-      if (event.data.type === 'FARHA_TEXT_OVERRIDE') {
-        const path = event.data.payload?.path;
-        if (!path) {
-          return;
-        }
-
-        const nextText = String(event.data.payload?.text ?? '');
-        const currentOverrides = Array.isArray(runtimeState.renderConfig?.textOverrides)
-          ? runtimeState.renderConfig.textOverrides
-          : [];
-        const otherOverrides = currentOverrides.filter((item) => item?.path !== path);
-        const nextOverrides = [
-          ...otherOverrides,
-          {
-            id: path,
-            path,
-            text: nextText,
-          },
-        ];
-
-        runtimeState.renderConfig = {
-          ...(runtimeState.renderConfig || {}),
-          textOverrides: nextOverrides,
-        };
-        applyTextOverrides(nextOverrides);
-        return;
-      }
-
-      if (event.data.type === 'FARHA_CUSTOM_ELEMENTS_SYNC') {
-        const nextElements = Array.isArray(event.data.payload?.elements)
-          ? event.data.payload.elements
-          : [];
-
-        runtimeState.renderConfig = {
-          ...(runtimeState.renderConfig || {}),
-          customElements: nextElements,
-        };
-        applyCustomElements(nextElements);
         return;
       }
 
@@ -4961,14 +4838,10 @@
 
         if (!el.dataset.farhaInlineBound) {
           el.addEventListener('mousedown', (event) => {
-            if (el.getAttribute('data-farha-editing') === 'true') {
-              event.stopPropagation();
-            }
+            event.stopPropagation();
           });
           el.addEventListener('touchstart', (event) => {
-            if (el.getAttribute('data-farha-editing') === 'true') {
-              event.stopPropagation();
-            }
+            event.stopPropagation();
           }, { passive: true });
           const openTemplateTextEditor = (triggerEvent = null) => {
             selectTemplateText(fieldKey, {
@@ -5558,30 +5431,6 @@
       wrapper.style.zIndex = '99999';
       selectElement(activeTransform.id);
     };
-    const startPendingCustomTransform = (kind, wrapper, point) => {
-      const contentNode = wrapper.querySelector('.farha-custom-element__content');
-      const imageNode = wrapper.querySelector('.farha-custom-element__image');
-      activeTransform = {
-        pending: true,
-        kind,
-        wrapper,
-        id: wrapper.dataset.id,
-        snapTarget: getEditorOverlayTarget(),
-        snapPeers: collectSnapPeerRects({ excludeNode: wrapper }),
-        startX: point.x,
-        startY: point.y,
-        startLeft: toPxNumber(wrapper.style.left, 0),
-        startTop: toPxNumber(wrapper.style.top, 0),
-        startWidth: toPxNumber(wrapper.style.width, wrapper.offsetWidth || 150),
-        startHeight: toPxNumber(wrapper.style.height, wrapper.offsetHeight || 150),
-        startFontSize: toPxNumber(contentNode?.style.fontSize || wrapper.dataset.fontSize, 24),
-        startCropX: toPxNumber(wrapper.dataset.cropX, 50),
-        startCropY: toPxNumber(wrapper.dataset.cropY, 50),
-        imageNode,
-        contentNode,
-      };
-      selectElement(activeTransform.id);
-    };
 
     const startNativeTransform = (node, point) => {
       const id = buildNativeElementId(node);
@@ -5610,28 +5459,6 @@
         kind: activeTransform.nativeKind,
         silent: true,
       });
-    };
-    const startPendingNativeTextMove = (node, point) => {
-      const id = buildNativeElementId(node);
-      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
-      ensureNativeElementBaseState(node);
-      activeTransform = {
-        scope: 'native',
-        kind: 'move',
-        pending: true,
-        node,
-        id,
-        snapTarget: getEditorOverlayTarget(),
-        snapPeers: collectSnapPeerRects({ excludeNode: node }),
-        label: currentOverride.label || getNativeElementLabel(node),
-        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
-        nativeKind: currentOverride.kind || getNativeElementKind(node),
-        startX: point.x,
-        startY: point.y,
-        startOffsetX: toPxNumber(currentOverride.x, 0),
-        startOffsetY: toPxNumber(currentOverride.y, 0),
-        startRect: node.getBoundingClientRect(),
-      };
     };
 
     const startNativeCropTransform = (node, point) => {
@@ -5970,7 +5797,9 @@
             selector: nativeOverride.selector || getNativeElementSelectorHint(nativeTarget) || nativeId,
             kind: nativeOverride.kind || getNativeElementKind(nativeTarget),
           };
+
           selectElement(null);
+          selectTemplateText(null);
 
           if (touchCount >= 2) {
             if (nativeOverride.locked) {
@@ -5982,23 +5811,6 @@
             event.preventDefault();
             event.stopPropagation();
             startNativeGestureTransform(nativeTarget, event.touches);
-            return;
-          }
-
-          if (target.closest('.farha-studio-editable')) {
-            event.preventDefault();
-            event.stopPropagation();
-            if (nativeOverride.locked) {
-              selectNativeElement(nativeTarget, nativeMeta);
-              return;
-            }
-            selectNativeElement(nativeTarget, nativeMeta);
-            selectTemplateText(nativeTarget.dataset.farhaStudioField || getNativeTextPathForNode(nativeTarget), {
-              text: nativeTarget.innerText || nativeTarget.textContent || '',
-              label: getStudioFieldLabel(nativeTarget.dataset.farhaStudioField || getNativeTextPathForNode(nativeTarget)),
-              preserveNativeSelection: true,
-            });
-            startPendingNativeTextMove(nativeTarget, point);
             return;
           }
 
@@ -6042,17 +5854,19 @@
 
       const wrapperId = wrapper.dataset.id;
       const isWrapperSelected = String(runtimeState.selectedCustomElementId || '') === String(wrapperId);
-      const action = actionNode?.dataset?.farhaAction || '';
       selectElement(wrapperId);
-      if (
-        wrapper.dataset.locked === 'true'
-        && !['delete', 'lock', 'copy', 'duplicate', 'paste', 'hide'].includes(action)
-      ) {
+      if (!actionNode && !isWrapperSelected) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (wrapper.dataset.locked === 'true' && actionNode?.dataset?.farhaAction !== 'delete') {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
 
+      const action = actionNode?.dataset?.farhaAction;
       if (action === 'delete') {
         event.preventDefault();
         event.stopPropagation();
@@ -6132,24 +5946,6 @@
         return;
       }
 
-      if (action === 'edit' && wrapper.dataset.type === 'text') {
-        const customTextNode = wrapper.querySelector('.farha-custom-element__text');
-        if (customTextNode) {
-          event.preventDefault();
-          event.stopPropagation();
-          openFloatingTextEditor({
-            target: customTextNode,
-            initialValue: customTextNode.innerText || '',
-            triggerEvent: event,
-            onCommit: (nextValue) => {
-              customTextNode.style.boxShadow = 'none';
-              persistUpdate(wrapper.dataset.id, { content: nextValue });
-            },
-          });
-        }
-        return;
-      }
-
       if (action === 'replace' && wrapper.dataset.type === 'image') {
         event.preventDefault();
         event.stopPropagation();
@@ -6199,14 +5995,6 @@
             ? 'crop'
             : 'move';
 
-      if (!actionNode && !isWrapperSelected) {
-        event.preventDefault();
-        event.stopPropagation();
-        hideSnapGuides();
-        startPendingCustomTransform(actionKind, wrapper, point);
-        return;
-      }
-
       if (!action) {
         event.preventDefault();
         event.stopPropagation();
@@ -6225,22 +6013,6 @@
       if (!activeTransform) return;
       const point = getPoint(event);
       if (!point) return;
-
-      if (activeTransform.pending) {
-        const travelX = point.x - activeTransform.startX;
-        const travelY = point.y - activeTransform.startY;
-        if (Math.hypot(travelX, travelY) < 6) {
-          return;
-        }
-        activeTransform.pending = false;
-        if (activeTransform.scope === 'native') {
-          activeTransform.node.style.cursor = 'grabbing';
-        } else if (activeTransform.wrapper) {
-          activeTransform.wrapper.style.opacity = '0.92';
-          activeTransform.wrapper.style.zIndex = '99999';
-        }
-      }
-
       event.preventDefault();
 
       if (activeTransform.scope === 'native') {
@@ -6423,11 +6195,6 @@
     const handleEnd = () => {
       if (!activeTransform) return;
       hideSnapGuides();
-
-      if (activeTransform.pending) {
-        activeTransform = null;
-        return;
-      }
 
       if (activeTransform.scope === 'native') {
         const { id, node } = activeTransform;
@@ -6638,7 +6405,6 @@
         controlsRoot.className = 'farha-custom-element__controls';
         wrapper.appendChild(controlsRoot);
       }
-      controlsRoot.classList.add('farha-native-overlay__toolbar');
 
       let resizeHandle = wrapper.querySelector('.farha-custom-element__resize');
       if (!resizeHandle) {
@@ -6646,10 +6412,9 @@
         resizeHandle.type = 'button';
         resizeHandle.className = 'farha-custom-element__resize';
         resizeHandle.dataset.farhaAction = 'resize';
-        resizeHandle.textContent = '+';
+        resizeHandle.textContent = '◢';
         wrapper.appendChild(resizeHandle);
       }
-      resizeHandle.classList.add('farha-native-overlay__handle');
 
       if (el.type === 'text') {
         let inner = contentRoot.querySelector('.farha-custom-element__text');
@@ -6682,16 +6447,8 @@
           inner.contentEditable = 'false';
           inner.setAttribute('tabindex', '0');
           if (!inner.dataset.farhaInlineBound) {
-            inner.addEventListener('mousedown', (e) => {
-              if (inner.getAttribute('data-farha-editing') === 'true') {
-                e.stopPropagation();
-              }
-            });
-            inner.addEventListener('touchstart', (e) => {
-              if (inner.getAttribute('data-farha-editing') === 'true') {
-                e.stopPropagation();
-              }
-            }, { passive: true });
+            inner.addEventListener('mousedown', (e) => e.stopPropagation());
+            inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
             const openCustomTextEditor = (triggerEvent = null) => {
               if (el.locked) {
                 return;
@@ -6767,154 +6524,122 @@
 
       if (runtimeState.preview) {
         const isSelected = String(runtimeState.selectedCustomElementId || '') === String(el.id);
-        const wrapperRect = wrapper.getBoundingClientRect();
         controlsRoot.innerHTML = '';
         controlsRoot.style.position = 'absolute';
-        controlsRoot.style.top = '0';
-        controlsRoot.style.right = '0';
+        controlsRoot.style.top = '-16px';
+        controlsRoot.style.right = '-16px';
         controlsRoot.style.left = 'auto';
         controlsRoot.style.display = isSelected ? 'flex' : 'none';
-        controlsRoot.style.gap = '';
-        controlsRoot.style.flexWrap = '';
-        controlsRoot.style.maxWidth = 'min(92vw, 640px)';
+        controlsRoot.style.gap = '6px';
+        controlsRoot.style.flexWrap = 'wrap';
+        controlsRoot.style.maxWidth = '240px';
         controlsRoot.style.pointerEvents = 'auto';
-        controlsRoot.style.zIndex = '3';
-        controlsRoot.style.opacity = el.locked ? '0.8' : '1';
-        controlsRoot.style.direction = 'rtl';
-        controlsRoot.dataset.inside = wrapperRect.top < 88 ? 'true' : 'false';
+        controlsRoot.style.zIndex = '2';
+        controlsRoot.style.opacity = el.locked ? '0.72' : '1';
 
-        if (!controlsRoot.dataset.farhaControlBound) {
-          const handleCustomControlChange = (event) => {
-            const control = event.target?.closest?.('[data-farha-custom-control]');
-            if (!control) {
-              return;
-            }
-
-            const owner = controlsRoot.closest('.farha-custom-element');
-            if (!owner || owner.dataset.type !== 'text') {
-              return;
-            }
-
-            const textNode = owner.querySelector('.farha-custom-element__text');
-            if (!textNode) {
-              return;
-            }
-
-            event.stopPropagation();
-
-            const controlName = control.dataset.farhaCustomControl;
-            if (controlName === 'color') {
-              const nextColor = String(control.value || '').trim() || '#111827';
-              textNode.style.color = nextColor;
-              persistUpdate(owner.dataset.id, { color: nextColor });
-              return;
-            }
-
-            if (controlName === 'fontFamily') {
-              const nextFontFamily = String(control.value || '').trim();
-              textNode.style.fontFamily = nextFontFamily;
-              persistUpdate(owner.dataset.id, { fontFamily: nextFontFamily });
-            }
-          };
-
-          controlsRoot.addEventListener('input', handleCustomControlChange, true);
-          controlsRoot.addEventListener('change', handleCustomControlChange, true);
-          controlsRoot.dataset.farhaControlBound = 'true';
-        }
-
-        const makeActionButton = ({ label, action, wide = true, danger = false, active = false, ariaLabel = '' }) => {
+        const makeActionButton = (label, action) => {
           const button = document.createElement('button');
           button.type = 'button';
           button.dataset.farhaAction = action;
-          button.className = `farha-native-overlay__btn${wide ? ' farha-native-overlay__btn--wide' : ''}${danger ? ' farha-native-overlay__btn--danger' : ''}`;
           button.textContent = label;
-          button.setAttribute('aria-label', ariaLabel || label);
-          button.dataset.active = active ? 'true' : 'false';
-          return button;
-        };
+          button.style.width = '32px';
+          button.style.height = '32px';
+          button.style.border = 'none';
+          button.style.borderRadius = '999px';
+          button.style.background = 'rgba(255,255,255,0.96)';
+          button.style.boxShadow = '0 8px 24px rgba(15, 23, 42, 0.18)';
+          button.style.color = '#7f2a1f';
+          button.style.fontSize = '16px';
+          button.style.cursor = 'pointer';
+            return button;
+          };
 
-        const meta = document.createElement('div');
-        meta.className = 'farha-native-overlay__meta';
-
-        const label = document.createElement('span');
-        label.className = 'farha-native-overlay__label';
-        label.textContent = wrapper.dataset.name || (el.type === 'text' ? 'نص حر' : 'صورة حرة');
-        label.title = wrapper.dataset.name || '';
-        meta.appendChild(label);
-
-        const hint = document.createElement('span');
-        hint.className = 'farha-native-overlay__hint';
-        hint.textContent = el.type === 'text' ? 'عنصر حر قابل للتحرير المباشر' : 'عنصر حر قابل للاستبدال والتحريك';
-        meta.appendChild(hint);
-        controlsRoot.appendChild(meta);
-
-        const appendTextField = (fieldLabel, controlName, node) => {
-          const field = document.createElement('label');
-          field.className = 'farha-native-overlay__field';
-          field.dataset.visible = 'true';
-
-          const fieldLabelNode = document.createElement('span');
-          fieldLabelNode.className = 'farha-native-overlay__field-label';
-          fieldLabelNode.textContent = fieldLabel;
-          field.appendChild(fieldLabelNode);
-          field.appendChild(node);
-          controlsRoot.appendChild(field);
-        };
+          const createDeleteBtn = () => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.dataset.farhaAction = 'delete';
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            btn.style.position = 'absolute';
+            btn.style.top = '-12px';
+            btn.style.right = '-12px';
+            btn.style.width = '24px';
+            btn.style.height = '24px';
+            btn.style.borderRadius = '50%';
+            btn.style.background = '#ff3366';
+            btn.style.color = '#fff';
+            btn.style.border = '2px solid #fff';
+            btn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+            btn.style.display = 'flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.style.cursor = 'pointer';
+            btn.style.zIndex = '3';
+            return btn;
+          };
 
         controlsRoot.style.alignItems = 'center';
-        controlsRoot.style.justifyContent = 'flex-start';
-        controlsRoot.appendChild(makeActionButton({ label: 'تحريك', action: 'move', ariaLabel: 'تحريك العنصر الحر' }));
-
-        if (el.type === 'text') {
-          controlsRoot.appendChild(makeActionButton({ label: 'تحرير', action: 'edit', ariaLabel: 'تحرير النص' }));
-
-          const colorInput = document.createElement('input');
-          colorInput.type = 'color';
-          colorInput.className = 'farha-native-overlay__color';
-          colorInput.dataset.farhaCustomControl = 'color';
-          colorInput.setAttribute('aria-label', 'لون النص');
-          colorInput.value = cssColorToHex(el.color || '#111827');
-          appendTextField('لون', 'color', colorInput);
-
-          const fontSelect = document.createElement('select');
-          fontSelect.className = 'farha-native-overlay__select';
-          fontSelect.dataset.farhaCustomControl = 'fontFamily';
-          fontSelect.setAttribute('aria-label', 'نوع الخط');
-          populateNativeOverlayFontSelect(fontSelect, el.fontFamily || '');
-          appendTextField('خط', 'fontFamily', fontSelect);
-        }
-
+        controlsRoot.style.justifyContent = 'flex-end';
+        const moveButton = makeActionButton('MOVE', 'move');
+        moveButton.style.width = '56px';
+        moveButton.style.fontSize = '11px';
+        moveButton.style.fontWeight = '800';
+        controlsRoot.appendChild(moveButton);
         if (el.type === 'image') {
-          controlsRoot.appendChild(makeActionButton({ label: 'استبدال', action: 'replace', ariaLabel: 'استبدال الصورة' }));
-          controlsRoot.appendChild(makeActionButton({
-            label: 'قص',
-            action: 'crop-toggle',
-            active: wrapper.dataset.cropMode === 'true',
-            ariaLabel: 'قص الصورة',
-          }));
+          const replaceButton = makeActionButton('REPLACE', 'replace');
+          replaceButton.style.width = '74px';
+          replaceButton.style.fontSize = '10px';
+          replaceButton.style.fontWeight = '800';
+          controlsRoot.appendChild(replaceButton);
         }
-
-        controlsRoot.appendChild(makeActionButton({ label: 'تكرار', action: 'duplicate', ariaLabel: 'تكرار العنصر' }));
-        controlsRoot.appendChild(makeActionButton({ label: 'نسخ', action: 'copy', ariaLabel: 'نسخ العنصر' }));
-        controlsRoot.appendChild(makeActionButton({ label: 'لصق', action: 'paste', ariaLabel: 'لصق عنصر' }));
-        controlsRoot.appendChild(makeActionButton({ label: 'إخفاء', action: 'hide', ariaLabel: 'إخفاء العنصر' }));
-        controlsRoot.appendChild(makeActionButton({
-          label: el.locked ? 'فتح' : 'قفل',
-          action: 'lock',
-          active: el.locked,
-          ariaLabel: el.locked ? 'فتح قفل العنصر' : 'قفل العنصر',
-        }));
-        controlsRoot.appendChild(makeActionButton({
-          label: 'حذف',
-          action: 'delete',
-          danger: true,
-          ariaLabel: 'حذف العنصر',
-        }));
+        const deleteButton = makeActionButton('X', 'delete');
+        deleteButton.style.color = '#b42318';
+        deleteButton.style.fontSize = '18px';
+        deleteButton.style.fontWeight = '700';
+        controlsRoot.appendChild(deleteButton);
+        const duplicateButton = makeActionButton('DUP', 'duplicate');
+        duplicateButton.style.width = '52px';
+        duplicateButton.style.fontSize = '10px';
+        duplicateButton.style.fontWeight = '800';
+        controlsRoot.appendChild(duplicateButton);
+        const copyButton = makeActionButton('COPY', 'copy');
+        copyButton.style.width = '58px';
+        copyButton.style.fontSize = '10px';
+        copyButton.style.fontWeight = '800';
+        controlsRoot.appendChild(copyButton);
+        const pasteButton = makeActionButton('PASTE', 'paste');
+        pasteButton.style.width = '60px';
+        pasteButton.style.fontSize = '10px';
+        pasteButton.style.fontWeight = '800';
+        controlsRoot.appendChild(pasteButton);
+        const hideButton = makeActionButton('HIDE', 'hide');
+        hideButton.style.width = '56px';
+        hideButton.style.fontSize = '10px';
+        hideButton.style.fontWeight = '800';
+        controlsRoot.appendChild(hideButton);
+        const lockButton = makeActionButton(el.locked ? 'UNLOCK' : 'LOCK', 'lock');
+        lockButton.style.width = '62px';
+        lockButton.style.fontSize = '10px';
+        lockButton.style.fontWeight = '800';
+        lockButton.dataset.active = el.locked ? 'true' : 'false';
+        controlsRoot.appendChild(lockButton);
+        if (el.type === 'image') {
+          const cropButton = makeActionButton('CROP', 'crop-toggle');
+          cropButton.style.width = '64px';
+          cropButton.style.fontSize = '10px';
+          cropButton.style.fontWeight = '800';
+          controlsRoot.appendChild(cropButton);
+        }
 
         resizeHandle.style.position = 'absolute';
         resizeHandle.style.bottom = '-16px';
         resizeHandle.style.right = '-16px';
-        resizeHandle.style.left = 'auto';
+        resizeHandle.style.width = '34px';
+        resizeHandle.style.height = '34px';
+        resizeHandle.style.border = 'none';
+        resizeHandle.style.borderRadius = '999px';
+        resizeHandle.style.background = '#7f2a1f';
+        resizeHandle.style.color = '#fff';
+        resizeHandle.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.22)';
         resizeHandle.style.cursor = 'nwse-resize';
         resizeHandle.style.display = isSelected && !el.locked ? 'block' : 'none';
       } else {

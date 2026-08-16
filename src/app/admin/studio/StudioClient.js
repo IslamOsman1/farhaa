@@ -1668,15 +1668,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         [path]: value,
       },
     }));
-    sendPreviewBridgeMessage({
-      type: 'FARHA_TEXT_OVERRIDE',
-      payload: {
-        path,
-        text: value,
-        label: getTextFieldLabel(path),
-        preserveNativeSelection: true,
-      },
-    });
   }
 
   function resetTemplate() {
@@ -1939,23 +1930,10 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   }
 
   function updateCustomElements(updater) {
-    let nextCustomElements = null;
-    setDraft((current) => {
-      nextCustomElements = normalizeCustomElements(updater(current.customElements || []));
-      return {
-        ...current,
-        customElements: nextCustomElements,
-      };
-    });
-
-    if (nextCustomElements) {
-      sendPreviewBridgeMessage({
-        type: 'FARHA_CUSTOM_ELEMENTS_SYNC',
-        payload: {
-          elements: nextCustomElements,
-        },
-      });
-    }
+    setDraft((current) => ({
+      ...current,
+      customElements: normalizeCustomElements(updater(current.customElements || [])),
+    }));
   }
 
   function patchCustomElement(id, updates, options = {}) {
@@ -1973,7 +1951,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       return;
     }
 
-    let bridgePayload = null;
     setDraft((current) => {
       const currentOverrides = normalizeNativeElementOverrides(current.nativeElementOverrides);
       const fallbackMeta = id === selectedNativeElementId
@@ -1992,33 +1969,17 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         return current;
       }
 
-      const nextOverride = buildDefaultNativeElementOverride({
-        ...currentValue,
-        ...nextUpdates,
-      });
-      bridgePayload = {
-        id,
-        label: nextOverride.label || fallbackMeta.label || id,
-        selector: nextOverride.selector || fallbackMeta.selector || '',
-        kind: nextOverride.kind || fallbackMeta.kind || 'native',
-        updates: nextUpdates,
-      };
-
       return {
         ...current,
         nativeElementOverrides: {
           ...currentOverrides,
-          [id]: nextOverride,
+          [id]: buildDefaultNativeElementOverride({
+            ...currentValue,
+            ...nextUpdates,
+          }),
         },
       };
     });
-
-    if (bridgePayload) {
-      sendPreviewBridgeMessage({
-        type: 'FARHA_NATIVE_ELEMENT_UPDATE',
-        payload: bridgePayload,
-      });
-    }
   }
 
   function setNativeElementNumber(id, key, value, fallback = 0) {
@@ -3021,26 +2982,13 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   }
 
   function setThemeValue(key, value) {
-    let nextThemeConfig = null;
-    setDraft((current) => {
-      nextThemeConfig = {
+    setDraft((current) => ({
+      ...current,
+      themeConfig: {
         ...current.themeConfig,
         [key]: value,
-      };
-      return {
-        ...current,
-        themeConfig: nextThemeConfig,
-      };
-    });
-
-    if (nextThemeConfig) {
-      sendPreviewBridgeMessage({
-        type: 'FARHA_THEME_UPDATE',
-        payload: {
-          theme: nextThemeConfig,
-        },
-      });
-    }
+      },
+    }));
   }
 
   function setUiValue(key, value) {
@@ -4964,10 +4912,10 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     }}
                     title="إضافة نص"
                   >
-                    نص
+                    TEXT
                   </button>
                   <MediaPicker
-                    label="صورة"
+                    label="IMAGE"
                     value=""
                     accept="image"
                     folder="studio-free-elements"
@@ -4989,7 +4937,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
                         title="إضافة صورة"
                       >
-                        صورة
+                        IMAGE
                       </button>
                     }
                   />
@@ -5003,7 +4951,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       }}
                       title="لصق العنصر المنسوخ"
                     >
-                      لصق
+                      PASTE
                     </button>
                   ) : null}
                   <button
@@ -5021,24 +4969,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           </div>
         </div>
 
-        <div className="studio-canvas__tips" aria-label="تلميحات المحاكي">
-          <div className="studio-canvas__tip">
-            <strong>حدد ثم اسحب</strong>
-            <span>اضغط على النص أو العنصر مرة واحدة، ثم اسحبه مباشرة داخل القالب.</span>
-          </div>
-          <div className="studio-canvas__tip">
-            <strong>اضغط مرتين للكتابة</strong>
-            <span>الضغط المزدوج يفتح تحرير النص من نفس مكانه داخل المعاينة.</span>
-          </div>
-          <div className="studio-canvas__tip">
-            <strong>اضغط في مكان فارغ</strong>
-            <span>سيظهر لك مربع سريع لإضافة نص أو صورة أو لصق عنصر منسوخ.</span>
-          </div>
-          <div className="studio-canvas__tip">
-            <strong>كل شيء مباشر</strong>
-            <span>النص واللون والخط والتحريك يظهرون داخل المحاكي في نفس اللحظة.</span>
-          </div>
-        </div>
         <button type="button" className="studio-mobile-editor-toggle" onClick={() => setEditorOpen(true)}>
           فتح التعديلات
         </button>
