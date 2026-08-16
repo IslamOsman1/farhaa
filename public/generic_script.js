@@ -4868,10 +4868,14 @@
 
         if (!el.dataset.farhaInlineBound) {
           el.addEventListener('mousedown', (event) => {
-            event.stopPropagation();
+            if (el.getAttribute('data-farha-editing') === 'true') {
+              event.stopPropagation();
+            }
           });
           el.addEventListener('touchstart', (event) => {
-            event.stopPropagation();
+            if (el.getAttribute('data-farha-editing') === 'true') {
+              event.stopPropagation();
+            }
           }, { passive: true });
           const openTemplateTextEditor = (triggerEvent = null) => {
             selectTemplateText(fieldKey, {
@@ -6477,8 +6481,16 @@
           inner.contentEditable = 'false';
           inner.setAttribute('tabindex', '0');
           if (!inner.dataset.farhaInlineBound) {
-            inner.addEventListener('mousedown', (e) => e.stopPropagation());
-            inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+            inner.addEventListener('mousedown', (e) => {
+              if (inner.getAttribute('data-farha-editing') === 'true') {
+                e.stopPropagation();
+              }
+            });
+            inner.addEventListener('touchstart', (e) => {
+              if (inner.getAttribute('data-farha-editing') === 'true') {
+                e.stopPropagation();
+              }
+            }, { passive: true });
             const openCustomTextEditor = (triggerEvent = null) => {
               if (el.locked) {
                 return;
