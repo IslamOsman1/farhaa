@@ -206,6 +206,7 @@
     fontLibraryPromise: null,
     previewMutationSyncRaf: 0,
     previewMutationObserver: null,
+    activePreviewTransform: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -6318,6 +6319,11 @@
         imageNode,
         contentNode,
       };
+      runtimeState.activePreviewTransform = {
+        scope: 'custom',
+        kind,
+        id: wrapper.dataset.id,
+      };
       wrapper.style.opacity = '0.92';
       wrapper.style.zIndex = '99999';
       selectElement(activeTransform.id);
@@ -6348,6 +6354,11 @@
         startOffsetX: toPxNumber(currentOverride.x, 0),
         startOffsetY: toPxNumber(currentOverride.y, 0),
         startRect: node.getBoundingClientRect(),
+      };
+      runtimeState.activePreviewTransform = {
+        scope: 'native',
+        kind: 'move',
+        id,
       };
       node.style.cursor = 'grabbing';
       selectNativeElement(node, {
@@ -6404,6 +6415,11 @@
         startCropY: toPxNumber(currentOverride.cropY, 50),
         startRect: node.getBoundingClientRect(),
       };
+      runtimeState.activePreviewTransform = {
+        scope: 'native',
+        kind: 'crop',
+        id,
+      };
       node.style.cursor = 'move';
       selectNativeElement(node, {
         label: activeTransform.label,
@@ -6435,6 +6451,11 @@
         startDistance,
         startScale: Number.isFinite(Number(currentOverride.scale)) ? Number(currentOverride.scale) : 1,
       };
+      runtimeState.activePreviewTransform = {
+        scope: 'native',
+        kind: 'scale',
+        id,
+      };
       node.style.cursor = 'nwse-resize';
       selectNativeElement(node, {
         label: activeTransform.label,
@@ -6465,6 +6486,11 @@
         centerY,
         startAngle,
         startRotation: Number.isFinite(Number(currentOverride.rotation)) ? Number(currentOverride.rotation) : 0,
+      };
+      runtimeState.activePreviewTransform = {
+        scope: 'native',
+        kind: 'rotate',
+        id,
       };
       node.style.cursor = 'grabbing';
       selectNativeElement(node, {
@@ -7223,6 +7249,7 @@
       hideSnapGuides();
 
       if (activeTransform.pending) {
+        runtimeState.activePreviewTransform = null;
         activeTransform = null;
         return;
       }
@@ -7243,6 +7270,7 @@
           hidden: Boolean(currentOverride.hidden),
           locked: Boolean(currentOverride.locked),
         });
+        runtimeState.activePreviewTransform = null;
         activeTransform = null;
         return;
       }
@@ -7274,6 +7302,7 @@
         });
       }
 
+      runtimeState.activePreviewTransform = null;
       activeTransform = null;
     };
 
@@ -7416,6 +7445,12 @@
 
     sortedElements.forEach((el, index) => {
       let wrapper = container.querySelector(`[data-id="${el.id}"]`);
+      const activePreviewTransform = runtimeState.activePreviewTransform;
+      const preserveLivePosition =
+        activePreviewTransform
+        && activePreviewTransform.scope === 'custom'
+        && String(activePreviewTransform.id) === String(el.id)
+        && ['move', 'resize', 'crop'].includes(String(activePreviewTransform.kind || ''));
       if (!wrapper) {
         wrapper = document.createElement('div');
         wrapper.className = 'farha-custom-element';
@@ -7432,8 +7467,10 @@
       wrapper.dataset.cropMode = wrapper.dataset.cropMode || 'false';
       wrapper.dataset.locked = el.locked ? 'true' : 'false';
       wrapper.dataset.hidden = el.hidden ? 'true' : 'false';
-      wrapper.style.left = `${el.x || 0}px`;
-      wrapper.style.top = `${el.y || 0}px`;
+      if (!preserveLivePosition) {
+        wrapper.style.left = `${el.x || 0}px`;
+        wrapper.style.top = `${el.y || 0}px`;
+      }
       wrapper.style.display = el.hidden ? 'none' : 'block';
       wrapper.style.pointerEvents = el.hidden ? 'none' : 'auto';
       wrapper.style.touchAction = el.type === 'text' ? 'none' : 'none';
@@ -7447,8 +7484,10 @@
       if (el.type === 'image') {
         const nextWidth = el.width || '150px';
         const nextHeight = el.height && el.height !== 'auto' ? el.height : nextWidth;
-        wrapper.style.width = nextWidth;
-        wrapper.style.height = nextHeight;
+        if (!preserveLivePosition || activePreviewTransform.kind !== 'resize') {
+          wrapper.style.width = nextWidth;
+          wrapper.style.height = nextHeight;
+        }
         wrapper.style.borderRadius = '18px';
         wrapper.style.overflow = 'hidden';
         wrapper.style.background = 'rgba(255,255,255,0.14)';
