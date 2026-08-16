@@ -2744,6 +2744,7 @@
     applyFamilyPresentation(localizedFields);
     applyMediaVisibility(localizedFields);
     applyStaticLocaleTranslations(localizedFields, locale);
+    mountDynamicSections(localizedFields, runtimeState.renderConfig?.sections || {});
   }
 
   function applyStaticLocaleTranslations(fields, locale) {
@@ -3228,6 +3229,264 @@
       item.textContent = note;
       host.appendChild(item);
     });
+  }
+
+  function ensureDynamicSectionStyle() {
+    if (document.getElementById('farha-dynamic-sections-style')) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = 'farha-dynamic-sections-style';
+    style.textContent = `
+      .farha-dynamic-section {
+        max-width: min(92vw, 760px);
+        margin: 28px auto;
+        padding: 26px 20px;
+        border-radius: 28px;
+        background: rgba(255, 250, 246, 0.96);
+        border: 1px solid rgba(127, 42, 31, 0.12);
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+        direction: rtl;
+        text-align: right;
+        font-family: var(--font-body, "Tajawal", system-ui, sans-serif);
+      }
+      .farha-dynamic-section h2 {
+        margin: 0 0 10px;
+        font-size: clamp(22px, 3vw, 30px);
+        color: var(--farha-primary, #7f2a1f);
+        font-family: var(--font-display, "Aref Ruqaa", serif);
+      }
+      .farha-dynamic-section p {
+        margin: 0;
+        color: rgba(31, 41, 55, 0.82);
+        line-height: 1.9;
+      }
+      .farha-dynamic-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .farha-dynamic-box {
+        padding: 16px 10px;
+        border-radius: 20px;
+        background: rgba(127, 42, 31, 0.05);
+        border: 1px solid rgba(127, 42, 31, 0.1);
+        text-align: center;
+      }
+      .farha-dynamic-box strong {
+        display: block;
+        font-size: clamp(22px, 4vw, 32px);
+        color: var(--farha-primary, #7f2a1f);
+        font-family: var(--font-display, "Aref Ruqaa", serif);
+      }
+      .farha-dynamic-box span {
+        display: block;
+        margin-top: 6px;
+        color: rgba(31, 41, 55, 0.7);
+        font-size: 13px;
+      }
+      .farha-dynamic-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .farha-dynamic-note {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(127, 42, 31, 0.05);
+        border: 1px solid rgba(127, 42, 31, 0.1);
+        color: #1f2937;
+      }
+      .farha-dynamic-form {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .farha-dynamic-form input,
+      .farha-dynamic-form textarea,
+      .farha-dynamic-form select {
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(127, 42, 31, 0.14);
+        background: #fff;
+        color: #1f2937;
+        padding: 12px 14px;
+        font: 500 14px var(--font-body, "Tajawal", system-ui, sans-serif);
+        box-sizing: border-box;
+      }
+      .farha-dynamic-form button {
+        border: none;
+        border-radius: 999px;
+        padding: 13px 18px;
+        background: linear-gradient(135deg, var(--farha-primary, #7f2a1f), var(--farha-accent, #c39a58));
+        color: #fff;
+        font: 800 15px var(--font-body, "Tajawal", system-ui, sans-serif);
+        cursor: pointer;
+      }
+      .farha-dynamic-feedback {
+        min-height: 20px;
+        font-size: 13px;
+        color: #7f2a1f;
+      }
+      @media (max-width: 640px) {
+        .farha-dynamic-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function getDynamicSectionAnchor() {
+    return (
+      document.querySelector('#da3wa-rsvp, #rsvp-section, #program-section, #timeline, .program, #allrecords')
+      || document.body
+    );
+  }
+
+  function mountDynamicSectionPortal(id, title, bodyHtml, { afterSelector = '', appendToAnchor = false, hidden = false } = {}) {
+    ensureDynamicSectionStyle();
+
+    const existing = document.getElementById(id);
+    const section = existing || document.createElement('section');
+    section.id = id;
+    section.className = 'farha-dynamic-section';
+    section.style.display = hidden ? 'none' : '';
+    section.innerHTML = `
+      <h2>${title}</h2>
+      ${bodyHtml}
+    `;
+
+    if (!existing) {
+      const afterNode = afterSelector ? document.querySelector(afterSelector) : null;
+      const anchor = getDynamicSectionAnchor();
+      if (afterNode && afterNode.parentElement) {
+        afterNode.insertAdjacentElement('afterend', section);
+      } else if (appendToAnchor && anchor) {
+        anchor.appendChild(section);
+      } else if (anchor && anchor !== document.body) {
+        anchor.insertAdjacentElement('afterend', section);
+      } else {
+        document.body.appendChild(section);
+      }
+    }
+
+    return section;
+  }
+
+  function mountDynamicCountdown(fields, sections) {
+    const hasNativeCountdown = Boolean(document.querySelector('#countdown-section, #countdown, .count, .when'));
+    const dateValue = fields.weddingDate || fields.date || '';
+    if (!dateValue || hasNativeCountdown) {
+      document.getElementById('farha-dynamic-countdown')?.remove();
+      return;
+    }
+
+    const hidden = sections?.countdown === false;
+    const section = mountDynamicSectionPortal(
+      'farha-dynamic-countdown',
+      String(fields.titleCountdown || 'العد التنازلي'),
+      `
+        <p>باقي على موعد الحفل</p>
+        <div class="farha-dynamic-grid" id="farha-dynamic-countdown-grid">
+          <div class="farha-dynamic-box"><strong data-unit="days">00</strong><span>يوم</span></div>
+          <div class="farha-dynamic-box"><strong data-unit="hours">00</strong><span>ساعة</span></div>
+          <div class="farha-dynamic-box"><strong data-unit="minutes">00</strong><span>دقيقة</span></div>
+          <div class="farha-dynamic-box"><strong data-unit="seconds">00</strong><span>ثانية</span></div>
+        </div>
+      `,
+      { hidden },
+    );
+
+    const targetDate = new Date(dateValue);
+    if (Number.isNaN(targetDate.getTime())) {
+      return;
+    }
+
+    const tick = () => {
+      const diff = Math.max(0, targetDate.getTime() - Date.now());
+      const values = {
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+      };
+
+      Object.entries(values).forEach(([unit, value]) => {
+        const node = section.querySelector(`[data-unit="${unit}"]`);
+        if (node) {
+          node.textContent = String(value).padStart(2, '0');
+        }
+      });
+    };
+
+    tick();
+    if (section._farhaCountdownTimer) {
+      window.clearInterval(section._farhaCountdownTimer);
+    }
+    section._farhaCountdownTimer = window.setInterval(tick, 1000);
+  }
+
+  function mountDynamicNotes(fields, sections) {
+    const hasNativeNotes = Boolean(document.querySelector('#notes-section, #notesList, .notes'));
+    const notes = Array.isArray(fields.notes) ? fields.notes.filter(Boolean) : [];
+    if (hasNativeNotes || !notes.length) {
+      document.getElementById('farha-dynamic-notes')?.remove();
+      return;
+    }
+
+    const hidden = sections?.notes === false;
+    mountDynamicSectionPortal(
+      'farha-dynamic-notes',
+      String(fields.titleNotes || 'الأسئلة والملاحظات'),
+      `
+        <div class="farha-dynamic-list">
+          ${notes.map((note) => `<div class="farha-dynamic-note">${String(note)}</div>`).join('')}
+        </div>
+      `,
+      { hidden },
+    );
+  }
+
+  function mountDynamicRsvp(fields, sections) {
+    const hasNativeRsvp = Boolean(document.querySelector('#da3wa-rsvp, #rsvp-section, #rsvp-form, #da3wa-rsvp-form, form.rsvp-form, form.t-form, form.js-form-proccess'));
+    if (hasNativeRsvp) {
+      document.getElementById('farha-dynamic-rsvp')?.remove();
+      return;
+    }
+
+    const hidden = sections?.rsvp === false;
+    const section = mountDynamicSectionPortal(
+      'farha-dynamic-rsvp',
+      String(fields.contactLabel || 'تأكيد الحضور'),
+      `
+        <p>${String(fields.contactName || 'يمكنك تأكيد حضورك من خلال النموذج التالي.')}</p>
+        <form class="farha-dynamic-form rsvp-form" id="farha-dynamic-rsvp-form">
+          <input type="text" name="guestName" placeholder="اسم الضيف" />
+          <input type="tel" name="phone" placeholder="رقم الجوال" />
+          <select name="status">
+            <option value="confirmed">سأحضر</option>
+            <option value="declined">لن أتمكن من الحضور</option>
+          </select>
+          <input type="number" name="companions" min="0" step="1" placeholder="عدد المرافقين" />
+          <textarea name="message" rows="3" placeholder="رسالة أو ملاحظة إضافية"></textarea>
+          <button type="submit">إرسال التأكيد</button>
+          <div class="farha-dynamic-feedback" id="farha-dynamic-rsvp-feedback"></div>
+        </form>
+      `,
+      { hidden, appendToAnchor: true },
+    );
+
+    syncRsvpFormReferences(section.querySelector('form'));
+    hijackRsvpForms(true);
+  }
+
+  function mountDynamicSections(fields, sections) {
+    mountDynamicCountdown(fields, sections);
+    mountDynamicNotes(fields, sections);
+    mountDynamicRsvp(fields, sections);
   }
 
   function applyTheme(theme) {
