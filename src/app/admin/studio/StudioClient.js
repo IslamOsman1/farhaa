@@ -54,6 +54,7 @@ const NATIVE_TEXT_STYLE_KEYS = [
   'textShadow',
 ];
 const NATIVE_MEDIA_STYLE_KEYS = ['objectFit', 'cropX', 'cropY'];
+const NATIVE_TEXT_STYLE_OVERRIDE_KEYS = [...NATIVE_TEXT_STYLE_KEYS];
 
 const SECTION_META = {
   'custom-elements': { icon: '✚', label: 'العناصر الحرة', description: 'إضافة نصوص وصور متحركة فوق القالب' },
@@ -1985,6 +1986,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             label: selectedNativeElementLabel || selectedNativeElement?.label || '',
             selector: selectedNativeElement?.selector || '',
             kind: selectedNativeElement?.kind || 'native',
+            textPath: selectedNativeElement?.textPath || '',
           }
         : {};
       const currentValue = buildDefaultNativeElementOverride({
@@ -2008,8 +2010,35 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         updates: nextUpdates,
       };
 
+      const nextTextPath = nextOverride.textPath || fallbackMeta.textPath || '';
+      const nextTextStylePatch = nextTextPath
+        ? Object.fromEntries(
+          Object.entries(nextUpdates).filter(([key, value]) => (
+            NATIVE_TEXT_STYLE_OVERRIDE_KEYS.includes(key)
+            && value != null
+          )),
+        )
+        : null;
+
       return {
         ...current,
+        uiConfig:
+          nextTextPath && nextTextStylePatch && Object.keys(nextTextStylePatch).length
+            ? {
+                ...(current.uiConfig || {}),
+                textStyleOverrides: {
+                  ...((current.uiConfig?.textStyleOverrides && typeof current.uiConfig.textStyleOverrides === 'object')
+                    ? current.uiConfig.textStyleOverrides
+                    : {}),
+                  [nextTextPath]: {
+                    ...((((current.uiConfig?.textStyleOverrides && typeof current.uiConfig.textStyleOverrides === 'object')
+                      ? current.uiConfig.textStyleOverrides[nextTextPath]
+                      : null) || {})),
+                    ...nextTextStylePatch,
+                  },
+                },
+              }
+            : current.uiConfig,
         nativeElementOverrides: {
           ...currentOverrides,
           [id]: nextOverride,
