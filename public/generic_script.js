@@ -1283,6 +1283,18 @@
         outline: none;
         cursor: pointer;
       }
+      .farha-native-overlay__number {
+        width: 72px;
+        height: 30px;
+        border: none;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #7f2a1f;
+        font: 800 11px/1 Tajawal, sans-serif;
+        text-align: center;
+        outline: none;
+        box-shadow: inset 0 0 0 1px rgba(127, 42, 31, 0.12);
+      }
       .farha-native-overlay__btn,
       .farha-native-overlay__handle {
         display: inline-flex;
@@ -1362,6 +1374,13 @@
       .farha-native-overlay__handle--rotate {
         left: -14px;
         right: auto;
+        cursor: grab;
+      }
+      .farha-native-overlay__handle--move {
+        left: -14px;
+        right: auto;
+        bottom: auto;
+        top: -14px;
         cursor: grab;
       }
       @media (max-width: 640px) {
@@ -2395,6 +2414,7 @@
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
           <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
         </div>
+        <button type="button" class="farha-native-overlay__handle farha-native-overlay__handle--move" data-farha-native-action="move" aria-label="مقبض تحريك العنصر">✥</button>
         <button type="button" class="farha-native-overlay__handle farha-native-overlay__handle--rotate" data-farha-native-action="rotate" aria-label="تدوير العنصر">↻</button>
         <button type="button" class="farha-native-overlay__handle" data-farha-native-action="scale" aria-label="تكبير أو تصغير العنصر">+</button>
       `;
@@ -2420,8 +2440,28 @@
           <select class="farha-native-overlay__select" data-farha-native-control="fontFamily" aria-label="نوع الخط"></select>
         `;
 
+        const xField = document.createElement('label');
+        xField.className = 'farha-native-overlay__field';
+        xField.dataset.farhaNativeRole = 'x-field';
+        xField.dataset.visible = 'true';
+        xField.innerHTML = `
+          <span class="farha-native-overlay__field-label">X</span>
+          <input type="number" class="farha-native-overlay__number" data-farha-native-control="x" aria-label="إحداثي X" step="1" />
+        `;
+
+        const yField = document.createElement('label');
+        yField.className = 'farha-native-overlay__field';
+        yField.dataset.farhaNativeRole = 'y-field';
+        yField.dataset.visible = 'true';
+        yField.innerHTML = `
+          <span class="farha-native-overlay__field-label">Y</span>
+          <input type="number" class="farha-native-overlay__number" data-farha-native-control="y" aria-label="إحداثي Y" step="1" />
+        `;
+
         toolbar.appendChild(colorField);
         toolbar.appendChild(fontField);
+        toolbar.appendChild(xField);
+        toolbar.appendChild(yField);
       }
 
       if (!overlay.querySelector('.farha-native-overlay__corner-delete')) {
@@ -2442,7 +2482,7 @@
 
         const selectedId = runtimeState.selectedNativeElementId;
         const selectedNode = selectedId ? findNativeElementById(selectedId) : null;
-        if (!selectedId || !selectedNode || !isNativeTextEditableNode(selectedNode)) {
+        if (!selectedId || !selectedNode) {
           return;
         }
 
@@ -2459,9 +2499,19 @@
         };
 
         if (controlName === 'color') {
+          if (!isNativeTextEditableNode(selectedNode)) {
+            return;
+          }
           nextOverride.color = String(control.value || '').trim();
         } else if (controlName === 'fontFamily') {
+          if (!isNativeTextEditableNode(selectedNode)) {
+            return;
+          }
           nextOverride.fontFamily = String(control.value || '').trim();
+        } else if (controlName === 'x') {
+          nextOverride.x = toPxNumber(control.value, 0);
+        } else if (controlName === 'y') {
+          nextOverride.y = toPxNumber(control.value, 0);
         } else {
           return;
         }
@@ -2629,8 +2679,12 @@
     const cropButton = overlay.querySelector('[data-farha-native-action="crop-toggle"]');
     const colorField = overlay.querySelector('[data-farha-native-role="color-field"]');
     const fontField = overlay.querySelector('[data-farha-native-role="font-field"]');
+    const xField = overlay.querySelector('[data-farha-native-role="x-field"]');
+    const yField = overlay.querySelector('[data-farha-native-role="y-field"]');
     const colorInput = overlay.querySelector('[data-farha-native-control="color"]');
     const fontSelect = overlay.querySelector('[data-farha-native-control="fontFamily"]');
+    const xInput = overlay.querySelector('[data-farha-native-control="x"]');
+    const yInput = overlay.querySelector('[data-farha-native-control="y"]');
     const canStyleText = isNativeTextEditableNode(selectedNode);
 
     overlay.dataset.visible = 'true';
@@ -2668,6 +2722,12 @@
     if (fontField) {
       fontField.dataset.visible = canStyleText ? 'true' : 'false';
     }
+    if (xField) {
+      xField.dataset.visible = 'true';
+    }
+    if (yField) {
+      yField.dataset.visible = 'true';
+    }
     if (canStyleText) {
       if (colorInput) {
         colorInput.value = cssColorToHex(currentOverride.color || getNativeElementSelectionMeta(selectedNode).color || '#7f2a1f');
@@ -2680,6 +2740,12 @@
           populateNativeOverlayFontSelect(fontSelect, currentOverride.fontFamily || getNativeElementSelectionMeta(selectedNode).fontFamily || '');
         }
       });
+    }
+    if (xInput) {
+      xInput.value = String(Math.round(toPxNumber(currentOverride.x, 0)));
+    }
+    if (yInput) {
+      yInput.value = String(Math.round(toPxNumber(currentOverride.y, 0)));
     }
   }
 
@@ -6112,9 +6178,11 @@
           wrapper.dataset.selected = isSelected ? 'true' : 'false';
           const controls = wrapper.querySelector('.farha-custom-element__controls');
           const resize = wrapper.querySelector('.farha-custom-element__resize');
+          const move = wrapper.querySelector('.farha-custom-element__move');
           const deleteButton = wrapper.querySelector('.farha-custom-element__delete');
           if (controls) controls.style.display = isSelected ? 'flex' : 'none';
           if (resize) resize.style.display = isSelected && wrapper.dataset.locked !== 'true' ? 'block' : 'none';
+          if (move) move.style.display = isSelected && wrapper.dataset.locked !== 'true' ? 'inline-flex' : 'none';
           if (deleteButton) deleteButton.style.display = isSelected ? 'inline-flex' : 'none';
           wrapper.style.outline = isSelected ? '2px solid rgba(127, 42, 31, 0.92)' : 'none';
           wrapper.style.outlineOffset = isSelected ? '4px' : '0';
@@ -6574,17 +6642,12 @@
           if (target.closest('.farha-studio-editable')) {
             event.preventDefault();
             event.stopPropagation();
-            if (nativeOverride.locked) {
-              selectNativeElement(nativeTarget, nativeMeta);
-              return;
-            }
             selectNativeElement(nativeTarget, nativeMeta);
             selectTemplateText(nativeTarget.dataset.farhaStudioField || getNativeTextPathForNode(nativeTarget), {
               text: nativeTarget.innerText || nativeTarget.textContent || '',
               label: getStudioFieldLabel(nativeTarget.dataset.farhaStudioField || getNativeTextPathForNode(nativeTarget)),
               preserveNativeSelection: true,
             });
-            startPendingNativeTransform(nativeTarget, point);
             return;
           }
 
@@ -6782,6 +6845,17 @@
         target?.closest?.('[contenteditable="true"], input, textarea, select') ||
         wrapper?.classList?.contains('farha-studio-editing');
       if (isEditableTarget && !action) {
+        return;
+      }
+
+      if (
+        wrapper.dataset.type === 'text'
+        && !action
+        && target?.closest?.('.farha-custom-element__text')
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        hideSnapGuides();
         return;
       }
 
@@ -7283,6 +7357,17 @@
       }
       resizeHandle.classList.add('farha-native-overlay__handle');
 
+      let moveHandle = wrapper.querySelector('.farha-custom-element__move');
+      if (!moveHandle) {
+        moveHandle = document.createElement('button');
+        moveHandle.type = 'button';
+        moveHandle.className = 'farha-custom-element__move farha-native-overlay__handle farha-native-overlay__handle--move';
+        moveHandle.dataset.farhaAction = 'move';
+        moveHandle.setAttribute('aria-label', 'مقبض تحريك العنصر');
+        moveHandle.textContent = '✥';
+        wrapper.appendChild(moveHandle);
+      }
+
       let deleteCorner = wrapper.querySelector('.farha-custom-element__delete');
       if (!deleteCorner) {
         deleteCorner = document.createElement('button');
@@ -7434,19 +7519,18 @@
             }
 
             const owner = controlsRoot.closest('.farha-custom-element');
-            if (!owner || owner.dataset.type !== 'text') {
+            if (!owner) {
               return;
             }
 
             const textNode = owner.querySelector('.farha-custom-element__text');
-            if (!textNode) {
-              return;
-            }
-
             event.stopPropagation();
 
             const controlName = control.dataset.farhaCustomControl;
             if (controlName === 'color') {
+              if (owner.dataset.type !== 'text' || !textNode) {
+                return;
+              }
               const nextColor = String(control.value || '').trim() || '#111827';
               textNode.style.color = nextColor;
               persistUpdate(owner.dataset.id, { color: nextColor });
@@ -7454,9 +7538,26 @@
             }
 
             if (controlName === 'fontFamily') {
+              if (owner.dataset.type !== 'text' || !textNode) {
+                return;
+              }
               const nextFontFamily = String(control.value || '').trim();
               textNode.style.fontFamily = nextFontFamily;
               persistUpdate(owner.dataset.id, { fontFamily: nextFontFamily });
+              return;
+            }
+
+            if (controlName === 'x') {
+              const nextX = toPxNumber(control.value, 0);
+              owner.style.left = `${nextX}px`;
+              persistUpdate(owner.dataset.id, { x: nextX });
+              return;
+            }
+
+            if (controlName === 'y') {
+              const nextY = toPxNumber(control.value, 0);
+              owner.style.top = `${nextY}px`;
+              persistUpdate(owner.dataset.id, { y: nextY });
             }
           };
 
@@ -7511,6 +7612,25 @@
         controlsRoot.appendChild(makeActionButton({ label: '←', action: 'nudge-left', wide: false, ariaLabel: 'تحريك يسار' }));
         controlsRoot.appendChild(makeActionButton({ label: '↑', action: 'nudge-up', wide: false, ariaLabel: 'تحريك أعلى' }));
         controlsRoot.appendChild(makeActionButton({ label: '↓', action: 'nudge-down', wide: false, ariaLabel: 'تحريك أسفل' }));
+        controlsRoot.appendChild(makeActionButton({ label: '✥', action: 'move', wide: false, ariaLabel: 'مقبض تحريك واضح' }));
+
+        const xInput = document.createElement('input');
+        xInput.type = 'number';
+        xInput.className = 'farha-native-overlay__number';
+        xInput.dataset.farhaCustomControl = 'x';
+        xInput.setAttribute('aria-label', 'إحداثي X');
+        xInput.step = '1';
+        xInput.value = String(Math.round(toPxNumber(el.x, 0)));
+        appendTextField('X', 'x', xInput);
+
+        const yInput = document.createElement('input');
+        yInput.type = 'number';
+        yInput.className = 'farha-native-overlay__number';
+        yInput.dataset.farhaCustomControl = 'y';
+        yInput.setAttribute('aria-label', 'إحداثي Y');
+        yInput.step = '1';
+        yInput.value = String(Math.round(toPxNumber(el.y, 0)));
+        appendTextField('Y', 'y', yInput);
 
         if (el.type === 'text') {
           controlsRoot.appendChild(makeActionButton({ label: 'تحرير', action: 'edit', ariaLabel: 'تحرير النص' }));
@@ -7564,10 +7684,12 @@
         resizeHandle.style.left = 'auto';
         resizeHandle.style.cursor = 'nwse-resize';
         resizeHandle.style.display = isSelected && !el.locked ? 'block' : 'none';
+        moveHandle.style.display = isSelected && !el.locked ? 'inline-flex' : 'none';
         deleteCorner.style.display = isSelected ? 'inline-flex' : 'none';
       } else {
         controlsRoot.style.display = 'none';
         resizeHandle.style.display = 'none';
+        moveHandle.style.display = 'none';
         deleteCorner.style.display = 'none';
       }
     });
