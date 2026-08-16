@@ -3742,23 +3742,37 @@
 
         if (!el.dataset.farhaInlineBound) {
           el.addEventListener('mousedown', (event) => {
-            event.stopPropagation();
+            if (el.getAttribute('data-farha-editing') === 'true') {
+              event.stopPropagation();
+            }
           });
           el.addEventListener('touchstart', (event) => {
-            event.stopPropagation();
+            if (el.getAttribute('data-farha-editing') === 'true') {
+              event.stopPropagation();
+            }
           }, { passive: true });
           el.addEventListener('click', (event) => {
             event.stopPropagation();
             const nativeId = buildNativeElementId(el);
-            const alreadySelected = String(runtimeState.selectedNativeElementId || '') === String(nativeId);
             selectNativeElement(el, {
               label: getStudioFieldLabel(fieldKey),
               selector: binding.selector || nativeId,
               kind: 'text',
             });
-            if (!alreadySelected) {
-              return;
-            }
+            selectTemplateText(fieldKey, {
+              text: el.innerText || '',
+              label: getStudioFieldLabel(fieldKey),
+              preserveNativeSelection: true,
+            });
+          });
+          el.addEventListener('dblclick', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            selectNativeElement(el, {
+              label: getStudioFieldLabel(fieldKey),
+              selector: binding.selector || buildNativeElementId(el),
+              kind: 'text',
+            });
             selectTemplateText(fieldKey, {
               text: el.innerText || '',
               label: getStudioFieldLabel(fieldKey),
@@ -3783,6 +3797,34 @@
               },
             });
           });
+          el.addEventListener('touchend', (event) => {
+            const now = Date.now();
+            const lastTap = Number(el.dataset.farhaLastTapAt || 0);
+            el.dataset.farhaLastTapAt = String(now);
+            if (now - lastTap >= 320) {
+              return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            if (isTextPathLocked(fieldKey)) {
+              return;
+            }
+            openFloatingTextEditor({
+              target: el,
+              initialValue: el.innerText || '',
+              onCommit: (nextValue) => {
+                window.parent.postMessage({
+                  type: 'FARHA_TEXT_OVERRIDE',
+                  payload: {
+                    path: fieldKey,
+                    text: nextValue.trim(),
+                    label: getStudioFieldLabel(fieldKey),
+                    preserveNativeSelection: true,
+                  },
+                }, '*');
+              },
+            });
+          }, { passive: false });
           el.dataset.farhaInlineBound = 'true';
         }
       });
@@ -5185,7 +5227,14 @@
 
         window.parent.postMessage({
           type: 'FARHA_CANVAS_CLICK',
-          payload: { x, y }
+          payload: {
+            x,
+            y,
+            visualX: e.clientX - rect.left,
+            visualY: e.clientY - rect.top,
+            expanded: runtimeState.editorAddMode === 'image',
+            forceImage: runtimeState.editorAddMode === 'image',
+          }
         }, '*');
       };
       document.body.addEventListener('click', runtimeState.canvasClickHandler);
@@ -5294,15 +5343,24 @@
           inner.contentEditable = 'false';
           inner.setAttribute('tabindex', '0');
           if (!inner.dataset.farhaInlineBound) {
-            inner.addEventListener('mousedown', (e) => e.stopPropagation());
-            inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+            inner.addEventListener('mousedown', (e) => {
+              if (inner.getAttribute('data-farha-editing') === 'true') {
+                e.stopPropagation();
+              }
+            });
+            inner.addEventListener('touchstart', (e) => {
+              if (inner.getAttribute('data-farha-editing') === 'true') {
+                e.stopPropagation();
+              }
+            }, { passive: true });
             inner.addEventListener('click', (e) => {
               e.stopPropagation();
-              const alreadySelected = String(runtimeState.selectedCustomElementId || '') === String(el.id);
               selectElement(el.id);
-              if (!alreadySelected) {
-                return;
-              }
+            });
+            inner.addEventListener('dblclick', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              selectElement(el.id);
               if (el.locked) {
                 return;
               }
@@ -5318,6 +5376,31 @@
                 },
               });
             });
+            inner.addEventListener('touchend', (e) => {
+              const now = Date.now();
+              const lastTap = Number(inner.dataset.farhaLastTapAt || 0);
+              inner.dataset.farhaLastTapAt = String(now);
+              if (now - lastTap >= 320) {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              selectElement(el.id);
+              if (el.locked) {
+                return;
+              }
+              openFloatingTextEditor({
+                target: inner,
+                initialValue: inner.innerText || '',
+                onCommit: (nextValue) => {
+                  inner.style.boxShadow = 'none';
+                  window.parent.postMessage({
+                    type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
+                    payload: { id: el.id, updates: { content: nextValue } }
+                  }, '*');
+                },
+              });
+            }, { passive: false });
             inner.dataset.farhaInlineBound = 'true';
           }
         } else {
