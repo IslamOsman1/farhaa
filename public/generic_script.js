@@ -3476,8 +3476,10 @@
         ? manifest.runtimeBindings.sectionSelectors
         : {
             gallery: ['#gallery-section', '#da3wa-mem'],
+            countdown: ['#countdown-section', '#countdown', '.count', '.when'],
             timeline: ['#program-section', '#timeline', '.program'],
             rsvp: ['#rsvp-section', '#da3wa-rsvp'],
+            notes: ['#notes-section', '#notesList', '.notes'],
             calendar: ['#calendar-section', '#da3wa-cal'],
           };
 

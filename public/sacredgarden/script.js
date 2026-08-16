@@ -6,13 +6,6 @@ function queryAll(selector, root = document) {
   return Array.from(root.querySelectorAll(selector));
 }
 
-function setHtml(selector, value, root = document) {
-  if (value == null || value === '') return;
-  queryAll(selector, root).forEach((node) => {
-    node.innerHTML = String(value);
-  });
-}
-
 function setText(selector, value, root = document) {
   if (value == null || value === '') return;
   queryAll(selector, root).forEach((node) => {
@@ -20,22 +13,72 @@ function setText(selector, value, root = document) {
   });
 }
 
-function setHtmlMany(selectors, value) {
-  selectors.forEach((selector) => setHtml(selector, value));
+function setHtml(selector, value, root = document) {
+  if (value == null || value === '') return;
+  queryAll(selector, root).forEach((node) => {
+    node.innerHTML = String(value);
+  });
 }
 
-function setTextMany(selectors, value) {
-  selectors.forEach((selector) => setText(selector, value));
+function setImage(selector, value, root = document) {
+  if (!value) return;
+  queryAll(selector, root).forEach((node) => {
+    if ((node.tagName || '').toLowerCase() === 'img') {
+      node.setAttribute('src', value);
+      node.removeAttribute('srcset');
+      node.removeAttribute('data-original');
+    } else {
+      node.style.backgroundImage = `url("${value}")`;
+    }
+    node.hidden = false;
+    node.style.display = '';
+    node.style.visibility = 'visible';
+    node.style.opacity = '1';
+  });
+}
+
+function setMediaSource(selector, value, root = document) {
+  if (!value) return;
+  queryAll(selector, root).forEach((node) => {
+    const tagName = (node.tagName || '').toLowerCase();
+    if (tagName === 'video' || tagName === 'audio' || tagName === 'source' || tagName === 'img') {
+      node.setAttribute('src', value);
+      node.removeAttribute('srcset');
+      node.removeAttribute('data-original');
+      if (tagName === 'video' || tagName === 'audio') {
+        queryAll('source', node).forEach((sourceNode) => sourceNode.setAttribute('src', value));
+        node.load?.();
+      }
+    } else {
+      node.style.backgroundImage = `url("${value}")`;
+    }
+  });
+}
+
+function setDisplay(selector, visible) {
+  queryAll(selector).forEach((node) => {
+    node.style.display = visible ? '' : 'none';
+    node.hidden = !visible;
+    node.style.visibility = visible ? 'visible' : 'hidden';
+    node.style.pointerEvents = visible ? 'auto' : 'none';
+  });
+}
+
+function getRenderConfig() {
+  return window.__INVITE__?.renderConfig || null;
+}
+
+function getConfig() {
+  return window.__INVITE__?.config || {};
 }
 
 function getOpeningRuntimeState() {
   const params = new URLSearchParams(window.location.search);
-  const opening = window.__INVITE__?.renderConfig?.opening || window.__INVITE__?.opening || null;
+  const opening = getRenderConfig()?.opening || window.__INVITE__?.opening || null;
   const openingSlug = String(opening?.slug || '');
   const openingType = String(opening?.type || '');
 
   return {
-    opening,
     openingDisabled: params.get('farhaOpening') === '0' || openingSlug === 'no-opening',
     openingOnly: params.get('farhaOpeningOnly') === '1',
     hasTemplateReplacement: openingType === 'template-opening' || openingSlug.startsWith('template-opening:'),
@@ -70,13 +113,11 @@ function syncSacredGardenOpeningState() {
     return;
   }
 
-  if (video && typeof video.pause === 'function') {
-    try {
-      video.pause();
-      video.currentTime = 0;
-    } catch (error) {
-      void error;
-    }
+  try {
+    video?.pause?.();
+    if (video) video.currentTime = 0;
+  } catch (_error) {
+    // Ignore media reset errors.
   }
 
   if (overlay) {
@@ -113,15 +154,16 @@ function syncSacredGardenOpeningState() {
 
 function getInitial(name) {
   if (!name) return '';
-  const trimmed = String(name).trim();
-  if (!trimmed) return '';
-  return Array.from(trimmed)[0] || '';
+  return Array.from(String(name).trim())[0] || '';
 }
 
 function buildSealSvg(monogramText) {
-  const safeText = String(monogramText || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeText = String(monogramText || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 
-  return "
+  return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 142">
       <defs>
         <radialGradient id="waxGlow" cx="50%" cy="40%" r="62%">
@@ -146,39 +188,13 @@ function buildSealSvg(monogramText) {
         </linearGradient>
       </defs>
       <g transform="translate(95 71)" filter="url(#waxShadow)">
-        <path fill="url(#waxGlow)" d="M0,-50
-          C8,-58 21,-57 30,-50
-          C41,-52 52,-45 56,-34
-          C67,-31 74,-19 72,-7
-          C79,2 79,16 71,25
-          C72,37 64,48 53,52
-          C48,63 36,69 24,67
-          C15,75 1,77 -10,72
-          C-20,77 -34,75 -43,67
-          C-55,68 -66,61 -71,50
-          C-83,46 -90,35 -89,23
-          C-97,14 -97,0 -89,-10
-          C-91,-22 -83,-33 -71,-37
-          C-66,-49 -54,-55 -42,-54
-          C-33,-61 -19,-62 -8,-56
-          Z"/>
+        <path fill="url(#waxGlow)" d="M0,-50 C8,-58 21,-57 30,-50 C41,-52 52,-45 56,-34 C67,-31 74,-19 72,-7 C79,2 79,16 71,25 C72,37 64,48 53,52 C48,63 36,69 24,67 C15,75 1,77 -10,72 C-20,77 -34,75 -43,67 C-55,68 -66,61 -71,50 C-83,46 -90,35 -89,23 C-97,14 -97,0 -89,-10 C-91,-22 -83,-33 -71,-37 C-66,-49 -54,-55 -42,-54 C-33,-61 -19,-62 -8,-56 Z"/>
         <ellipse cx="-15" cy="-22" rx="28" ry="18" fill="rgba(255,255,255,0.12)"/>
         <path fill="url(#waxHighlight)" d="M-40,-30 C-22,-55 18,-56 34,-35 C12,-42 -12,-41 -40,-30 Z"/>
-        <text x="0" y="8"
-          text-anchor="middle"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-size="34"
-          font-style="italic"
-          font-weight="700"
-          fill="url(#goldInk)"
-          stroke="#f6e5af"
-          stroke-width="0.7"
-          paint-order="stroke fill">
-           + "" + "
-        </text>
+        <text x="0" y="8" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-style="italic" font-weight="700" fill="url(#goldInk)" stroke="#f6e5af" stroke-width="0.7" paint-order="stroke fill">${safeText}</text>
       </g>
     </svg>
-  ".trim();
+  `.trim();
 }
 
 function ensureSealMonogram(brideName, groomName) {
@@ -223,11 +239,11 @@ function ensureSealMonogram(brideName, groomName) {
   const brideInitial = getInitial(brideName);
   const groomInitial = getInitial(groomName);
   const text = [brideInitial, groomInitial].filter(Boolean).join('&');
-  if (text) {
-    const sealSvg = buildSealSvg(text);
-    generatedSealImage.src = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(sealSvg);
-  }
+  if (!text) return;
+
+  generatedSealImage.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(buildSealSvg(text))}`;
 }
+
 function formatDisplayDate(dateValue) {
   const parsedDate = new Date(dateValue);
   if (Number.isNaN(parsedDate.getTime())) return '';
@@ -265,19 +281,19 @@ function buildCountdownMarkup(dateValue) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
     <style>
-      *{box-sizing:border-box;margin:0;padding:0;}
-      body{background:transparent;}
-      #countdownContainer{display:flex;justify-content:center;align-items:center;gap:6px;margin:80px 20px;}
-      .time-block{text-align:center;}
-      .number-wrap{overflow:hidden;height:56px;display:flex;align-items:center;justify-content:center;}
-      .number{font-size:45px;font-family:'Ovo',serif;line-height:1.2;display:block;white-space:nowrap;background:linear-gradient(105deg,#B48C3D 0%,#B48C3D 25%,#cda95a 46%,#d8ba72 52%,#cda95a 58%,#B48C3D 75%,#B48C3D 100%);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;clip-path:inset(0 100% 0 0);transition:transform .55s cubic-bezier(.25,.1,.25,1),opacity .55s ease;}
-      .number.revealed{animation:inkReveal 1.1s cubic-bezier(.4,0,.2,1) forwards,candleShimmer 4.5s ease-in-out 1.1s infinite;}
-      @keyframes inkReveal{0%{clip-path:inset(0 100% 0 0);}100%{clip-path:inset(0 0 0 0);}}
-      @keyframes candleShimmer{0%{background-position:100% 0;}50%{background-position:0 0;}100%{background-position:100% 0;}}
-      .number.flip-out{transform:translateY(-60%);opacity:0;}
-      .number.flip-in{transform:translateY(60%);opacity:0;transition:none;}
-      .label{font-size:19px;margin-top:8px;font-weight:400;color:#B48C3D;font-family:'Ovo',serif;opacity:.85;}
-      .separator{font-size:52px;margin-top:-40px;color:#B48C3D;line-height:1;font-family:'Ovo',serif;opacity:.9;}
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{background:transparent}
+      #countdownContainer{display:flex;justify-content:center;align-items:center;gap:6px;margin:80px 20px}
+      .time-block{text-align:center}
+      .number-wrap{overflow:hidden;height:56px;display:flex;align-items:center;justify-content:center}
+      .number{font-size:45px;font-family:'Ovo',serif;line-height:1.2;display:block;white-space:nowrap;background:linear-gradient(105deg,#B48C3D 0%,#B48C3D 25%,#cda95a 46%,#d8ba72 52%,#cda95a 58%,#B48C3D 75%,#B48C3D 100%);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;clip-path:inset(0 100% 0 0);transition:transform .55s cubic-bezier(.25,.1,.25,1),opacity .55s ease}
+      .number.revealed{animation:inkReveal 1.1s cubic-bezier(.4,0,.2,1) forwards,candleShimmer 4.5s ease-in-out 1.1s infinite}
+      @keyframes inkReveal{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}
+      @keyframes candleShimmer{0%{background-position:100% 0}50%{background-position:0 0}100%{background-position:100% 0}}
+      .number.flip-out{transform:translateY(-60%);opacity:0}
+      .number.flip-in{transform:translateY(60%);opacity:0;transition:none}
+      .label{font-size:19px;margin-top:8px;font-weight:400;color:#B48C3D;font-family:'Ovo',serif;opacity:.85}
+      .separator{font-size:52px;margin-top:-40px;color:#B48C3D;line-height:1;font-family:'Ovo',serif;opacity:.9}
     </style>
   </head>
   <body>
@@ -342,17 +358,78 @@ function buildCountdownMarkup(dateValue) {
   </html>`;
 }
 
+function applySacredGardenTheme(theme = {}) {
+  const styleId = 'farha-sacredgarden-theme';
+  query(`#${styleId}`)?.remove();
+
+  const headingFont = theme.fontHeading ? `"${String(theme.fontHeading).replace(/"/g, '')}", serif` : '';
+  const bodyFont = theme.fontBody ? `"${String(theme.fontBody).replace(/"/g, '')}", system-ui, sans-serif` : '';
+
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = `
+    #rec2487446043 .tn-atom,
+    #rec2487446093 .tn-atom,
+    #rec2487446123 .tn-atom,
+    #rec2487446223 .tn-atom,
+    #rec2487446253 .tn-atom,
+    #rec2487446233 .t702__title {
+      ${theme.primaryColor ? `color: ${theme.primaryColor} !important;` : ''}
+      ${headingFont ? `font-family: ${headingFont} !important;` : ''}
+    }
+    #rec2487446233 .t-input,
+    #rec2487446233 .t-textarea,
+    #rec2487446233 .t702__descr,
+    #rec2487446233 .t-submit,
+    #weiTapLabel {
+      ${theme.primaryColor ? `color: ${theme.primaryColor} !important;` : ''}
+      ${bodyFont ? `font-family: ${bodyFont} !important;` : ''}
+    }
+    #rec2487446233 .t-submit,
+    #weiAudioBtn {
+      ${theme.accentColor ? `background: ${theme.accentColor} !important;` : ''}
+    }
+    #rec2487446233 .t-submit {
+      ${theme.primaryColor ? `border-color: ${theme.primaryColor} !important;` : ''}
+    }
+    #rec2487446043 .t396__carrier,
+    #rec2487446253 .t396__carrier,
+    #weiOverlay,
+    #weiVideoWrap {
+      ${theme.surfaceColor ? `background-color: ${theme.surfaceColor} !important;` : ''}
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function applySacredGardenSections(sections = {}) {
+  const sectionMap = {
+    hero: ['#rec2487446043'],
+    details: ['#rec2487446123'],
+    countdown: ['#rec2487446093'],
+    rsvp: ['#rec2487446223', '#rec2487446233'],
+    notes: ['#rec2487446253'],
+  };
+
+  Object.entries(sectionMap).forEach(([key, selectors]) => {
+    const visible = sections[key] !== false;
+    selectors.forEach((selector) => setDisplay(selector, visible));
+  });
+}
+
 function applySacredGardenConfig() {
-  const config = window.__INVITE__?.config;
-  if (!config) return;
+  const renderConfig = getRenderConfig();
+  const config = getConfig();
+  if (!renderConfig && !Object.keys(config).length) return;
 
   syncSacredGardenOpeningState();
+  applySacredGardenTheme(renderConfig?.theme || {});
+  applySacredGardenSections(renderConfig?.sections || {});
 
   const groom = config.groomName || config.groom || config.groomName_en || config.groom_en || '';
   const bride = config.brideName || config.bride || config.brideName_en || config.bride_en || '';
   const combinedNames = [groom, bride].filter(Boolean).join(' <br /><br />');
   const inlineNames = [groom, bride].filter(Boolean).join(' and ');
-
   const displayDate = formatDisplayDate(config.weddingDate || config.date || '');
   const openingTitle = config.openingKicker || config.titleInvitation || '';
   const openingHint = config.openingHint || '';
@@ -363,10 +440,19 @@ function applySacredGardenConfig() {
   const titleCountdown = config.titleCountdown || '';
   const titleVenue = config.titleVenue || '';
   const titleRsvp = config.contactLabel || config.rsvpTitle || '';
-  const rsvpDescription = config.contactName || config.rsvpDescription || '';
+  const rsvpDescription = config.contactName || config.rsvpDescription || config.invitationText || '';
   const recapTitle = config.titleNotes || config.recapTitle || '';
   const venueName = config.venueName || '';
   const venueAddress = config.venueAddress || config.venueAddr || '';
+  const openingPoster =
+    config.openingPoster
+    || config.openingBackgroundImage
+    || config['images.background']
+    || config.venueImage
+    || config['images.venue']
+    || '';
+  const openingVideo = config.openingVideo || '';
+  const closingImage = config.venueImage || config['images.venue'] || config['images.background'] || '';
 
   if (combinedNames) {
     setHtml('#rec2487446043 [data-elem-id="1763402147625"] .tn-atom', combinedNames);
@@ -391,13 +477,7 @@ function applySacredGardenConfig() {
   }
 
   if (invitationText) {
-    setHtmlMany(
-      [
-        '#rec2487446043 [data-elem-id="1780748008617000005"] .tn-atom',
-        '#rec2487446233 .t702__descr',
-      ],
-      String(invitationText).replace(/\n/g, '<br />'),
-    );
+    setHtml('#rec2487446043 [data-elem-id="1780748008617000005"] .tn-atom', String(invitationText).replace(/\n/g, '<br />'));
   }
 
   if (openingPoem) {
@@ -405,13 +485,8 @@ function applySacredGardenConfig() {
   }
 
   if (scrollText) {
-    setTextMany(
-      [
-        '#rec2487446043 [data-elem-id="1782235970225000002"] .tn-atom',
-        '#rec2487446223 [data-elem-id="1782316019612"] .tn-atom',
-      ],
-      scrollText,
-    );
+    setText('#rec2487446043 [data-elem-id="1782235970225000002"] .tn-atom', scrollText);
+    setText('#rec2487446223 [data-elem-id="1782316019612"] .tn-atom', scrollText);
   }
 
   if (titleCountdown) {
@@ -423,13 +498,8 @@ function applySacredGardenConfig() {
   }
 
   if (titleRsvp) {
-    setTextMany(
-      [
-        '#rec2487446223 [data-elem-id="1763405219328"] .tn-atom',
-        '#popuptitle_2487446233',
-      ],
-      titleRsvp,
-    );
+    setText('#rec2487446223 [data-elem-id="1763405219328"] .tn-atom', titleRsvp);
+    setText('#popuptitle_2487446233', titleRsvp);
   }
 
   if (rsvpDescription) {
@@ -453,6 +523,20 @@ function applySacredGardenConfig() {
     setText('#weiTapLabel', openingHint);
   }
 
+  if (openingPoster) {
+    setImage('#weiImg', openingPoster);
+    setImage('#rec2487446253 [data-elem-id="1772823499423"] img', openingPoster);
+    setImage('#rec2487446253 [data-elem-id="1780167388618000002"] img', openingPoster);
+  }
+
+  if (closingImage) {
+    setImage('#rec2487446253 [data-elem-id="1772823499423"] img', closingImage);
+  }
+
+  if (openingVideo) {
+    setMediaSource('#weiVideo', openingVideo);
+  }
+
   const countdownHost = query('#rec2487446093 [data-elem-id="1771277551711000001"] .tn-atom__html');
   if (countdownHost && (config.weddingDate || config.date)) {
     const parsedDate = new Date(config.weddingDate || config.date);
@@ -465,55 +549,16 @@ function applySacredGardenConfig() {
   const musicUrl = config.musicUrl || '';
   if (music && musicUrl && music.getAttribute('src') !== musicUrl) {
     music.setAttribute('src', musicUrl);
-    queryAll('source', music).forEach((sourceNode) => {
-      sourceNode.setAttribute('src', musicUrl);
-    });
-    if (typeof music.load === 'function') music.load();
+    queryAll('source', music).forEach((sourceNode) => sourceNode.setAttribute('src', musicUrl));
+    music.load?.();
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  syncSacredGardenOpeningState();
-  applySacredGardenConfig();
-
-  window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data?.type === 'FARHA_RENDER_CONFIG') {
-      window.setTimeout(() => {
-        syncSacredGardenOpeningState();
-        applySacredGardenConfig();
-      }, 60);
-    }
-  });
-
-  let lastSignature = '';
-  window.setInterval(() => {
-    const config = window.__INVITE__?.config || {};
-    const signature = JSON.stringify({
-      groom: config.groomName || config.groom || '',
-      bride: config.brideName || config.bride || '',
-      date: config.weddingDate || config.date || '',
-      invitationText: config.invitationText || '',
-      openingPoem: config.openingPoem || config.poemText || '',
-      musicUrl: config.musicUrl || '',
-      venueName: config.venueName || '',
-      venueAddress: config.venueAddress || config.venueAddr || '',
-      openingTitle: config.openingKicker || config.titleInvitation || '',
-      titleCountdown: config.titleCountdown || '',
-      titleVenue: config.titleVenue || '',
-      titleRsvp: config.contactLabel || config.rsvpTitle || '',
-      recapTitle: config.titleNotes || config.recapTitle || '',
-    });
-
-    if (signature !== lastSignature) {
-      lastSignature = signature;
-      syncSacredGardenOpeningState();
-      applySacredGardenConfig();
-    }
-  }, 600);
-
+function interceptRsvpForms() {
   const forms = document.querySelectorAll('form.t-form, form.js-form-proccess');
   forms.forEach((form) => {
+    if (form.dataset.farhaBound === '1') return;
+    form.dataset.farhaBound = '1';
     form.removeAttribute('action');
 
     const successBox = form.querySelector('.js-successbox') || form.parentElement?.querySelector('.js-successbox');
@@ -529,44 +574,43 @@ document.addEventListener('DOMContentLoaded', () => {
         companions: 0,
         message: '',
       };
-
       const extraMessages = [];
 
       for (const [key, val] of formData.entries()) {
-        const normalizedKey = key.toLowerCase();
+        const normalizedKey = String(key).toLowerCase();
         const normalizedValue = String(val).toLowerCase();
 
         if (normalizedKey.includes('name') || normalizedKey.includes('nom')) {
           data.guestName = val;
         } else if (
-          normalizedKey.includes('attend') ||
-          normalizedKey.includes('come') ||
-          normalizedKey.includes('presence') ||
-          normalizedKey.includes('viens')
+          normalizedKey.includes('attend')
+          || normalizedKey.includes('come')
+          || normalizedKey.includes('presence')
+          || normalizedKey.includes('viens')
         ) {
           if (
-            normalizedValue.includes('yes') ||
-            normalizedValue.includes('accept') ||
-            normalizedValue.includes('oui') ||
-            normalizedValue.includes('pleasure') ||
-            normalizedValue.includes('will')
+            normalizedValue.includes('yes')
+            || normalizedValue.includes('accept')
+            || normalizedValue.includes('oui')
+            || normalizedValue.includes('pleasure')
+            || normalizedValue.includes('will')
           ) {
             data.status = 'confirmed';
           } else if (
-            normalizedValue.includes('no') ||
-            normalizedValue.includes('decline') ||
-            normalizedValue.includes('non') ||
-            normalizedValue.includes('regret') ||
-            normalizedValue.includes('not')
+            normalizedValue.includes('no')
+            || normalizedValue.includes('decline')
+            || normalizedValue.includes('non')
+            || normalizedValue.includes('regret')
+            || normalizedValue.includes('not')
           ) {
             data.status = 'declined';
           }
         } else if (
-          normalizedKey.includes('guest') ||
-          normalizedKey.includes('companion') ||
-          normalizedKey.includes('person') ||
-          normalizedKey.includes('number') ||
-          normalizedKey.includes('combien')
+          normalizedKey.includes('guest')
+          || normalizedKey.includes('companion')
+          || normalizedKey.includes('person')
+          || normalizedKey.includes('number')
+          || normalizedKey.includes('combien')
         ) {
           const parsed = parseInt(val, 10);
           if (!Number.isNaN(parsed)) {
@@ -587,11 +631,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       data.templateId = pathParts[0] || 'unknown';
 
-      const submitBtn = form.querySelector('button[type="submit"]');
-      const originalText = submitBtn ? submitBtn.innerHTML : '';
-      if (submitBtn) {
-        submitBtn.innerHTML = 'Sending...';
-        submitBtn.disabled = true;
+      const submitButton = form.querySelector('button[type="submit"]');
+      const originalText = submitButton ? submitButton.innerHTML : '';
+      if (submitButton) {
+        submitButton.innerHTML = 'Sending...';
+        submitButton.disabled = true;
       }
 
       try {
@@ -616,11 +660,61 @@ document.addEventListener('DOMContentLoaded', () => {
           successBox.style.color = '#e74c3c';
         }
       } finally {
-        if (submitBtn) {
-          submitBtn.innerHTML = originalText;
-          submitBtn.disabled = false;
+        if (submitButton) {
+          submitButton.innerHTML = originalText;
+          submitButton.disabled = false;
         }
       }
     });
   });
+}
+
+function refreshSacredGarden() {
+  syncSacredGardenOpeningState();
+  applySacredGardenConfig();
+  interceptRsvpForms();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  refreshSacredGarden();
+
+  window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === 'FARHA_RENDER_CONFIG') {
+      window.setTimeout(refreshSacredGarden, 60);
+    }
+  });
+
+  let lastSignature = '';
+  window.setInterval(() => {
+    const renderConfig = getRenderConfig();
+    const config = getConfig();
+    const signature = JSON.stringify({
+      fields: {
+        groom: config.groomName || config.groom || '',
+        bride: config.brideName || config.bride || '',
+        date: config.weddingDate || config.date || '',
+        invitationText: config.invitationText || '',
+        openingPoem: config.openingPoem || config.poemText || '',
+        musicUrl: config.musicUrl || '',
+        venueName: config.venueName || '',
+        venueAddress: config.venueAddress || config.venueAddr || '',
+        openingTitle: config.openingKicker || config.titleInvitation || '',
+        openingPoster: config.openingPoster || config.openingBackgroundImage || config['images.background'] || '',
+        openingVideo: config.openingVideo || '',
+        titleCountdown: config.titleCountdown || '',
+        titleVenue: config.titleVenue || '',
+        titleRsvp: config.contactLabel || config.rsvpTitle || '',
+        recapTitle: config.titleNotes || config.recapTitle || '',
+      },
+      sections: renderConfig?.sections || {},
+      theme: renderConfig?.theme || {},
+      opening: renderConfig?.opening || {},
+    });
+
+    if (signature !== lastSignature) {
+      lastSignature = signature;
+      refreshSacredGarden();
+    }
+  }, 600);
 });

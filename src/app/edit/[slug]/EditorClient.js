@@ -18,6 +18,7 @@ const GROUPS = [
   { key: 'basic', label: 'الأساسيات' },
   { key: 'wording', label: 'النصوص' },
   { key: 'families', label: 'العائلات' },
+  { key: 'sections', label: 'الأقسام' },
   { key: 'details', label: 'المكان والزمان' },
   { key: 'schedule', label: 'البرنامج' },
   { key: 'media', label: 'الوسائط' },
@@ -853,6 +854,21 @@ export default function EditorClient({ invitation, manifest, manifests, openings
   }
 
   const groupedFields = currentManifest.editableFields.filter((field) => field.section === activeGroup);
+  const manifestSectionEntries = Array.isArray(currentManifest.sections)
+    ? currentManifest.sections.map((section) => ({
+        key: section.key,
+        label: section.labelAr,
+        enabled: draft.sectionConfig[section.key] !== false,
+      }))
+    : [];
+  const extraSectionEntries = Object.keys(draft.sectionConfig || {})
+    .filter((sectionKey) => !manifestSectionEntries.some((entry) => entry.key === sectionKey))
+    .map((sectionKey) => ({
+      key: sectionKey,
+      label: sectionKey,
+      enabled: draft.sectionConfig[sectionKey] !== false,
+    }));
+  const allSectionEntries = [...manifestSectionEntries, ...extraSectionEntries];
   const previewWidth = previewDevice === 'desktop' ? '100%' : previewDevice === 'tablet' ? '820px' : '390px';
 
   return (
@@ -1096,14 +1112,18 @@ export default function EditorClient({ invitation, manifest, manifests, openings
               </section>
             ) : null}
 
-            {activeGroup === 'media' ? (
+            {activeGroup === 'sections' ? (
               <section className="panel-section">
                 <h2>الأقسام</h2>
                 <div className="toggle-list">
-                  {Object.entries(draft.sectionConfig).map(([sectionKey, enabled]) => (
-                    <label key={sectionKey} className="toggle-row">
-                      <span>{sectionKey}</span>
-                      <input type="checkbox" checked={enabled} onChange={(event) => setSectionValue(sectionKey, event.target.checked)} />
+                  {allSectionEntries.map((section) => (
+                    <label key={section.key} className="toggle-row">
+                      <span>{section.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={section.enabled}
+                        onChange={(event) => setSectionValue(section.key, event.target.checked)}
+                      />
                     </label>
                   ))}
                 </div>

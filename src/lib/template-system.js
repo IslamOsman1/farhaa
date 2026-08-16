@@ -276,11 +276,19 @@ const sharedSections = [
     supportsVisibility: true,
   },
   {
+    key: 'countdown',
+    labelAr: 'العد التنازلي',
+    labelEn: 'Countdown',
+    description: 'عرض الوقت المتبقي',
+    order: 2,
+    supportsVisibility: true,
+  },
+  {
     key: 'timeline',
     labelAr: 'البرنامج',
     labelEn: 'Schedule',
     description: 'برنامج الحفل',
-    order: 2,
+    order: 3,
     supportsVisibility: true,
   },
   {
@@ -288,7 +296,7 @@ const sharedSections = [
     labelAr: 'المعرض',
     labelEn: 'Gallery',
     description: 'صور الحفل والذكريات',
-    order: 3,
+    order: 4,
     supportsVisibility: true,
   },
   {
@@ -296,7 +304,15 @@ const sharedSections = [
     labelAr: 'تأكيد الحضور',
     labelEn: 'RSVP',
     description: 'استقبال ردود الضيوف',
-    order: 4,
+    order: 5,
+    supportsVisibility: true,
+  },
+  {
+    key: 'notes',
+    labelAr: 'الأسئلة والملاحظات',
+    labelEn: 'Questions & Notes',
+    description: 'ملاحظات أو تعليمات إضافية',
+    order: 6,
     supportsVisibility: true,
   },
   {
@@ -304,7 +320,7 @@ const sharedSections = [
     labelAr: 'التقويم',
     labelEn: 'Calendar',
     description: 'إضافة الموعد إلى التقويم',
-    order: 5,
+    order: 7,
     supportsVisibility: true,
   },
 ];
@@ -1295,9 +1311,11 @@ function createBaseManifest(definition) {
       sections: {
         hero: true,
         details: true,
+        countdown: true,
         timeline: true,
         gallery: true,
         rsvp: true,
+        notes: true,
         calendar: true,
       },
       theme: {
@@ -1325,8 +1343,10 @@ function createBaseManifest(definition) {
       ),
       sectionSelectors: {
         gallery: ['#gallery-section', '#da3wa-mem'],
+        countdown: ['#countdown-section', '#countdown', '.count', '.when'],
         timeline: ['#program-section', '#timeline', '.program'],
         rsvp: ['#rsvp-section', '#da3wa-rsvp'],
+        notes: ['#notes-section', '#notesList', '.notes'],
         calendar: ['#calendar-section', '#da3wa-cal'],
       },
     },
@@ -1418,9 +1438,11 @@ export function normalizeInvitationData(invitation) {
     sectionConfig: {
       hero: true,
       details: true,
+      countdown: true,
       timeline: true,
       gallery: true,
       rsvp: true,
+      notes: true,
       calendar: true,
       ...legacySections,
       ...parseJsonSafely(invitation?.sectionConfig, {}),
