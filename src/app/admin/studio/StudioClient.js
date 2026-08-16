@@ -527,6 +527,10 @@ function normalizeDraftState(input) {
     sectionConfig: safe.sectionConfig || {},
     openingConfig: safe.openingConfig || {},
     textOverrides: safe.textOverrides || {},
+    ui: {
+      addCustomElementMode: '',
+      ...(safe.ui || {}),
+    },
     uiConfig: {
       ...(safe.uiConfig || {}),
       editorGuides: safe.uiConfig?.editorGuides !== false,

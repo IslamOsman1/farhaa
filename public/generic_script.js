@@ -178,6 +178,7 @@
     nativeOverlayRaf: 0,
     editorDock: null,
     editorDockHandler: null,
+    editorAddMode: '',
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
@@ -1712,6 +1713,88 @@
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin) return;
       if (!event.data) {
+        return;
+      }
+
+      if (event.data.type === 'FARHA_THEME_UPDATE') {
+        const nextTheme =
+          event.data.payload?.theme && typeof event.data.payload.theme === 'object'
+            ? event.data.payload.theme
+            : {};
+        runtimeState.renderConfig = {
+          ...(runtimeState.renderConfig || {}),
+          theme: nextTheme,
+        };
+        applyTheme(nextTheme);
+        return;
+      }
+
+      if (event.data.type === 'FARHA_TEXT_OVERRIDE') {
+        const path = String(event.data.payload?.path || '').trim();
+        if (!path) {
+          return;
+        }
+
+        const nextOverrides = {
+          ...((runtimeState.renderConfig?.textOverrides && typeof runtimeState.renderConfig.textOverrides === 'object')
+            ? runtimeState.renderConfig.textOverrides
+            : {}),
+          [path]: event.data.payload?.text == null ? '' : String(event.data.payload.text),
+        };
+        runtimeState.renderConfig = {
+          ...(runtimeState.renderConfig || {}),
+          textOverrides: nextOverrides,
+        };
+        applyTextOverrides(nextOverrides);
+        return;
+      }
+
+      if (event.data.type === 'FARHA_CUSTOM_ELEMENTS_SYNC') {
+        const nextElements = Array.isArray(event.data.payload?.elements)
+          ? event.data.payload.elements
+          : [];
+        runtimeState.renderConfig = {
+          ...(runtimeState.renderConfig || {}),
+          customElements: nextElements,
+        };
+        applyCustomElements(nextElements);
+        return;
+      }
+
+      if (event.data.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
+        const nativeId = String(event.data.payload?.id || '').trim();
+        if (!nativeId) {
+          return;
+        }
+
+        const currentOverrides = normalizeNativeElementOverrides(runtimeState.nativeElementOverrides || {});
+        const currentValue = currentOverrides[nativeId] || {};
+        const nextUpdates =
+          event.data.payload?.updates && typeof event.data.payload.updates === 'object'
+            ? event.data.payload.updates
+            : {};
+        const nextOverrides = {
+          ...currentOverrides,
+          [nativeId]: {
+            ...currentValue,
+            label: event.data.payload?.label || currentValue.label || nativeId,
+            selector: event.data.payload?.selector || currentValue.selector || '',
+            kind: event.data.payload?.kind || currentValue.kind || 'native',
+            ...nextUpdates,
+          },
+        };
+
+        runtimeState.renderConfig = {
+          ...(runtimeState.renderConfig || {}),
+          nativeElementOverrides: nextOverrides,
+        };
+        runtimeState.nativeElementOverrides = nextOverrides;
+        applyNativeElementOverrides(nextOverrides);
+        return;
+      }
+
+      if (event.data.type === 'FARHA_EDITOR_ADD_MODE') {
+        runtimeState.editorAddMode = String(event.data.payload?.mode || '').trim();
         return;
       }
 
