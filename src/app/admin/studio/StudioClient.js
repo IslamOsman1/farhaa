@@ -2999,13 +2999,26 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   }
 
   function setThemeValue(key, value) {
-    setDraft((current) => ({
-      ...current,
-      themeConfig: {
+    let nextThemeConfig = null;
+    setDraft((current) => {
+      nextThemeConfig = {
         ...current.themeConfig,
         [key]: value,
-      },
-    }));
+      };
+      return {
+        ...current,
+        themeConfig: nextThemeConfig,
+      };
+    });
+
+    if (nextThemeConfig) {
+      sendPreviewBridgeMessage({
+        type: 'FARHA_THEME_UPDATE',
+        payload: {
+          theme: nextThemeConfig,
+        },
+      });
+    }
   }
 
   function setUiValue(key, value) {

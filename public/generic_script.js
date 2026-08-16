@@ -2510,6 +2510,24 @@
         return;
       }
 
+      if (event.data.type === 'FARHA_THEME_UPDATE') {
+        const nextTheme = event.data.payload?.theme;
+        if (!nextTheme || typeof nextTheme !== 'object' || Array.isArray(nextTheme)) {
+          return;
+        }
+
+        runtimeState.renderConfig = {
+          ...(runtimeState.renderConfig || {}),
+          theme: {
+            ...((runtimeState.renderConfig && runtimeState.renderConfig.theme) || {}),
+            ...nextTheme,
+          },
+        };
+        ensureSharedFontLibraryStyles();
+        applyTheme(runtimeState.renderConfig.theme || {});
+        return;
+      }
+
       if (event.data.type !== 'FARHA_RENDER_CONFIG' || event.data.version !== '1.0.0') {
         return;
       }
