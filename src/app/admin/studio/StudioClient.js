@@ -1668,6 +1668,15 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         [path]: value,
       },
     }));
+    sendPreviewBridgeMessage({
+      type: 'FARHA_TEXT_OVERRIDE',
+      payload: {
+        path,
+        text: value,
+        label: getTextFieldLabel(path),
+        preserveNativeSelection: true,
+      },
+    });
   }
 
   function resetTemplate() {
@@ -1930,10 +1939,23 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   }
 
   function updateCustomElements(updater) {
-    setDraft((current) => ({
-      ...current,
-      customElements: normalizeCustomElements(updater(current.customElements || [])),
-    }));
+    let nextCustomElements = null;
+    setDraft((current) => {
+      nextCustomElements = normalizeCustomElements(updater(current.customElements || []));
+      return {
+        ...current,
+        customElements: nextCustomElements,
+      };
+    });
+
+    if (nextCustomElements) {
+      sendPreviewBridgeMessage({
+        type: 'FARHA_CUSTOM_ELEMENTS_SYNC',
+        payload: {
+          elements: nextCustomElements,
+        },
+      });
+    }
   }
 
   function patchCustomElement(id, updates, options = {}) {
@@ -4942,10 +4964,10 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     }}
                     title="إضافة نص"
                   >
-                    TEXT
+                    نص
                   </button>
                   <MediaPicker
-                    label="IMAGE"
+                    label="صورة"
                     value=""
                     accept="image"
                     folder="studio-free-elements"
@@ -4967,7 +4989,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
                         title="إضافة صورة"
                       >
-                        IMAGE
+                        صورة
                       </button>
                     }
                   />
@@ -4981,7 +5003,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       }}
                       title="لصق العنصر المنسوخ"
                     >
-                      PASTE
+                      لصق
                     </button>
                   ) : null}
                   <button
@@ -4999,6 +5021,24 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           </div>
         </div>
 
+        <div className="studio-canvas__tips" aria-label="تلميحات المحاكي">
+          <div className="studio-canvas__tip">
+            <strong>حدد ثم اسحب</strong>
+            <span>اضغط على النص أو العنصر مرة واحدة، ثم اسحبه مباشرة داخل القالب.</span>
+          </div>
+          <div className="studio-canvas__tip">
+            <strong>اضغط مرتين للكتابة</strong>
+            <span>الضغط المزدوج يفتح تحرير النص من نفس مكانه داخل المعاينة.</span>
+          </div>
+          <div className="studio-canvas__tip">
+            <strong>اضغط في مكان فارغ</strong>
+            <span>سيظهر لك مربع سريع لإضافة نص أو صورة أو لصق عنصر منسوخ.</span>
+          </div>
+          <div className="studio-canvas__tip">
+            <strong>كل شيء مباشر</strong>
+            <span>النص واللون والخط والتحريك يظهرون داخل المحاكي في نفس اللحظة.</span>
+          </div>
+        </div>
         <button type="button" className="studio-mobile-editor-toggle" onClick={() => setEditorOpen(true)}>
           فتح التعديلات
         </button>
