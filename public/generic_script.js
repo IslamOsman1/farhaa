@@ -5512,6 +5512,28 @@
         silent: true,
       });
     };
+    const startPendingNativeTextMove = (node, point) => {
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      ensureNativeElementBaseState(node);
+      activeTransform = {
+        scope: 'native',
+        kind: 'move',
+        pending: true,
+        node,
+        id,
+        snapTarget: getEditorOverlayTarget(),
+        snapPeers: collectSnapPeerRects({ excludeNode: node }),
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        nativeKind: currentOverride.kind || getNativeElementKind(node),
+        startX: point.x,
+        startY: point.y,
+        startOffsetX: toPxNumber(currentOverride.x, 0),
+        startOffsetY: toPxNumber(currentOverride.y, 0),
+        startRect: node.getBoundingClientRect(),
+      };
+    };
 
     const startNativeCropTransform = (node, point) => {
       const id = buildNativeElementId(node);
@@ -5866,30 +5888,37 @@
             return;
           }
 
-          if (String(runtimeState.selectedNativeElementId || '') !== String(nativeId)) {
-            event.preventDefault();
-            event.stopPropagation();
-            if (nativeOverride.locked) {
-              selectNativeElement(nativeTarget, nativeMeta);
-              return;
-            }
-            startNativeTransform(nativeTarget, point);
+        if (String(runtimeState.selectedNativeElementId || '') !== String(nativeId)) {
+          if (target.closest('.farha-studio-editable')) {
             return;
           }
-
-          if (nativeOverride.locked) {
-            event.preventDefault();
-            event.stopPropagation();
-            return;
-          }
-
           event.preventDefault();
           event.stopPropagation();
-          if (nativeTarget.dataset.farhaCropMode === 'true' && isNativeReplaceableImageNode(nativeTarget)) {
-            startNativeCropTransform(nativeTarget, point);
+          if (nativeOverride.locked) {
+            selectNativeElement(nativeTarget, nativeMeta);
             return;
           }
           startNativeTransform(nativeTarget, point);
+          return;
+        }
+
+        if (nativeOverride.locked) {
+          event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
+        event.preventDefault();
+        event.stopPropagation();
+        if (target.closest('.farha-studio-editable')) {
+          startPendingNativeTextMove(nativeTarget, point);
+          return;
+        }
+        if (nativeTarget.dataset.farhaCropMode === 'true' && isNativeReplaceableImageNode(nativeTarget)) {
+          startNativeCropTransform(nativeTarget, point);
+          return;
+        }
+        startNativeTransform(nativeTarget, point);
           return;
         }
 
@@ -6065,6 +6094,17 @@
       if (!activeTransform) return;
       const point = getPoint(event);
       if (!point) return;
+
+      if (activeTransform.scope === 'native' && activeTransform.pending) {
+        const travelX = point.x - activeTransform.startX;
+        const travelY = point.y - activeTransform.startY;
+        if (Math.hypot(travelX, travelY) < 6) {
+          return;
+        }
+        activeTransform.pending = false;
+        activeTransform.node.style.cursor = 'grabbing';
+      }
+
       event.preventDefault();
 
       if (activeTransform.scope === 'native') {
@@ -6247,6 +6287,11 @@
     const handleEnd = () => {
       if (!activeTransform) return;
       hideSnapGuides();
+
+      if (activeTransform.pending) {
+        activeTransform = null;
+        return;
+      }
 
       if (activeTransform.scope === 'native') {
         const { id, node } = activeTransform;
