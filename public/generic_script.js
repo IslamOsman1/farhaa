@@ -969,6 +969,28 @@
         color: #b42318;
         background: #fff1f2;
       }
+      .farha-native-overlay__corner-delete {
+        position: absolute;
+        top: -12px;
+        right: -12px;
+        width: 28px;
+        height: 28px;
+        border: 2px solid #fff;
+        border-radius: 999px;
+        background: #b42318;
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font: 900 14px/1 Tajawal, sans-serif;
+        pointer-events: auto;
+        cursor: pointer;
+        z-index: 3;
+      }
+      .farha-native-overlay__corner-delete:hover {
+        transform: scale(1.04);
+      }
       .farha-native-overlay__handle {
         position: absolute;
         right: -14px;
@@ -1999,6 +2021,16 @@
 
         toolbar.appendChild(colorField);
         toolbar.appendChild(fontField);
+      }
+
+      if (!overlay.querySelector('.farha-native-overlay__corner-delete')) {
+        const deleteCorner = document.createElement('button');
+        deleteCorner.type = 'button';
+        deleteCorner.className = 'farha-native-overlay__corner-delete';
+        deleteCorner.dataset.farhaNativeAction = 'delete';
+        deleteCorner.setAttribute('aria-label', 'حذف العنصر');
+        deleteCorner.textContent = 'X';
+        overlay.appendChild(deleteCorner);
       }
 
       const handleControlChange = (event) => {
@@ -5519,8 +5551,12 @@
           wrapper.dataset.selected = isSelected ? 'true' : 'false';
           const controls = wrapper.querySelector('.farha-custom-element__controls');
           const resize = wrapper.querySelector('.farha-custom-element__resize');
+          const deleteButton = wrapper.querySelector('.farha-custom-element__delete');
           if (controls) controls.style.display = isSelected ? 'flex' : 'none';
           if (resize) resize.style.display = isSelected && wrapper.dataset.locked !== 'true' ? 'block' : 'none';
+          if (deleteButton) deleteButton.style.display = isSelected ? 'inline-flex' : 'none';
+          wrapper.style.outline = isSelected ? '2px solid rgba(127, 42, 31, 0.92)' : 'none';
+          wrapper.style.outlineOffset = isSelected ? '4px' : '0';
           wrapper.style.boxShadow = isSelected
             ? '0 0 0 2px rgba(255,255,255,0.95), 0 0 0 4px rgba(127, 42, 31, 0.45)'
             : 'none';
@@ -5604,6 +5640,34 @@
         startRect: node.getBoundingClientRect(),
       };
       node.style.cursor = 'grabbing';
+      selectNativeElement(node, {
+        label: activeTransform.label,
+        selector: activeTransform.selector,
+        kind: activeTransform.nativeKind,
+        silent: true,
+      });
+    };
+    const startPendingNativeTransform = (node, point) => {
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      ensureNativeElementBaseState(node);
+      activeTransform = {
+        scope: 'native',
+        kind: 'move',
+        pending: true,
+        node,
+        id,
+        snapTarget: getEditorOverlayTarget(),
+        snapPeers: collectSnapPeerRects({ excludeNode: node }),
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        nativeKind: currentOverride.kind || getNativeElementKind(node),
+        startX: point.x,
+        startY: point.y,
+        startOffsetX: toPxNumber(currentOverride.x, 0),
+        startOffsetY: toPxNumber(currentOverride.y, 0),
+        startRect: node.getBoundingClientRect(),
+      };
       selectNativeElement(node, {
         label: activeTransform.label,
         selector: activeTransform.selector,
@@ -6009,7 +6073,7 @@
               selectNativeElement(nativeTarget, nativeMeta);
               return;
             }
-            startNativeTransform(nativeTarget, point);
+            startPendingNativeTransform(nativeTarget, point);
             return;
           }
 
@@ -6651,6 +6715,17 @@
       }
       resizeHandle.classList.add('farha-native-overlay__handle');
 
+      let deleteCorner = wrapper.querySelector('.farha-custom-element__delete');
+      if (!deleteCorner) {
+        deleteCorner = document.createElement('button');
+        deleteCorner.type = 'button';
+        deleteCorner.className = 'farha-custom-element__delete farha-native-overlay__corner-delete';
+        deleteCorner.dataset.farhaAction = 'delete';
+        deleteCorner.setAttribute('aria-label', 'حذف العنصر');
+        deleteCorner.textContent = 'X';
+        wrapper.appendChild(deleteCorner);
+      }
+
       if (el.type === 'text') {
         let inner = contentRoot.querySelector('.farha-custom-element__text');
         if (!inner) {
@@ -6917,9 +6992,11 @@
         resizeHandle.style.left = 'auto';
         resizeHandle.style.cursor = 'nwse-resize';
         resizeHandle.style.display = isSelected && !el.locked ? 'block' : 'none';
+        deleteCorner.style.display = isSelected ? 'inline-flex' : 'none';
       } else {
         controlsRoot.style.display = 'none';
         resizeHandle.style.display = 'none';
+        deleteCorner.style.display = 'none';
       }
     });
   }
