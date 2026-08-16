@@ -4912,12 +4912,12 @@
       style.textContent = `
         .farha-studio-editable {
           transition: all 0.2s ease-in-out;
-          cursor: text !important;
+          cursor: move !important;
           position: relative;
-          user-select: text !important;
-          -webkit-user-select: text !important;
-          touch-action: manipulation !important;
-          -webkit-touch-callout: default !important;
+          user-select: none !important;
+          -webkit-user-select: none !important;
+          touch-action: none !important;
+          -webkit-touch-callout: none !important;
         }
         .farha-studio-editable:hover {
           outline: 2px dashed #ff4d7d !important;
@@ -4968,6 +4968,14 @@
           outline-offset: 4px !important;
           background: rgba(255,255,255,0.18) !important;
           border-radius: 8px;
+        }
+        .farha-studio-editable[contenteditable="true"],
+        .farha-studio-editable[data-farha-editing="true"] {
+          cursor: text !important;
+          user-select: text !important;
+          -webkit-user-select: text !important;
+          touch-action: manipulation !important;
+          -webkit-touch-callout: default !important;
         }
         .farha-studio-editing {
           outline: 2px solid #7f2a1f !important;
@@ -5685,29 +5693,6 @@
         silent: true,
       });
     };
-    const startPendingNativeTextMove = (node, point) => {
-      const id = buildNativeElementId(node);
-      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
-      ensureNativeElementBaseState(node);
-      activeTransform = {
-        scope: 'native',
-        kind: 'move',
-        pending: true,
-        node,
-        id,
-        snapTarget: getEditorOverlayTarget(),
-        snapPeers: collectSnapPeerRects({ excludeNode: node }),
-        label: currentOverride.label || getNativeElementLabel(node),
-        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
-        nativeKind: currentOverride.kind || getNativeElementKind(node),
-        startX: point.x,
-        startY: point.y,
-        startOffsetX: toPxNumber(currentOverride.x, 0),
-        startOffsetY: toPxNumber(currentOverride.y, 0),
-        startRect: node.getBoundingClientRect(),
-      };
-    };
-
     const startNativeCropTransform = (node, point) => {
       const id = buildNativeElementId(node);
       const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
@@ -6072,7 +6057,7 @@
               label: getStudioFieldLabel(nativeTarget.dataset.farhaStudioField || getNativeTextPathForNode(nativeTarget)),
               preserveNativeSelection: true,
             });
-            startPendingNativeTextMove(nativeTarget, point);
+            startPendingNativeTransform(nativeTarget, point);
             return;
           }
 
