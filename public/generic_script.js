@@ -6594,10 +6594,10 @@
         }
 
         if (action === 'move') {
-          setMovePlacementMode({
-            scope: 'native',
-            id: selectedId,
-          });
+          if (!baseOverride.locked && point) {
+            hideSnapGuides();
+            startNativeTransform(selectedNode, point);
+          }
           return;
         }
 
@@ -6874,10 +6874,8 @@
       if (action === 'move') {
         event.preventDefault();
         event.stopPropagation();
-        setMovePlacementMode({
-          scope: 'custom',
-          id: wrapper.dataset.id,
-        });
+        hideSnapGuides();
+        startTransform('move', wrapper, point);
         return;
       }
 
