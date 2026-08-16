@@ -1448,6 +1448,18 @@
   }
 
   function getNativeElementKind(node) {
+    if (!node) {
+      return 'native';
+    }
+
+    const textTarget = getNativeTextEditTarget(node);
+    if (textTarget && !isNativeReplaceableImageNode(node)) {
+      const hasBackgroundMedia = window.getComputedStyle(node).backgroundImage !== 'none';
+      if (!hasBackgroundMedia) {
+        return 'text';
+      }
+    }
+
     const targetNode = getNativeImageTarget(node);
     const tagName = (targetNode?.tagName || node?.tagName || '').toLowerCase();
     if (['img', 'video', 'svg', 'canvas', 'picture'].includes(tagName)) {
@@ -1563,19 +1575,48 @@
   
   function resolveNativeElementTarget(startNode) {
     let current = startNode?.nodeType === 1 ? startNode : startNode?.parentElement;
+    const explicitEditable = current?.closest?.('.farha-studio-editable, [data-farha-studio-field], [data-farha-text-path]') || null;
+    let firstCandidate = null;
+    let preferredTextCandidate = null;
+
     while (current && current !== document.body && current !== document.documentElement) {
       if (current.closest('.farha-custom-element')) {
         return null;
       }
 
       if (isNativeElementCandidate(current)) {
-        return current;
+        firstCandidate = firstCandidate || current;
+
+        if (!explicitEditable) {
+          return current;
+        }
+
+        const candidateTextTarget = getNativeTextEditTarget(current);
+        if (candidateTextTarget === explicitEditable) {
+          const editableDescendants = current.querySelectorAll('.farha-studio-editable, [data-farha-studio-field], [data-farha-text-path]').length;
+          const candidateStyle = window.getComputedStyle(current);
+          const isInlineOnly = candidateStyle.display === 'inline' || candidateStyle.display === 'contents';
+          if (editableDescendants <= 1) {
+            preferredTextCandidate = current;
+          }
+          if (
+            editableDescendants <= 1
+            && (
+              candidateStyle.position !== 'static'
+              || !isInlineOnly
+            )
+          ) {
+            return current;
+          }
+        } else if (preferredTextCandidate) {
+          return preferredTextCandidate;
+        }
       }
 
       current = current.parentElement;
     }
 
-    return null;
+    return preferredTextCandidate || firstCandidate || null;
   }
 
   function isCanvasBackgroundTarget(startNode) {
