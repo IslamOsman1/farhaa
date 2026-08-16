@@ -1951,6 +1951,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       return;
     }
 
+    let bridgePayload = null;
     setDraft((current) => {
       const currentOverrides = normalizeNativeElementOverrides(current.nativeElementOverrides);
       const fallbackMeta = id === selectedNativeElementId
@@ -1969,17 +1970,33 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         return current;
       }
 
+      const nextOverride = buildDefaultNativeElementOverride({
+        ...currentValue,
+        ...nextUpdates,
+      });
+      bridgePayload = {
+        id,
+        label: nextOverride.label || fallbackMeta.label || id,
+        selector: nextOverride.selector || fallbackMeta.selector || '',
+        kind: nextOverride.kind || fallbackMeta.kind || 'native',
+        updates: nextUpdates,
+      };
+
       return {
         ...current,
         nativeElementOverrides: {
           ...currentOverrides,
-          [id]: buildDefaultNativeElementOverride({
-            ...currentValue,
-            ...nextUpdates,
-          }),
+          [id]: nextOverride,
         },
       };
     });
+
+    if (bridgePayload) {
+      sendPreviewBridgeMessage({
+        type: 'FARHA_NATIVE_ELEMENT_UPDATE',
+        payload: bridgePayload,
+      });
+    }
   }
 
   function setNativeElementNumber(id, key, value, fallback = 0) {

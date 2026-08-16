@@ -2480,6 +2480,36 @@
         return;
       }
 
+      if (event.data.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
+        const nextId = event.data.payload?.id;
+        if (!nextId) {
+          return;
+        }
+
+        const node = findNativeElementById(nextId);
+        if (!node) {
+          return;
+        }
+
+        const currentOverride = runtimeState.nativeElementOverrides?.[nextId] || {};
+        const nextOverride = {
+          ...currentOverride,
+          label: event.data.payload?.label || currentOverride.label || getNativeElementLabel(node),
+          selector: event.data.payload?.selector || currentOverride.selector || getNativeElementSelectorHint(node) || nextId,
+          kind: event.data.payload?.kind || currentOverride.kind || getNativeElementKind(node),
+          ...(event.data.payload?.updates || {}),
+        };
+
+        runtimeState.nativeElementOverrides = {
+          ...(runtimeState.nativeElementOverrides || {}),
+          [nextId]: nextOverride,
+        };
+
+        applyNativeOverrideToNode(node, nextOverride);
+        queueNativeOverlaySync();
+        return;
+      }
+
       if (event.data.type !== 'FARHA_RENDER_CONFIG' || event.data.version !== '1.0.0') {
         return;
       }
