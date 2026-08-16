@@ -54,7 +54,6 @@ const NATIVE_TEXT_STYLE_KEYS = [
   'textShadow',
 ];
 const NATIVE_MEDIA_STYLE_KEYS = ['objectFit', 'cropX', 'cropY'];
-const NATIVE_TEXT_STYLE_OVERRIDE_KEYS = [...NATIVE_TEXT_STYLE_KEYS];
 
 const SECTION_META = {
   'custom-elements': { icon: '✚', label: 'العناصر الحرة', description: 'إضافة نصوص وصور متحركة فوق القالب' },
@@ -527,10 +526,6 @@ function normalizeDraftState(input) {
     sectionConfig: safe.sectionConfig || {},
     openingConfig: safe.openingConfig || {},
     textOverrides: safe.textOverrides || {},
-    ui: {
-      addCustomElementMode: '',
-      ...(safe.ui || {}),
-    },
     uiConfig: {
       ...(safe.uiConfig || {}),
       editorGuides: safe.uiConfig?.editorGuides !== false,
@@ -1300,8 +1295,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     const contentY = Math.max(0, Math.round(toFiniteNumber(payload?.y, 0)));
     const rawVisualX = toFiniteNumber(payload?.visualX, contentX);
     const rawVisualY = toFiniteNumber(payload?.visualY, contentY);
-    const forceImage = Boolean(payload?.forceImage);
-    const expanded = Boolean(payload?.expanded || forceImage);
 
     if (!shellRect) {
       return {
@@ -1310,13 +1303,12 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         visualX: rawVisualX,
         visualY: rawVisualY,
         token: Date.now(),
-        forceImage,
-        expanded,
+        forceImage: Boolean(payload?.forceImage),
       };
     }
 
-    const menuWidth = expanded ? (hasClipboardElement ? 272 : 188) : 58;
-    const menuHeight = expanded ? 56 : 58;
+    const menuWidth = hasClipboardElement ? 272 : 188;
+    const menuHeight = 56;
     const padding = 18;
     const visualX = clampValue(rawVisualX + 24, padding, Math.max(padding, shellRect.width - padding));
     const visualY = clampValue(rawVisualY - 16, padding, Math.max(padding, shellRect.height - padding));
@@ -1337,8 +1329,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       visualX: positionedX,
       visualY: positionedY,
       token: Date.now(),
-      forceImage,
-      expanded,
+      forceImage: Boolean(payload?.forceImage),
     };
   }
 
@@ -1990,7 +1981,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             label: selectedNativeElementLabel || selectedNativeElement?.label || '',
             selector: selectedNativeElement?.selector || '',
             kind: selectedNativeElement?.kind || 'native',
-            textPath: selectedNativeElement?.textPath || '',
           }
         : {};
       const currentValue = buildDefaultNativeElementOverride({
@@ -2014,35 +2004,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         updates: nextUpdates,
       };
 
-      const nextTextPath = nextOverride.textPath || fallbackMeta.textPath || '';
-      const nextTextStylePatch = nextTextPath
-        ? Object.fromEntries(
-          Object.entries(nextUpdates).filter(([key, value]) => (
-            NATIVE_TEXT_STYLE_OVERRIDE_KEYS.includes(key)
-            && value != null
-          )),
-        )
-        : null;
-
       return {
         ...current,
-        uiConfig:
-          nextTextPath && nextTextStylePatch && Object.keys(nextTextStylePatch).length
-            ? {
-                ...(current.uiConfig || {}),
-                textStyleOverrides: {
-                  ...((current.uiConfig?.textStyleOverrides && typeof current.uiConfig.textStyleOverrides === 'object')
-                    ? current.uiConfig.textStyleOverrides
-                    : {}),
-                  [nextTextPath]: {
-                    ...((((current.uiConfig?.textStyleOverrides && typeof current.uiConfig.textStyleOverrides === 'object')
-                      ? current.uiConfig.textStyleOverrides[nextTextPath]
-                      : null) || {})),
-                    ...nextTextStylePatch,
-                  },
-                },
-              }
-            : current.uiConfig,
         nativeElementOverrides: {
           ...currentOverrides,
           [id]: nextOverride,
@@ -3848,7 +3811,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             <input
                               type="color"
                               value={selectedCustomElement.color || '#1f2937'}
-                              onInput={(event) => patchCustomElement(selectedCustomElement.id, { color: event.target.value })}
                               onChange={(event) => patchCustomElement(selectedCustomElement.id, { color: event.target.value })}
                             />
                           </label>
@@ -3908,7 +3870,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               dir="ltr"
                               value={selectedCustomElement.fontFamily || ''}
                               placeholder="مثال: Tajawal, serif"
-                              onInput={(event) => patchCustomElement(selectedCustomElement.id, { fontFamily: event.target.value })}
                               onChange={(event) => patchCustomElement(selectedCustomElement.id, { fontFamily: event.target.value })}
                             />
                           </label>
@@ -4305,7 +4266,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               list="studio-font-options"
                               value={selectedNativeElement.fontFamily || ''}
                               placeholder="Tajawal"
-                              onInput={(event) => patchNativeElement(selectedNativeElementId, { fontFamily: event.target.value })}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { fontFamily: event.target.value })}
                             />
                           </label>
@@ -4348,7 +4308,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               type="text"
                               value={selectedNativeElement.color || ''}
                               placeholder="#7f2a1f"
-                              onInput={(event) => patchNativeElement(selectedNativeElementId, { color: event.target.value })}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { color: event.target.value })}
                             />
                           </label>
@@ -4496,11 +4455,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           <input
                             type="color"
                             value={normalizeHexColor(selectedTemplateTextStyleTarget.color, '#7f2a1f')}
-                            onInput={(event) =>
-                              patchNativeElement(selectedNativeElementId, {
-                                color: event.target.value,
-                              })
-                            }
                             onChange={(event) =>
                               patchNativeElement(selectedNativeElementId, {
                                 color: event.target.value,
@@ -4512,11 +4466,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           <span>نوع الخط</span>
                           <select
                             value={selectedTemplateTextStyleTarget.fontFamily || ''}
-                            onInput={(event) =>
-                              patchNativeElement(selectedNativeElementId, {
-                                fontFamily: event.target.value,
-                              })
-                            }
                             onChange={(event) =>
                               patchNativeElement(selectedNativeElementId, {
                                 fontFamily: event.target.value,
@@ -5000,7 +4949,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
               {canvasClickMenu ? (
                 <div
                   ref={canvasMenuRef}
-                  className={`studio-canvas-menu${canvasClickMenu.expanded ? ' is-expanded' : ' is-collapsed'}`}
+                  className="studio-canvas-menu"
                   style={{
                     top: `${canvasClickMenu.visualY ?? canvasClickMenu.y}px`,
                     left: `${canvasClickMenu.visualX ?? canvasClickMenu.x}px`,
@@ -5008,85 +4957,63 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 >
                   <button
                     type="button"
-                    className="mini-btn studio-canvas-menu__plus"
+                    className="mini-btn studio-canvas-menu__action"
                     onClick={() => {
-                      setCanvasClickMenu((current) => (
-                        current
-                          ? buildCanvasClickMenuState({
-                            ...current,
-                            expanded: !current.expanded,
-                          })
-                          : current
-                      ));
+                      addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
+                      setCanvasClickMenu(null);
                     }}
-                    title={canvasClickMenu.expanded ? 'إغلاق خيارات الإضافة' : 'إضافة عنصر'}
-                    aria-label={canvasClickMenu.expanded ? 'إغلاق خيارات الإضافة' : 'إضافة عنصر'}
+                    title="إضافة نص"
                   >
-                    +
+                    نص
                   </button>
-                  {canvasClickMenu.expanded ? (
-                    <>
+                  <MediaPicker
+                    label="صورة"
+                    value=""
+                    accept="image"
+                    folder="studio-free-elements"
+                    autoOpenToken={canvasClickMenu.forceImage ? canvasClickMenu.token : undefined}
+                    onOpenChange={(open) => {
+                      if (!open && canvasClickMenu.forceImage) {
+                        setCanvasClickMenu(null);
+                      }
+                    }}
+                    onChange={(url) => {
+                      if (url) {
+                        addCustomElement('image', { x: canvasClickMenu.x, y: canvasClickMenu.y }, url);
+                        setCanvasClickMenu(null);
+                      }
+                    }}
+                    trigger={
                       <button
                         type="button"
-                        className="mini-btn studio-canvas-menu__action"
-                        onClick={() => {
-                          addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
-                          setCanvasClickMenu(null);
-                        }}
-                        title="إضافة نص"
+                        className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
+                        title="إضافة صورة"
                       >
-                        نص
+                        صورة
                       </button>
-                      <MediaPicker
-                        label="صورة"
-                        value=""
-                        accept="image"
-                        folder="studio-free-elements"
-                        autoOpenToken={canvasClickMenu.forceImage ? canvasClickMenu.token : undefined}
-                        onOpenChange={(open) => {
-                          if (!open && canvasClickMenu.forceImage) {
-                            setCanvasClickMenu(null);
-                          }
-                        }}
-                        onChange={(url) => {
-                          if (url) {
-                            addCustomElement('image', { x: canvasClickMenu.x, y: canvasClickMenu.y }, url);
-                            setCanvasClickMenu(null);
-                          }
-                        }}
-                        trigger={(
-                          <button
-                            type="button"
-                            className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
-                            title="إضافة صورة"
-                          >
-                            صورة
-                          </button>
-                        )}
-                      />
-                      {hasClipboardElement ? (
-                        <button
-                          type="button"
-                          className="mini-btn studio-canvas-menu__action studio-canvas-menu__paste-trigger"
-                          onClick={() => {
-                            pasteElementClipboardAt({ x: canvasClickMenu.x, y: canvasClickMenu.y });
-                            setCanvasClickMenu(null);
-                          }}
-                          title="لصق العنصر المنسوخ"
-                        >
-                          لصق
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        className="mini-btn studio-canvas-menu__close"
-                        onClick={() => setCanvasClickMenu(null)}
-                        title="إغلاق"
-                      >
-                        ×
-                      </button>
-                    </>
+                    }
+                  />
+                  {hasClipboardElement ? (
+                    <button
+                      type="button"
+                      className="mini-btn studio-canvas-menu__action studio-canvas-menu__paste-trigger"
+                      onClick={() => {
+                        pasteElementClipboardAt({ x: canvasClickMenu.x, y: canvasClickMenu.y });
+                        setCanvasClickMenu(null);
+                      }}
+                      title="لصق العنصر المنسوخ"
+                    >
+                      لصق
+                    </button>
                   ) : null}
+                  <button
+                    type="button"
+                    className="mini-btn studio-canvas-menu__close"
+                    onClick={() => setCanvasClickMenu(null)}
+                    title="إغلاق"
+                  >
+                    ✕
+                  </button>
                 </div>
               ) : null}
               </div>
