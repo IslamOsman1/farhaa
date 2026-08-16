@@ -6106,6 +6106,20 @@
       applyNativeOverrideToNode(node, nextOverride);
       queueNativeOverlaySync();
     };
+    const clearMovePlacementMode = () => {
+      runtimeState.movePlacementMode = null;
+      if (document.body?.dataset) {
+        delete document.body.dataset.farhaMovePlacement;
+      }
+    };
+    const setMovePlacementMode = (payload) => {
+      runtimeState.movePlacementMode = payload || null;
+      if (payload?.scope) {
+        document.body.dataset.farhaMovePlacement = payload.scope;
+      } else if (document.body?.dataset) {
+        delete document.body.dataset.farhaMovePlacement;
+      }
+    };
     const getNudgeDelta = (direction, step) => {
       if (direction === 'nudge-right') return { dx: step, dy: 0 };
       if (direction === 'nudge-left') return { dx: -step, dy: 0 };
@@ -6159,6 +6173,43 @@
 
       const nextLeft = toPxNumber(wrapper.style.left, 0) + delta.dx;
       const nextTop = toPxNumber(wrapper.style.top, 0) + delta.dy;
+      wrapper.style.left = `${nextLeft}px`;
+      wrapper.style.top = `${nextTop}px`;
+      persistUpdate(wrapper.dataset.id, {
+        x: nextLeft,
+        y: nextTop,
+      });
+      selectElement(wrapper.dataset.id);
+      return true;
+    };
+    const moveNativeElementToCanvasPoint = (node, canvasPoint) => {
+      if (!node || !canvasPoint) {
+        return false;
+      }
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      if (currentOverride.locked) {
+        return false;
+      }
+      const placement = getCanvasPlacementFromNode(node);
+      const nextOverride = {
+        ...currentOverride,
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        kind: currentOverride.kind || getNativeElementKind(node),
+        x: Math.round(canvasPoint.x - placement.x),
+        y: Math.round(canvasPoint.y - placement.y),
+      };
+      applyLocalNativeOverride(id, node, nextOverride);
+      persistNativeUpdate(id, node, nextOverride);
+      return true;
+    };
+    const moveCustomElementToCanvasPoint = (wrapper, canvasPoint) => {
+      if (!wrapper || !canvasPoint || wrapper.dataset.locked === 'true') {
+        return false;
+      }
+      const nextLeft = Math.max(0, Math.round(canvasPoint.x - ((wrapper.offsetWidth || 0) / 2)));
+      const nextTop = Math.max(0, Math.round(canvasPoint.y - ((wrapper.offsetHeight || 0) / 2)));
       wrapper.style.left = `${nextLeft}px`;
       wrapper.style.top = `${nextTop}px`;
       persistUpdate(wrapper.dataset.id, {
@@ -6483,6 +6534,29 @@
       ) {
         event.preventDefault();
         event.stopPropagation();
+        const movePlacementMode = runtimeState.movePlacementMode;
+        if (movePlacementMode?.scope === 'native' && movePlacementMode.id) {
+          const nativeNode = findNativeElementById(movePlacementMode.id);
+          const targetPlacement = getCanvasPlacementFromNode(getEditorOverlayTarget());
+          const canvasPoint = {
+            x: Math.round(point.x - targetPlacement.x + (window.scrollX || 0)),
+            y: Math.round(point.y - targetPlacement.y + (window.scrollY || 0)),
+          };
+          moveNativeElementToCanvasPoint(nativeNode, canvasPoint);
+          clearMovePlacementMode();
+          return;
+        }
+        if (movePlacementMode?.scope === 'custom' && movePlacementMode.id) {
+          const customWrapper = document.querySelector(`.farha-custom-element[data-id="${movePlacementMode.id}"]`);
+          const targetPlacement = getCanvasPlacementFromNode(getEditorOverlayTarget());
+          const canvasPoint = {
+            x: Math.round(point.x - targetPlacement.x + (window.scrollX || 0)),
+            y: Math.round(point.y - targetPlacement.y + (window.scrollY || 0)),
+          };
+          moveCustomElementToCanvasPoint(customWrapper, canvasPoint);
+          clearMovePlacementMode();
+          return;
+        }
         selectElement(null);
         selectTemplateText(null);
         selectNativeElement(null, { silent: true });
@@ -6510,14 +6584,20 @@
         event.preventDefault();
         event.stopPropagation();
 
-        if ((action === 'scale' || action === 'rotate' || action === 'move') && point && !baseOverride.locked) {
+        if ((action === 'scale' || action === 'rotate') && point && !baseOverride.locked) {
           if (action === 'scale') {
             startNativeScaleTransform(selectedNode, point);
-          } else if (action === 'rotate') {
-            startNativeRotateTransform(selectedNode, point);
           } else {
-            startNativeTransform(selectedNode, point);
+            startNativeRotateTransform(selectedNode, point);
           }
+          return;
+        }
+
+        if (action === 'move') {
+          setMovePlacementMode({
+            scope: 'native',
+            id: selectedId,
+          });
           return;
         }
 
@@ -6788,6 +6868,16 @@
             },
           },
         }, '*');
+        return;
+      }
+
+      if (action === 'move') {
+        event.preventDefault();
+        event.stopPropagation();
+        setMovePlacementMode({
+          scope: 'custom',
+          id: wrapper.dataset.id,
+        });
         return;
       }
 
