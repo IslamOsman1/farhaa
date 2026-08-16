@@ -6324,6 +6324,9 @@
     };
     const startPendingCustomTransform = (kind, wrapper, point) => {
       startTransform(kind, wrapper, point);
+      if (activeTransform) {
+        activeTransform.pending = true;
+      }
     };
 
     const startNativeTransform = (node, point) => {
@@ -6356,6 +6359,9 @@
     };
     const startPendingNativeTransform = (node, point) => {
       startNativeTransform(node, point);
+      if (activeTransform) {
+        activeTransform.pending = true;
+      }
     };
     const dispatchCanvasClick = (point) => {
       if (!point) {
@@ -6981,17 +6987,6 @@
         target?.closest?.('[contenteditable="true"], input, textarea, select') ||
         wrapper?.classList?.contains('farha-studio-editing');
       if (isEditableTarget && !action) {
-        return;
-      }
-
-      if (
-        wrapper.dataset.type === 'text'
-        && !action
-        && target?.closest?.('.farha-custom-element__text')
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-        hideSnapGuides();
         return;
       }
 
