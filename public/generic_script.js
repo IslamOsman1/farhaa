@@ -204,9 +204,336 @@
     editorDockHandler: null,
     fontLibrary: FALLBACK_OVERLAY_FONT_LIBRARY,
     fontLibraryPromise: null,
+    previewMutationSyncRaf: 0,
+    previewMutationObserver: null,
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
+
+  const templateBindingOverrides = {
+    sacredgarden: {
+      openingNames: { method: 'text', selector: '#rec2487446043 [data-elem-id="1763402147625"] .tn-atom, #rec2487446253 [data-elem-id="1772813849329000001"] .tn-atom' },
+      openingKicker: { method: 'text', selector: '#rec2487446043 [data-elem-id="176340398328864790"] .tn-atom' },
+      openingHint: { method: 'text', selector: '#rec2487446223 [data-elem-id="1782316019612"] .tn-atom' },
+      dateText: { method: 'text', selector: '#rec2487446043 [data-elem-id="176340401720454780"] .tn-atom' },
+      verseText: { method: 'text', selector: '#rec2487446043 [data-elem-id="1780748008617000003"] .tn-atom' },
+      invitationText: { method: 'text', selector: '#rec2487446043 [data-elem-id="1780748008617000005"] .tn-atom' },
+      titleCountdown: { method: 'text', selector: '#rec2487446093 [data-elem-id="1771277026942000001"] .tn-atom' },
+      titleVenue: { method: 'text', selector: '#rec2487446123 [data-elem-id="1771277026942000001"] .tn-atom' },
+      venueName: { method: 'text', selector: '#rec2487446123 [data-elem-id="1772804808869"] .tn-atom' },
+      venueAddress: { method: 'text', selector: '#rec2487446123 [data-elem-id="1772813480591000001"] .tn-atom' },
+      contactLabel: { method: 'text', selector: '#rec2487446223 [data-elem-id="1763405219328"] .tn-atom, #popuptitle_2487446233' },
+      contactName: { method: 'text', selector: '#rec2487446233 .t702__descr' },
+      closingNote: { method: 'text', selector: '#rec2487446253 [data-elem-id="1763405219328"] .tn-atom' },
+    },
+    blossomoud: {
+      openingNames: { method: 'text', selector: '[data-elem-id="1779566247730000001"] .tn-atom, [data-elem-id="1763405219328"] .tn-atom' },
+      openingHint: { method: 'text', selector: '[data-elem-id="1777183175514000001"] .tn-atom' },
+      dateText: { method: 'text', selector: '[data-elem-id="1779566247730000003"] .tn-atom' },
+      timeText: { method: 'text', selector: '[data-elem-id="1779626065755000001"] .tn-atom' },
+      invitationText: { method: 'text', selector: '[data-elem-id="1779624381838000001"] .tn-atom' },
+      venueName: { method: 'text', selector: '[data-elem-id="1779472210551000005"] .tn-atom' },
+      venueAddress: { method: 'text', selector: '[data-elem-id="1779545032699000001"] .tn-atom' },
+    },
+    destinationlove: {
+      openingNames: { method: 'text', selector: '[data-elem-id="1739457970056"] .tn-atom, [data-elem-id="1741107633653"] .tn-atom, [data-elem-id="1705236303923"] .tn-atom' },
+      openingKicker: { method: 'text', selector: '[data-elem-id="1739457970059"] .tn-atom' },
+      invitationText: { method: 'text', selector: '[data-elem-id="1739457970066"] .tn-atom' },
+      dateText: { method: 'text', selector: '[data-elem-id="1739457970065"] .tn-atom, [data-elem-id="1741107633658"] .tn-atom' },
+      venueName: { method: 'text', selector: '[data-elem-id="1739457970068"] .tn-atom, [data-elem-id="1741107633670"] .tn-atom, [data-elem-id="1739461934117"] .tn-atom' },
+      venueAddress: { method: 'text', selector: '[data-elem-id="1739461934122"] .tn-atom' },
+      titleProgram: { method: 'text', selector: '[data-elem-id="1739462100511"] .tn-atom' },
+      titleVenue: { method: 'text', selector: '[data-elem-id="1739461934107"] .tn-atom' },
+      titleNotes: { method: 'text', selector: '[data-elem-id="1741427070967"] .tn-atom' },
+      contactLabel: { method: 'text', selector: '[data-elem-id="1741438897474"] .tn-atom' },
+      contactName: { method: 'text', selector: '[data-elem-id="1741438897481"] .tn-atom' },
+      closingNote: { method: 'text', selector: '[data-elem-id="1705236303918"] .tn-atom' },
+    },
+    dolcevita: {
+      openingNames: { method: 'text', selector: '[data-elem-id="1776948176126"] .tn-atom, [data-elem-id="1710522265391"] .tn-atom' },
+      openingHint: { method: 'text', selector: '[data-elem-id="1777183175514000001"] .tn-atom' },
+      welcomeMessage: { method: 'text', selector: '[data-elem-id="1705235414679"] .tn-atom' },
+      invitationText: { method: 'text', selector: '[data-elem-id="1705235414678"] .tn-atom' },
+      titleVenue: { method: 'text', selector: '[data-elem-id="1776866271348000001"] .tn-atom' },
+      venueName: { method: 'text', selector: '[data-elem-id="1776866271348000003"] .tn-atom' },
+      venueAddress: { method: 'text', selector: '[data-elem-id="1776866271348000004"] .tn-atom' },
+      titleNotes: { method: 'text', selector: '[data-elem-id="1741427070967"] .tn-atom' },
+      contactLabel: { method: 'text', selector: '#popuptitle_2442651153' },
+      contactName: { method: 'text', selector: '[data-elem-id="1772813849329000001"] .tn-atom' },
+      closingNote: { method: 'text', selector: '[data-elem-id="1710522265387"] .tn-atom' },
+    },
+    jathuandthanu: {
+      openingNames: { method: 'text', selector: '[data-elem-id="1730310670429"] .tn-atom, [data-elem-id="1710522265391"] .tn-atom' },
+      dateText: { method: 'text', selector: '[data-elem-id="1730310670422"] .tn-atom, [data-elem-id="1705235414658"] .tn-atom' },
+      venueName: { method: 'text', selector: '[data-elem-id="1730310670428"] .tn-atom' },
+      welcomeMessage: { method: 'text', selector: '[data-elem-id="1730310670432"] .tn-atom' },
+      invitationText: { method: 'text', selector: '[data-elem-id="1730408987892"] .tn-atom' },
+      titleProgram: { method: 'text', selector: '[data-elem-id="1705235414648"] .tn-atom' },
+      titleCountdown: { method: 'text', selector: '[data-elem-id="1688561179508"] .tn-atom' },
+      titleNotes: { method: 'text', selector: '[data-elem-id="1730375467543"] .tn-atom' },
+      contactLabel: { method: 'text', selector: '[data-elem-id="1688212272397"] .tn-atom' },
+      contactName: { method: 'text', selector: '[data-elem-id="1730375049860"] .tn-atom' },
+      contactPhone: { method: 'text', selector: '[data-elem-id="1730375049855"] .tn-atom, [data-elem-id="1730375049858"] .tn-atom' },
+      closingNote: { method: 'text', selector: '[data-elem-id="1710522265387"] .tn-atom' },
+    },
+    royal: {
+      guestName: { method: 'text', selector: '#env-guest-name' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      groomName: { method: 'text', selector: '#groomName' },
+      brideName: { method: 'text', selector: '#brideName' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    majestic: {
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      groomName: { method: 'text', selector: '#groomName' },
+      brideName: { method: 'text', selector: '#brideName' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    twilight: {
+      groomName: { method: 'text', selector: '#groomName' },
+      brideName: { method: 'text', selector: '#brideName' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    imperial: {
+      groomName: { method: 'text', selector: '#groomName' },
+      brideName: { method: 'text', selector: '#brideName' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    toscana: {
+      groomName: { method: 'text', selector: '#groomName' },
+      brideName: { method: 'text', selector: '#brideName' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    classic: {
+      openingNames: { method: 'text', selector: '#preloaderNames' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    bab: {
+      openingNames: { method: 'text', selector: '#coverNames' },
+      openingHint: { method: 'text', selector: '#knockHint' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    reverie: {
+      openingNames: { method: 'text', selector: '#coverNames' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    ring: {
+      openingNames: { method: 'text', selector: '#coverNames' },
+      openingHint: { method: 'text', selector: '#hintLabel' },
+      groomName: { method: 'text', selector: '#groomName' },
+      brideName: { method: 'text', selector: '#brideName' },
+      welcomeMessage: { method: 'text', selector: '#heroSub' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      contactLabel: { method: 'text', selector: '#contactLabel' },
+      contactName: { method: 'text', selector: '#contactName' },
+      contactPhone: { method: 'text', selector: '#contactPhoneText' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    letter: {
+      openingKicker: { method: 'text', selector: '#coverKicker' },
+      openingNames: { method: 'text', selector: '#coverNames' },
+      openingHint: { method: 'text', selector: '#coverHint' },
+      groomName: { method: 'text', selector: '#groomName' },
+      brideName: { method: 'text', selector: '#brideName' },
+      welcomeMessage: { method: 'text', selector: '#heroSub' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    disney: {
+      openingNames: { method: 'text', selector: '#preloaderNames' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    rozana: {
+      openingNames: { method: 'text', selector: '#coverNames' },
+      openingHint: { method: 'text', selector: '#coverHint' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      dateText: { method: 'text', selector: '#wipeDate, #weddingDate' },
+      timeText: { method: 'text', selector: '#wipeTime, #weddingTime' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      venueName: { method: 'text', selector: '#heroVenue, #venueName' },
+      venueAddress: { method: 'text', selector: '#heroAddr, #venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    hadeel: {
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    wisal: {
+      openingNames: { method: 'text', selector: '#coverNames' },
+      openingHint: { method: 'text', selector: '#coverHint' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      dateText: { method: 'text', selector: '#wipeDate, #weddingDate' },
+      timeText: { method: 'text', selector: '#wipeTime, #weddingTime' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      venueName: { method: 'text', selector: '#heroVenue, #venueName' },
+      venueAddress: { method: 'text', selector: '#heroAddr, #venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    vangogh: {
+      openingNames: { method: 'text', selector: '#preloaderNames' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+    blush: {
+      openingKicker: { method: 'text', selector: '#coverKicker' },
+      openingNames: { method: 'text', selector: '#coverNames' },
+      openingHint: { method: 'text', selector: '#coverHint' },
+      groomName: { method: 'text', selector: '#heroGroom' },
+      brideName: { method: 'text', selector: '#heroBride' },
+      welcomeMessage: { method: 'text', selector: '#heroInvite' },
+      verseText: { method: 'text', selector: '#verseText' },
+      invitationText: { method: 'text', selector: '#invitationText' },
+      weddingDate: { method: 'computedDate', selector: '#weddingDate' },
+      timeText: { method: 'text', selector: '#weddingTime' },
+      venueName: { method: 'text', selector: '#venueName' },
+      venueAddress: { method: 'text', selector: '#venueAddr' },
+      locationLink: { method: 'attribute', selector: '#mapBtn', attribute: 'href' },
+      closingNote: { method: 'text', selector: '#closingNote' },
+      closingHashtag: { method: 'text', selector: '#closingHashtag' },
+    },
+  };
+
+  const templateSectionSelectorOverrides = {
+    sacredgarden: {
+      countdown: ['#rec2487446093'],
+      timeline: ['#rec2487446103'],
+      rsvp: ['#rec2487446223', '#rec2487446233'],
+      notes: ['#rec2487446253'],
+    },
+    blossomoud: {
+      countdown: ['#rec2443433753'],
+      timeline: ['#rec2443433773'],
+      notes: ['#rec2443433803'],
+      rsvp: ['#rec2443433813'],
+      calendar: ['#rec2443433823'],
+    },
+    destinationlove: {
+      timeline: ['#rec1141006126'],
+      notes: ['#rec1141006181'],
+      rsvp: ['#rec1141006156', '#rec1141006166'],
+      calendar: ['#rec1141006176'],
+    },
+  };
 
   const fallbackBindings = {
     groomName: { method: 'text', selector: '#groomName, #heroGroom' },
@@ -265,6 +592,29 @@
     brideRelationLabel: { method: 'text', selector: '#brideRelationLabel' },
     brideRelationName: { method: 'text', selector: '#brideRelationName' },
   };
+
+  const defaultSectionSelectors = {
+    gallery: ['#gallery-section', '#da3wa-mem'],
+    countdown: ['#countdown-section', '#countdown', '.count', '.when'],
+    timeline: ['#program-section', '#timeline', '.program'],
+    rsvp: ['#rsvp-section', '#da3wa-rsvp'],
+    notes: ['#notes-section', '#notesList', '.notes'],
+    calendar: ['#calendar-section', '#da3wa-cal'],
+  };
+
+  function buildTemplateBindings(slug) {
+    return {
+      ...fallbackBindings,
+      ...(templateBindingOverrides[slug] || {}),
+    };
+  }
+
+  function buildTemplateSectionSelectors(slug) {
+    return {
+      ...defaultSectionSelectors,
+      ...(templateSectionSelectorOverrides[slug] || {}),
+    };
+  }
 
   const STATIC_FIELD_TRANSLATIONS = {
     openingKicker: {
@@ -329,6 +679,12 @@
     runtimeState.invitationSlug = window.location.pathname.includes('/invite/')
       ? window.location.pathname.split('/').filter(Boolean).pop() || null
       : runtimeState.invitationSlug;
+    runtimeState.manifest = {
+      runtimeBindings: {
+        fieldBindings: buildTemplateBindings(runtimeState.templateSlug),
+        sectionSelectors: buildTemplateSectionSelectors(runtimeState.templateSlug),
+      },
+    };
 
     ensureSharedFontLibraryStyles();
     void loadSharedFontLibrary();
@@ -2369,6 +2725,79 @@
     syncTemplateTextSelection();
   }
 
+  function syncPreviewEditableBindings() {
+    if (!runtimeState.preview) {
+      return;
+    }
+
+    const bindings =
+      (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+      || fallbackBindings;
+
+    attachStudioInlineEditors(bindings);
+    applyTextOverrides(runtimeState.renderConfig?.textOverrides || []);
+    applyTextStyleOverrides(runtimeState.renderConfig?.ui?.textStyleOverrides || {});
+    applyNativeElementOverrides(runtimeState.renderConfig?.nativeElementOverrides || {});
+    initUniversalTextEditor();
+    queueNativeOverlaySync();
+  }
+
+  function schedulePreviewEditableBindingsSync() {
+    if (!runtimeState.preview) {
+      return;
+    }
+
+    if (runtimeState.previewMutationSyncRaf) {
+      window.cancelAnimationFrame(runtimeState.previewMutationSyncRaf);
+    }
+
+    runtimeState.previewMutationSyncRaf = window.requestAnimationFrame(() => {
+      runtimeState.previewMutationSyncRaf = 0;
+      syncPreviewEditableBindings();
+    });
+  }
+
+  function ensurePreviewEditableBindingsObserver() {
+    if (!runtimeState.preview || !document.body) {
+      if (runtimeState.previewMutationObserver) {
+        runtimeState.previewMutationObserver.disconnect();
+        runtimeState.previewMutationObserver = null;
+      }
+      if (runtimeState.previewMutationSyncRaf) {
+        window.cancelAnimationFrame(runtimeState.previewMutationSyncRaf);
+        runtimeState.previewMutationSyncRaf = 0;
+      }
+      return;
+    }
+
+    if (runtimeState.previewMutationObserver) {
+      return;
+    }
+
+    runtimeState.previewMutationObserver = new MutationObserver((mutations) => {
+      const shouldSync = mutations.some((mutation) => {
+        if (mutation.type !== 'childList') {
+          return false;
+        }
+
+        if (mutation.addedNodes.length || mutation.removedNodes.length) {
+          return true;
+        }
+
+        return false;
+      });
+
+      if (shouldSync) {
+        schedulePreviewEditableBindingsSync();
+      }
+    });
+
+    runtimeState.previewMutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
   function placeCaretWithinTarget(target, triggerEvent = null) {
     if (!target) {
       return;
@@ -2790,6 +3219,7 @@
     applyNativeElementOverrides(renderConfig.nativeElementOverrides || {});
     postStudioCatalogs(bindings);
     initUniversalTextEditor();
+    ensurePreviewEditableBindingsObserver();
 
     if (runtimeState.deviceResizeHandler) {
       window.removeEventListener('resize', runtimeState.deviceResizeHandler);
@@ -2843,6 +3273,12 @@
     if (!fields.mapUrl && fields.locationLink) fields.mapUrl = fields.locationLink;
     if (!fields.venueAddr && fields.venueAddress) fields.venueAddr = fields.venueAddress;
     if (!fields.date && fields.weddingDate) fields.date = fields.weddingDate;
+    if (!fields.openingNames && (fields.groomName || fields.brideName)) {
+      const names = [fields.groomName, fields.brideName].filter(Boolean);
+      if (names.length) {
+        fields.openingNames = names.join(' & ');
+      }
+    }
 
     if (!fields.images || typeof fields.images !== 'object') {
       fields.images = {};
@@ -3068,7 +3504,7 @@
         break;
     }
 
-    if (binding.selector === '#contactPhone' && fields.contactPhone) {
+    if (fields.contactPhone) {
       const waLink = `https://wa.me/${String(fields.contactPhone).replace(/[^0-9]/g, '')}`;
       setAttribute('#contactPhone, #contactWhatsapp, #contactLink', 'href', waLink);
       setText('#contactPhoneText', fields.contactPhone);
