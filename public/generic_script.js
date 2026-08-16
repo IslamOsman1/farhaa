@@ -2378,6 +2378,10 @@
         <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
           <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="تحريك العنصر">تحريك</button>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="nudge-right" aria-label="تحريك يمين">→</button>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="nudge-left" aria-label="تحريك يسار">←</button>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="nudge-up" aria-label="تحريك أعلى">↑</button>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="nudge-down" aria-label="تحريك أسفل">↓</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="استبدال الصورة">استبدال</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-text" aria-label="إضافة نص هنا">نص</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-image" aria-label="إضافة صورة هنا">صورة</button>
@@ -5988,6 +5992,68 @@
       applyNativeOverrideToNode(node, nextOverride);
       queueNativeOverlaySync();
     };
+    const getNudgeDelta = (direction, step) => {
+      if (direction === 'nudge-right') return { dx: step, dy: 0 };
+      if (direction === 'nudge-left') return { dx: -step, dy: 0 };
+      if (direction === 'nudge-up') return { dx: 0, dy: -step };
+      if (direction === 'nudge-down') return { dx: 0, dy: step };
+      return null;
+    };
+    const nudgeNativeElement = (node, direction, step = 2) => {
+      if (!node) {
+        return false;
+      }
+
+      const id = buildNativeElementId(node);
+      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+      if (currentOverride.locked) {
+        return false;
+      }
+
+      const delta = getNudgeDelta(direction, step);
+      if (!delta) {
+        return false;
+      }
+
+      const nextOverride = {
+        ...currentOverride,
+        label: currentOverride.label || getNativeElementLabel(node),
+        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
+        kind: currentOverride.kind || getNativeElementKind(node),
+        x: toPxNumber(currentOverride.x, 0) + delta.dx,
+        y: toPxNumber(currentOverride.y, 0) + delta.dy,
+      };
+      applyLocalNativeOverride(id, node, nextOverride);
+      persistNativeUpdate(id, node, nextOverride);
+      selectNativeElement(node, {
+        label: nextOverride.label,
+        selector: nextOverride.selector,
+        kind: nextOverride.kind,
+        silent: true,
+      });
+      return true;
+    };
+    const nudgeCustomElement = (wrapper, direction, step = 2) => {
+      if (!wrapper || wrapper.dataset.locked === 'true') {
+        return false;
+      }
+
+      const delta = getNudgeDelta(direction, step);
+      if (!delta) {
+        return false;
+      }
+
+      const nextLeft = toPxNumber(wrapper.style.left, 0) + delta.dx;
+      const nextTop = toPxNumber(wrapper.style.top, 0) + delta.dy;
+      wrapper.style.left = `${nextLeft}px`;
+      wrapper.style.top = `${nextTop}px`;
+      persistUpdate(wrapper.dataset.id, {
+        x: nextLeft,
+        y: nextTop,
+      });
+      selectElement(wrapper.dataset.id);
+      return true;
+    };
     const openNativeTextEditor = (node, overrideMeta = {}) => {
       const textTarget = getNativeTextEditTarget(node);
       if (!textTarget) {
@@ -6339,6 +6405,11 @@
           return;
         }
 
+        if (action.startsWith('nudge-')) {
+          nudgeNativeElement(selectedNode, action, event.shiftKey ? 10 : 2);
+          return;
+        }
+
         if (action === 'edit') {
           if (!isNativeTextEditableNode(selectedNode) || baseOverride.locked) {
             return;
@@ -6606,6 +6677,13 @@
             },
           },
         }, '*');
+        return;
+      }
+
+      if (action.startsWith('nudge-')) {
+        event.preventDefault();
+        event.stopPropagation();
+        nudgeCustomElement(wrapper, action, event.shiftKey ? 10 : 2);
         return;
       }
 
@@ -7001,6 +7079,45 @@
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchend', handleEnd);
     document.addEventListener('touchcancel', handleEnd);
+    document.addEventListener('keydown', (event) => {
+      if (!runtimeState.preview || activeTransform || runtimeState.activeTextEditor) {
+        return;
+      }
+
+      const target = event.target;
+      if (
+        target?.isContentEditable
+        || target?.closest?.('[contenteditable="true"], input, textarea, select, option')
+      ) {
+        return;
+      }
+
+      const directionMap = {
+        ArrowRight: 'nudge-right',
+        ArrowLeft: 'nudge-left',
+        ArrowUp: 'nudge-up',
+        ArrowDown: 'nudge-down',
+      };
+      const direction = directionMap[event.key];
+      if (!direction) {
+        return;
+      }
+
+      const step = event.shiftKey ? 10 : 2;
+      let handled = false;
+      const selectedNativeId = runtimeState.selectedNativeElementId;
+      if (selectedNativeId) {
+        handled = nudgeNativeElement(findNativeElementById(selectedNativeId), direction, step);
+      } else if (runtimeState.selectedCustomElementId) {
+        const selectedWrapper = document.querySelector(`.farha-custom-element[data-id="${runtimeState.selectedCustomElementId}"]`);
+        handled = nudgeCustomElement(selectedWrapper, direction, step);
+      }
+
+      if (handled) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    });
   }
 
   function applyCustomElements(elements) {
@@ -7390,6 +7507,10 @@
         controlsRoot.style.alignItems = 'center';
         controlsRoot.style.justifyContent = 'flex-start';
         controlsRoot.appendChild(makeActionButton({ label: 'تحريك', action: 'move', ariaLabel: 'تحريك العنصر الحر' }));
+        controlsRoot.appendChild(makeActionButton({ label: '→', action: 'nudge-right', wide: false, ariaLabel: 'تحريك يمين' }));
+        controlsRoot.appendChild(makeActionButton({ label: '←', action: 'nudge-left', wide: false, ariaLabel: 'تحريك يسار' }));
+        controlsRoot.appendChild(makeActionButton({ label: '↑', action: 'nudge-up', wide: false, ariaLabel: 'تحريك أعلى' }));
+        controlsRoot.appendChild(makeActionButton({ label: '↓', action: 'nudge-down', wide: false, ariaLabel: 'تحريك أسفل' }));
 
         if (el.type === 'text') {
           controlsRoot.appendChild(makeActionButton({ label: 'تحرير', action: 'edit', ariaLabel: 'تحرير النص' }));
