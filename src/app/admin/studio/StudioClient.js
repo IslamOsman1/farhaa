@@ -3815,6 +3815,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             <input
                               type="color"
                               value={selectedCustomElement.color || '#1f2937'}
+                              onInput={(event) => patchCustomElement(selectedCustomElement.id, { color: event.target.value })}
                               onChange={(event) => patchCustomElement(selectedCustomElement.id, { color: event.target.value })}
                             />
                           </label>
@@ -3874,6 +3875,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               dir="ltr"
                               value={selectedCustomElement.fontFamily || ''}
                               placeholder="مثال: Tajawal, serif"
+                              onInput={(event) => patchCustomElement(selectedCustomElement.id, { fontFamily: event.target.value })}
                               onChange={(event) => patchCustomElement(selectedCustomElement.id, { fontFamily: event.target.value })}
                             />
                           </label>
@@ -4270,6 +4272,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               list="studio-font-options"
                               value={selectedNativeElement.fontFamily || ''}
                               placeholder="Tajawal"
+                              onInput={(event) => patchNativeElement(selectedNativeElementId, { fontFamily: event.target.value })}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { fontFamily: event.target.value })}
                             />
                           </label>
@@ -4312,6 +4315,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               type="text"
                               value={selectedNativeElement.color || ''}
                               placeholder="#7f2a1f"
+                              onInput={(event) => patchNativeElement(selectedNativeElementId, { color: event.target.value })}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { color: event.target.value })}
                             />
                           </label>
@@ -4459,6 +4463,11 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           <input
                             type="color"
                             value={normalizeHexColor(selectedTemplateTextStyleTarget.color, '#7f2a1f')}
+                            onInput={(event) =>
+                              patchNativeElement(selectedNativeElementId, {
+                                color: event.target.value,
+                              })
+                            }
                             onChange={(event) =>
                               patchNativeElement(selectedNativeElementId, {
                                 color: event.target.value,
@@ -4470,6 +4479,11 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           <span>نوع الخط</span>
                           <select
                             value={selectedTemplateTextStyleTarget.fontFamily || ''}
+                            onInput={(event) =>
+                              patchNativeElement(selectedNativeElementId, {
+                                fontFamily: event.target.value,
+                              })
+                            }
                             onChange={(event) =>
                               patchNativeElement(selectedNativeElementId, {
                                 fontFamily: event.target.value,

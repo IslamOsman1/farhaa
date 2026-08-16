@@ -6049,28 +6049,7 @@
       selectElement(activeTransform.id);
     };
     const startPendingCustomTransform = (kind, wrapper, point) => {
-      const contentNode = wrapper.querySelector('.farha-custom-element__content');
-      const imageNode = wrapper.querySelector('.farha-custom-element__image');
-      activeTransform = {
-        pending: true,
-        kind,
-        wrapper,
-        id: wrapper.dataset.id,
-        snapTarget: getEditorOverlayTarget(),
-        snapPeers: collectSnapPeerRects({ excludeNode: wrapper }),
-        startX: point.x,
-        startY: point.y,
-        startLeft: toPxNumber(wrapper.style.left, 0),
-        startTop: toPxNumber(wrapper.style.top, 0),
-        startWidth: toPxNumber(wrapper.style.width, wrapper.offsetWidth || 150),
-        startHeight: toPxNumber(wrapper.style.height, wrapper.offsetHeight || 150),
-        startFontSize: toPxNumber(contentNode?.style.fontSize || wrapper.dataset.fontSize, 24),
-        startCropX: toPxNumber(wrapper.dataset.cropX, 50),
-        startCropY: toPxNumber(wrapper.dataset.cropY, 50),
-        imageNode,
-        contentNode,
-      };
-      selectElement(activeTransform.id);
+      startTransform(kind, wrapper, point);
     };
 
     const startNativeTransform = (node, point) => {
@@ -6102,32 +6081,30 @@
       });
     };
     const startPendingNativeTransform = (node, point) => {
-      const id = buildNativeElementId(node);
-      const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
-      ensureNativeElementBaseState(node);
-      activeTransform = {
-        scope: 'native',
-        kind: 'move',
-        pending: true,
-        node,
-        id,
-        snapTarget: getEditorOverlayTarget(),
-        snapPeers: collectSnapPeerRects({ excludeNode: node }),
-        label: currentOverride.label || getNativeElementLabel(node),
-        selector: currentOverride.selector || getNativeElementSelectorHint(node) || id,
-        nativeKind: currentOverride.kind || getNativeElementKind(node),
-        startX: point.x,
-        startY: point.y,
-        startOffsetX: toPxNumber(currentOverride.x, 0),
-        startOffsetY: toPxNumber(currentOverride.y, 0),
-        startRect: node.getBoundingClientRect(),
-      };
-      selectNativeElement(node, {
-        label: activeTransform.label,
-        selector: activeTransform.selector,
-        kind: activeTransform.nativeKind,
-        silent: true,
-      });
+      startNativeTransform(node, point);
+    };
+    const dispatchCanvasClick = (point) => {
+      if (!point) {
+        return;
+      }
+
+      const target = getEditorOverlayTarget();
+      const rect = target.getBoundingClientRect();
+      const pageX = point.x + window.scrollX;
+      const pageY = point.y + window.scrollY;
+      const targetPageLeft = rect.left + window.scrollX;
+      const targetPageTop = rect.top + window.scrollY;
+      const ownScrollX = target !== document.body && target !== document.documentElement ? (target.scrollLeft || 0) : 0;
+      const ownScrollY = target !== document.body && target !== document.documentElement ? (target.scrollTop || 0) : 0;
+      const x = pageX - targetPageLeft + ownScrollX;
+      const y = pageY - targetPageTop + ownScrollY;
+      const visualX = point.x - rect.left;
+      const visualY = point.y - rect.top;
+
+      window.parent.postMessage({
+        type: 'FARHA_CANVAS_CLICK',
+        payload: { x, y, visualX, visualY },
+      }, '*');
     };
     const startNativeCropTransform = (node, point) => {
       const id = buildNativeElementId(node);
@@ -6276,17 +6253,19 @@
         return;
       }
 
-      if (point && (addModeActive || canvasSurface)) {
-        if (!target.closest('.farha-custom-element, .farha-floating-text-editor, #farha-native-overlay, #farha-editor-dock')) {
-          selectElement(null);
-          selectTemplateText(null);
-          selectNativeElement(null, { silent: true });
-          hideSnapGuides();
-          window.parent.postMessage({
-            type: 'FARHA_CANVAS_DISMISS_MENU',
-          }, '*');
-          return;
-        }
+      if (
+        point
+        && (addModeActive || canvasSurface)
+        && !target.closest('.farha-custom-element, .farha-floating-text-editor, #farha-native-overlay, #farha-editor-dock')
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        selectElement(null);
+        selectTemplateText(null);
+        selectNativeElement(null, { silent: true });
+        hideSnapGuides();
+        dispatchCanvasClick(point);
+        return;
       }
 
       if (nativeActionNode) {
