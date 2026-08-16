@@ -1596,7 +1596,7 @@
     let current = startNode?.nodeType === 1 ? startNode : startNode?.parentElement;
     const explicitEditable = current?.closest?.('.farha-studio-editable, [data-farha-studio-field], [data-farha-text-path]') || null;
     let firstCandidate = null;
-    let preferredTextCandidate = null;
+    const preferredTextCandidate = explicitEditable ? getPreferredNativeTextContainer(explicitEditable) : null;
 
     while (current && current !== document.body && current !== document.documentElement) {
       if (current.closest('.farha-custom-element')) {
@@ -1612,19 +1612,7 @@
 
         const candidateTextTarget = getNativeTextEditTarget(current);
         if (candidateTextTarget === explicitEditable) {
-          const editableDescendants = current.querySelectorAll('.farha-studio-editable, [data-farha-studio-field], [data-farha-text-path]').length;
-          const candidateStyle = window.getComputedStyle(current);
-          const isInlineOnly = candidateStyle.display === 'inline' || candidateStyle.display === 'contents';
-          if (editableDescendants <= 1) {
-            preferredTextCandidate = current;
-          }
-          if (
-            editableDescendants <= 1
-            && (
-              candidateStyle.position !== 'static'
-              || !isInlineOnly
-            )
-          ) {
+          if (preferredTextCandidate && current === preferredTextCandidate) {
             return current;
           }
         } else if (preferredTextCandidate) {
@@ -1636,6 +1624,66 @@
     }
 
     return preferredTextCandidate || firstCandidate || null;
+  }
+
+  function isTransparentBackgroundColor(value) {
+    const color = String(value || '').replace(/\s+/g, '').toLowerCase();
+    return !color || color === 'transparent' || color === 'rgba(0,0,0,0)';
+  }
+
+  function getPreferredNativeTextContainer(explicitEditable) {
+    if (!explicitEditable) {
+      return null;
+    }
+
+    const editableRect = explicitEditable.getBoundingClientRect?.();
+    const editableArea = Math.max((editableRect?.width || 0) * (editableRect?.height || 0), 1);
+    let current = explicitEditable;
+    let fallback = explicitEditable;
+    let preferred = null;
+    let depth = 0;
+
+    while (current && current !== document.body && current !== document.documentElement && depth < 6) {
+      if (!isNativeElementCandidate(current)) {
+        current = current.parentElement;
+        depth += 1;
+        continue;
+      }
+
+      const editableDescendants = current.querySelectorAll('.farha-studio-editable, [data-farha-studio-field], [data-farha-text-path]').length;
+      if (current !== explicitEditable && editableDescendants > 1) {
+        break;
+      }
+
+      fallback = current;
+
+      const style = window.getComputedStyle(current);
+      const rect = current.getBoundingClientRect?.();
+      const currentArea = Math.max((rect?.width || 0) * (rect?.height || 0), 1);
+      const areaRatio = currentArea / editableArea;
+      const paddingSize =
+        toPxNumber(style.paddingTop, 0)
+        + toPxNumber(style.paddingRight, 0)
+        + toPxNumber(style.paddingBottom, 0)
+        + toPxNumber(style.paddingLeft, 0);
+      const hasVisualBox =
+        !isTransparentBackgroundColor(style.backgroundColor)
+        || style.backgroundImage !== 'none'
+        || toPxNumber(style.borderTopWidth, 0) > 0
+        || toPxNumber(style.borderRadius, 0) > 0
+        || paddingSize > 4
+        || style.boxShadow !== 'none';
+      const isContainerDisplay = ['block', 'inline-block', 'flex', 'inline-flex', 'grid', 'inline-grid'].includes(style.display);
+
+      if (hasVisualBox && isContainerDisplay && areaRatio <= 20) {
+        preferred = current;
+      }
+
+      current = current.parentElement;
+      depth += 1;
+    }
+
+    return preferred || fallback;
   }
 
   function isCanvasBackgroundTarget(startNode) {
