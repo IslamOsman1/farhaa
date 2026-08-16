@@ -1226,8 +1226,9 @@ const QUICK_MEDIA_KEYS = new Set([
   'musicUrl',
 ]);
 
-export default function StudioClient({ session, manifests, openings, inventory }) {
+export default function StudioClient({ session, manifests, openings, inventory, existingInvitation = null, mode = 'studio' }) {
   const router = useRouter();
+  const isInvitationEditing = mode === 'invitation' && Boolean(existingInvitation?.slug);
   const initialDraft = useMemo(() => normalizeDraftState(session.draft), [session.draft]);
   const [draft, setDraft] = useState(initialDraft);
   const [openSection, setOpenSection] = useState('basic');
@@ -1259,6 +1260,7 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const [activityLog, setActivityLog] = useState([]);
   const [versionTrail, setVersionTrail] = useState([]);
   const [fontLibrary, setFontLibrary] = useState(BUILTIN_FONT_LIBRARY);
+  const [invitationStatus, setInvitationStatus] = useState(existingInvitation?.status || 'DRAFT');
   const autosaveRef = useRef(null);
   const lastSavedRef = useRef(JSON.stringify(initialDraft));
   const historyRef = useRef({ current: null, past: [], future: [] });
@@ -4715,7 +4717,68 @@ export default function StudioClient({ session, manifests, openings, inventory }
   const currentDeviceLabel = DEVICE_PRESETS[draft.devicePreview.mode]?.label || '\u0647\u0627\u062A\u0641';
   const studioEyebrow = '\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0627\u0644\u062A\u062E\u0635\u064A\u0635';
   const livePreviewBadge = '\u0645\u0639\u0627\u064A\u0646\u0629 \u0645\u0628\u0627\u0634\u0631\u0629';
-  const studioMetaLine = `${session.name} \u00B7 ${currentOpening.nameAr}`;
+  const studioMetaLine = isInvitationEditing
+    ? `${existingInvitation.slug} · ${currentOpening.nameAr}`
+    : `${session.name} \u00B7 ${currentOpening.nameAr}`;
+
+  async function persistInvitationDraft(action = 'save') {
+    if (!isInvitationEditing || !existingInvitation?.slug) {
+      return;
+    }
+
+    setBusy(true);
+    setNotice('');
+    try {
+      const response = await fetch(`/api/editor/${existingInvitation.slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateSlug: draft.templateSlug,
+          openingSlug: draft.openingSlug,
+          contentConfig: {
+            ...draft.contentConfig,
+            __customElements: draft.customElements || [],
+            __nativeElementOverrides: draft.nativeElementOverrides || {},
+            __textOverrides: draft.textOverrides || {},
+            __uiConfig: draft.uiConfig || {},
+          },
+          themeConfig: draft.themeConfig || {},
+          sectionConfig: draft.sectionConfig || {},
+          openingConfig: draft.openingConfig || {},
+          action,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.error || payload.message || 'تعذر حفظ الدعوة.');
+      }
+
+      const nextStatus =
+        payload.status
+        || (action === 'publish' ? 'PUBLISHED' : action === 'unpublish' ? 'DRAFT' : invitationStatus);
+      setInvitationStatus(nextStatus);
+      setNotice(
+        action === 'publish'
+          ? 'تم نشر الدعوة بنجاح.'
+          : action === 'unpublish'
+            ? 'تم إلغاء نشر الدعوة.'
+            : 'تم حفظ تغييرات الدعوة.'
+      );
+      recordActivity(
+        action === 'publish'
+          ? 'نشر الدعوة'
+          : action === 'unpublish'
+            ? 'إلغاء نشر الدعوة'
+            : 'حفظ الدعوة',
+        existingInvitation.slug,
+      );
+      router.refresh();
+    } catch (error) {
+      setNotice(error.message || 'تعذر حفظ الدعوة.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="studio-workspace">
@@ -4917,8 +4980,8 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
           <div className="studio-editor__summary">
             <div>
-              <span>الجلسة</span>
-              <strong>{session.name}</strong>
+              <span>{isInvitationEditing ? 'الدعوة' : 'الجلسة'}</span>
+              <strong>{isInvitationEditing ? existingInvitation.slug : session.name}</strong>
             </div>
             <div>
               <span>القالب</span>
@@ -4928,6 +4991,12 @@ export default function StudioClient({ session, manifests, openings, inventory }
               <span>المعاينة</span>
               <strong>{currentDeviceLabel}</strong>
             </div>
+            {isInvitationEditing ? (
+              <div>
+                <span>الحالة</span>
+                <strong>{invitationStatus}</strong>
+              </div>
+            ) : null}
           </div>
 
           {notice ? <div className="admin-alert info">{notice}</div> : null}
@@ -4972,11 +5041,28 @@ export default function StudioClient({ session, manifests, openings, inventory }
 
           <div className="studio-editor__footer">
             <button type="button" className="mini-btn" onClick={() => setEditorOpen(false)}>إلغاء</button>
-            <button type="button" className="mini-btn" onClick={() => void saveVariant()} disabled={busy}>حفظ كمسودة</button>
-            <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة كاملة</Link>
-            <button type="button" className="btn-primary studio-primary-action" onClick={() => void createInvitation()} disabled={busy}>
-              إنشاء الدعوة
-            </button>
+            {isInvitationEditing ? (
+              <>
+                <button type="button" className="mini-btn" onClick={() => void persistInvitationDraft('save')} disabled={busy}>
+                  حفظ الدعوة
+                </button>
+                <button type="button" className="mini-btn" onClick={() => void persistInvitationDraft('unpublish')} disabled={busy}>
+                  إلغاء النشر
+                </button>
+                <Link className="mini-btn" href={`/invite/${existingInvitation.slug}`} target="_blank">فتح الدعوة</Link>
+                <button type="button" className="btn-primary studio-primary-action" onClick={() => void persistInvitationDraft('publish')} disabled={busy}>
+                  نشر التعديلات
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="mini-btn" onClick={() => void saveVariant()} disabled={busy}>حفظ كمسودة</button>
+                <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة كاملة</Link>
+                <button type="button" className="btn-primary studio-primary-action" onClick={() => void createInvitation()} disabled={busy}>
+                  إنشاء الدعوة
+                </button>
+              </>
+            )}
           </div>
         </div>
       </aside>

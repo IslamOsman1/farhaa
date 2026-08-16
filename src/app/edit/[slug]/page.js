@@ -1,21 +1,25 @@
 import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import EditorClient from './EditorClient';
+import StudioClient from '@/app/admin/studio/StudioClient';
 import { requireAdminSession } from '@/lib/admin-session';
 import { getMergedOpenings } from '@/lib/template-records';
 import {
-  buildInvitationRenderConfig,
   getAllTemplateManifests,
-  getOpeningBySlug,
   getTemplateManifest,
-  normalizeInvitationData,
 } from '@/lib/template-system';
+import { scanTemplateStudioInventory } from '@/lib/studio-inventory';
+import {
+  buildStudioDraftFromSession,
+  buildStudioSessionUpdateData,
+  createStudioDraftFromInvitation,
+} from '@/lib/studio';
 
 export const dynamic = 'force-dynamic';
 
 export default async function EditInvitationPage({ params }) {
+  let actor;
   try {
-    await requireAdminSession('manageInvitations');
+    actor = await requireAdminSession('manageInvitations');
   } catch (error) {
     redirect('/admin/login');
   }
@@ -42,24 +46,64 @@ export default async function EditInvitationPage({ params }) {
     return notFound();
   }
 
-  const normalized = normalizeInvitationData(invitation);
-  const opening = invitation.opening || getOpeningBySlug('native-template');
-  const openings = await getMergedOpenings();
-  const renderConfig = buildInvitationRenderConfig({
-    invitation,
-    manifest,
-    opening,
-    preview: true,
+  let session = await prisma.studioSession.findFirst({
+    where: { invitationId: invitation.id },
+    include: {
+      baseTemplate: true,
+      templateVariant: true,
+    },
   });
 
+  if (!session) {
+    const draft = createStudioDraftFromInvitation({ invitation, manifest });
+    const updateData = buildStudioSessionUpdateData({
+      manifest,
+      draft,
+      openingId: invitation.openingId || invitation.opening?.id || null,
+      invitationId: invitation.id,
+    });
+
+    session = await prisma.studioSession.create({
+      data: {
+        adminId: actor.id,
+        invitationId: invitation.id,
+        baseTemplateId: invitation.template.id,
+        templateVariantId: invitation.templateVariantId || null,
+        name: `تحرير ${invitation.slug}`,
+        status: 'DRAFT',
+        selectedOpeningId: invitation.openingId || invitation.opening?.id || null,
+        selectedOpeningConfig: updateData.selectedOpeningConfig,
+        devicePreview: updateData.devicePreview,
+        config: updateData.config,
+        content: updateData.content,
+        assets: updateData.assets,
+      },
+      include: {
+        baseTemplate: true,
+        templateVariant: true,
+      },
+    });
+  }
+
+  const openings = await getMergedOpenings();
+  const manifests = getAllTemplateManifests();
+  const sessionManifest = manifests.find((item) => item.slug === session.baseTemplate.slug) || manifest;
+  const hydratedSession = {
+    ...JSON.parse(JSON.stringify(session)),
+    draft: buildStudioDraftFromSession({
+      session,
+      manifest: sessionManifest,
+    }),
+  };
+
   return (
-    <EditorClient
-      invitation={JSON.parse(JSON.stringify(invitation))}
-      manifest={manifest}
-      manifests={getAllTemplateManifests()}
+    <StudioClient
+      session={hydratedSession}
+      existingInvitation={JSON.parse(JSON.stringify(invitation))}
+      mode="invitation"
+      manifests={manifests}
       openings={openings}
-      normalized={normalized}
-      initialRenderConfig={renderConfig}
+      inventory={scanTemplateStudioInventory({ openings })}
     />
   );
 }
