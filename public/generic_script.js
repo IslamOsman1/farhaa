@@ -2302,73 +2302,85 @@
     syncTemplateTextSelection();
   }
 
+  function placeCaretWithinTarget(target, triggerEvent = null) {
+    if (!target) {
+      return;
+    }
+
+    target.focus();
+    const selection = window.getSelection?.();
+    if (!selection) {
+      return;
+    }
+
+    let range = null;
+    if (triggerEvent) {
+      if (document.caretPositionFromPoint) {
+        const caretPosition = document.caretPositionFromPoint(triggerEvent.clientX, triggerEvent.clientY);
+        if (caretPosition && target.contains(caretPosition.offsetNode)) {
+          range = document.createRange();
+          range.setStart(caretPosition.offsetNode, caretPosition.offset);
+          range.collapse(true);
+        }
+      } else if (document.caretRangeFromPoint) {
+        const caretRange = document.caretRangeFromPoint(triggerEvent.clientX, triggerEvent.clientY);
+        if (caretRange && target.contains(caretRange.startContainer)) {
+          range = caretRange;
+          range.collapse(true);
+        }
+      }
+    }
+
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(target);
+      range.collapse(false);
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
   function closeFloatingTextEditor(commit = true) {
     const active = runtimeState.activeTextEditor;
     if (!active) return;
 
-    const { editor, target, cleanup, onCommit } = active;
-    const nextValue = editor.value;
+    const { target, cleanup, onCommit, initialValue } = active;
+    const nextValue = target.innerText;
 
     if (commit) {
-      target.innerText = nextValue;
       if (typeof onCommit === 'function') {
         onCommit(nextValue);
       }
+    } else {
+      target.innerText = initialValue;
     }
 
     cleanup?.();
-    editor.remove();
     target.classList.remove('farha-studio-editing');
+    target.contentEditable = 'false';
+    target.removeAttribute('data-farha-editing');
     runtimeState.activeTextEditor = null;
   }
 
-  function openFloatingTextEditor({ target, initialValue = '', onCommit }) {
+  function openFloatingTextEditor({ target, initialValue = '', onCommit, triggerEvent = null }) {
     if (!runtimeState.preview || !target) return;
 
     if (runtimeState.activeTextEditor?.target === target) {
-      runtimeState.activeTextEditor.editor.focus();
+      placeCaretWithinTarget(target, triggerEvent);
       return;
     }
 
     closeFloatingTextEditor(true);
-
-    const editor = document.createElement('textarea');
-    editor.className = 'farha-floating-text-editor';
-    editor.value = initialValue;
-    editor.setAttribute('dir', 'auto');
-    editor.spellcheck = false;
-
-    const applyPosition = () => {
-      const rect = target.getBoundingClientRect();
-      editor.style.position = 'fixed';
-      editor.style.left = `${Math.max(8, rect.left)}px`;
-      editor.style.top = `${Math.max(8, rect.top)}px`;
-      editor.style.width = `${Math.max(120, rect.width || 120)}px`;
-      editor.style.minHeight = `${Math.max(44, rect.height || 44)}px`;
-      editor.style.height = `${Math.max(52, rect.height + 20 || 52)}px`;
-      editor.style.zIndex = '2147483647';
-      editor.style.padding = '10px 12px';
-      editor.style.borderRadius = '12px';
-      editor.style.border = '2px solid #7f2a1f';
-      editor.style.background = 'rgba(255,255,255,0.98)';
-      editor.style.color = window.getComputedStyle(target).color || '#111827';
-      editor.style.font = window.getComputedStyle(target).font || '600 16px Tajawal, sans-serif';
-      editor.style.lineHeight = window.getComputedStyle(target).lineHeight || '1.5';
-      editor.style.textAlign = window.getComputedStyle(target).textAlign || 'right';
-      editor.style.direction = window.getComputedStyle(target).direction || 'rtl';
-      editor.style.resize = 'both';
-      editor.style.boxShadow = '0 18px 48px rgba(15, 23, 42, 0.18)';
-      editor.style.outline = 'none';
-    };
-
-    applyPosition();
-    document.body.appendChild(editor);
     target.classList.add('farha-studio-editing');
+    target.contentEditable = 'true';
+    target.spellcheck = false;
+    target.setAttribute('data-farha-editing', 'true');
+    target.setAttribute('dir', target.getAttribute('dir') || 'auto');
+    if ((target.innerText || '') !== initialValue) {
+      target.innerText = initialValue;
+    }
 
-    const handleWindowChange = () => applyPosition();
-    const handleInput = () => {
-      target.innerText = editor.value;
-    };
     const handleKeydown = (event) => {
       event.stopPropagation();
       if (event.key === 'Escape') {
@@ -2382,32 +2394,25 @@
     };
 
     const cleanup = () => {
-      window.removeEventListener('resize', handleWindowChange);
-      window.removeEventListener('scroll', handleWindowChange, true);
-      editor.removeEventListener('input', handleInput);
-      editor.removeEventListener('keydown', handleKeydown);
-      editor.removeEventListener('blur', handleBlur);
+      target.removeEventListener('keydown', handleKeydown);
+      target.removeEventListener('blur', handleBlur);
     };
 
     const handleBlur = () => {
       closeFloatingTextEditor(true);
     };
 
-    editor.addEventListener('input', handleInput);
-    editor.addEventListener('keydown', handleKeydown);
-    editor.addEventListener('blur', handleBlur);
-    window.addEventListener('resize', handleWindowChange);
-    window.addEventListener('scroll', handleWindowChange, true);
+    target.addEventListener('keydown', handleKeydown);
+    target.addEventListener('blur', handleBlur);
 
     runtimeState.activeTextEditor = {
-      editor,
       target,
       onCommit,
       cleanup,
+      initialValue,
     };
 
-    editor.focus();
-    editor.select();
+    placeCaretWithinTarget(target, triggerEvent);
   }
 
   function installMessageBridge() {
@@ -4805,6 +4810,10 @@
           outline-offset: 4px !important;
           border-radius: 8px;
         }
+        .farha-studio-editing::after,
+        .farha-studio-editable[data-farha-editing="true"]::after {
+          opacity: 0 !important;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -4834,18 +4843,7 @@
           el.addEventListener('touchstart', (event) => {
             event.stopPropagation();
           }, { passive: true });
-          el.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const nativeId = buildNativeElementId(el);
-            const alreadySelected = String(runtimeState.selectedNativeElementId || '') === String(nativeId);
-            selectNativeElement(el, {
-              label: getStudioFieldLabel(fieldKey),
-              selector: binding.selector || nativeId,
-              kind: 'text',
-            });
-            if (!alreadySelected) {
-              return;
-            }
+          const openTemplateTextEditor = (triggerEvent = null) => {
             selectTemplateText(fieldKey, {
               text: el.innerText || '',
               label: getStudioFieldLabel(fieldKey),
@@ -4857,6 +4855,7 @@
             openFloatingTextEditor({
               target: el,
               initialValue: el.innerText || '',
+              triggerEvent,
               onCommit: (nextValue) => {
                 window.parent.postMessage({
                   type: 'FARHA_TEXT_OVERRIDE',
@@ -4869,7 +4868,35 @@
                 }, '*');
               },
             });
+          };
+          el.addEventListener('click', (event) => {
+            event.stopPropagation();
+            selectNativeElement(el, {
+              label: getStudioFieldLabel(fieldKey),
+              selector: binding.selector || buildNativeElementId(el),
+              kind: 'text',
+            });
+            selectTemplateText(fieldKey, {
+              text: el.innerText || '',
+              label: getStudioFieldLabel(fieldKey),
+              preserveNativeSelection: true,
+            });
           });
+          el.addEventListener('dblclick', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openTemplateTextEditor(event);
+          });
+          el.addEventListener('touchend', (event) => {
+            event.stopPropagation();
+            const now = Date.now();
+            const lastTap = Number(el.dataset.farhaLastTapAt || 0);
+            el.dataset.farhaLastTapAt = String(now);
+            if (now - lastTap < 320) {
+              event.preventDefault();
+              openTemplateTextEditor(event);
+            }
+          }, { passive: false });
           el.dataset.farhaInlineBound = 'true';
         }
       });
@@ -6422,19 +6449,14 @@
           if (!inner.dataset.farhaInlineBound) {
             inner.addEventListener('mousedown', (e) => e.stopPropagation());
             inner.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
-            inner.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const alreadySelected = String(runtimeState.selectedCustomElementId || '') === String(el.id);
-              selectElement(el.id);
-              if (!alreadySelected) {
-                return;
-              }
+            const openCustomTextEditor = (triggerEvent = null) => {
               if (el.locked) {
                 return;
               }
               openFloatingTextEditor({
                 target: inner,
                 initialValue: inner.innerText || '',
+                triggerEvent,
                 onCommit: (nextValue) => {
                   inner.style.boxShadow = 'none';
                   window.parent.postMessage({
@@ -6443,7 +6465,28 @@
                   }, '*');
                 },
               });
+            };
+            inner.addEventListener('click', (e) => {
+              e.stopPropagation();
+              selectElement(el.id);
             });
+            inner.addEventListener('dblclick', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              selectElement(el.id);
+              openCustomTextEditor(e);
+            });
+            inner.addEventListener('touchend', (e) => {
+              e.stopPropagation();
+              const now = Date.now();
+              const lastTap = Number(inner.dataset.farhaLastTapAt || 0);
+              inner.dataset.farhaLastTapAt = String(now);
+              if (now - lastTap < 320) {
+                e.preventDefault();
+                selectElement(el.id);
+                openCustomTextEditor(e);
+              }
+            }, { passive: false });
             inner.dataset.farhaInlineBound = 'true';
           }
         } else {

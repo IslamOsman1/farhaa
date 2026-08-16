@@ -1392,6 +1392,16 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     [previewInvitation, currentManifest, currentOpening],
   );
 
+  useEffect(() => {
+    setPreviewBridgeMessage({
+      type: 'FARHA_RENDER_CONFIG',
+      version: '1.0.0',
+      manifest: currentManifest,
+      renderConfig,
+      token: `render-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    });
+  }, [currentManifest, renderConfig]);
+
   const groupedFields = useMemo(
     () =>
       currentManifest.editableFields.reduce((accumulator, field) => {
