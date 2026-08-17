@@ -7251,6 +7251,106 @@
       document.body.appendChild(modal);
     });
   }
+
+  function showCanvasContextMenu(clientX, clientY) {
+    let menu = document.getElementById('farha-context-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'farha-context-menu';
+      menu.style.cssText = `
+        position: fixed;
+        z-index: 2147483006;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15), 0 0 0 4px rgba(99, 102, 241, 0.1);
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 140px;
+        direction: rtl;
+        font: 600 14px/1.5 system-ui, -apple-system, sans-serif;
+      `;
+
+      const createBtn = (label, action) => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.style.cssText = `
+          padding: 8px 12px;
+          border: none;
+          background: transparent;
+          text-align: right;
+          cursor: pointer;
+          border-radius: 8px;
+          color: #0f172a;
+          transition: background 0.2s;
+        `;
+        btn.onmouseover = () => btn.style.background = 'rgba(99, 102, 241, 0.1)';
+        btn.onmouseout = () => btn.style.background = 'transparent';
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          menu.style.display = 'none';
+          window.parent.postMessage({
+            type: 'FARHA_EMULATOR_TOOL_ACTION',
+            payload: { action }
+          }, '*');
+        };
+        return btn;
+      };
+
+      menu.appendChild(createBtn('✍️ إضافة نص', 'add-text'));
+      menu.appendChild(createBtn('🖼️ إضافة صورة', 'add-image'));
+      
+      document.body.appendChild(menu);
+    }
+    
+    menu.style.display = 'flex';
+    menu.style.left = Math.min(clientX, window.innerWidth - 150) + 'px';
+    menu.style.top = Math.min(clientY, window.innerHeight - 100) + 'px';
+  }
+
+  // Hide menu when clicking anywhere else, and handle Native Action 'edit'
+  window.addEventListener('click', (e) => {
+    const menu = document.getElementById('farha-context-menu');
+    if (menu && e.target !== menu && !menu.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+    
+    const actionBtn = e.target.closest('[data-farha-native-action]');
+    if (actionBtn && actionBtn.dataset.farhaNativeAction === 'edit') {
+      if (runtimeState.selectedNativeElement) {
+         openFloatingTextEditor({ target: runtimeState.selectedNativeElement });
+      } else if (runtimeState.selectedCustomElementId) {
+         const wrapper = document.querySelector(`.farha-custom-element[data-id="${runtimeState.selectedCustomElementId}"]`);
+         if (wrapper) {
+             const inner = wrapper.querySelector('.farha-custom-element__text');
+             if (inner) {
+                 openFloatingTextEditor({ target: inner });
+             }
+         }
+      }
+    }
+  }, true);
+
+
+  window.addEventListener('dblclick', (e) => {
+    // Check if we double-clicked a native editable text
+    const nativeEditable = e.target.closest('.farha-studio-editable, .farha-native-editable-target');
+    if (nativeEditable) {
+      openFloatingTextEditor({ target: nativeEditable });
+      return;
+    }
+
+    // Check if we double-clicked a custom text element
+    const customText = e.target.closest('.farha-custom-element__text');
+    if (customText) {
+      openFloatingTextEditor({ target: customText });
+      return;
+    }
+  }, true);
 })();
 
 
