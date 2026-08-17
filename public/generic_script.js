@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   const initialSearchParams = new URLSearchParams(window.location.search);
   const initialPromoBarDisabled = initialSearchParams.get('farhaPromoBar') === '0';
   const initialOpeningDisabled = initialSearchParams.get('farhaOpening') === '0';
@@ -109,27 +109,27 @@
   }
 
   const TEMPLATE_META = {
-    jathuandthanu: { arabicName: '├â╦£├é┬¼├â╦£├é┬º├â╦£├é┬½├âΓäó├ïΓÇá ├âΓäó├ïΓÇá├â╦£├é┬½├â╦£├é┬º├âΓäó├óΓé¼┬á├âΓäó├ïΓÇá' },
-    royal: { arabicName: '├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬ª├âΓäó├óΓé¼┼╛├âΓäó├åΓÇÖ├âΓäó├à┬á' },
-    majestic: { arabicName: '├âΓäó├óΓé¼┬ª├â╦£├é┬º├â╦£├é┬¼├â╦£├é┬│├â╦£├é┬¬├âΓäó├à┬á├âΓäó├åΓÇÖ' },
-    twilight: { arabicName: '├â╦£├é┬¬├âΓäó├ïΓÇá├âΓäó├à┬á├âΓäó├óΓé¼┼╛├â╦£├é┬º├âΓäó├à┬á├â╦£├é┬¬' },
-    imperial: { arabicName: '├â╦£├é┬Ñ├âΓäó├óΓé¼┬ª├â╦£├é┬¿├â╦£├é┬▒├âΓäó├à┬á├â╦£├é┬º├âΓäó├óΓé¼┼╛' },
-    toscana: { arabicName: '├â╦£├é┬¬├âΓäó├ïΓÇá├â╦£├é┬│├âΓäó├åΓÇÖ├â╦£├é┬º├âΓäó├óΓé¼┬á├â╦£├é┬º' },
-    sacredgarden: { arabicName: '├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¡├â╦£├é┬»├âΓäó├à┬á├âΓäó├óΓé¼┼í├â╦£├é┬⌐ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬ª├âΓäó├óΓé¼┼í├â╦£├é┬»├â╦£├é┬│├â╦£├é┬⌐' },
-    blossomoud: { arabicName: '├â╦£├é┬¿├âΓäó├óΓé¼┼╛├âΓäó├ïΓÇá├â╦£├é┬│├âΓäó├ïΓÇá├âΓäó├óΓé¼┬ª ├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬»' },
-    dolcevita: { arabicName: '├â╦£├é┬»├âΓäó├ïΓÇá├âΓäó├óΓé¼┼╛├â╦£├é┬¬├â╦£├é┬┤├âΓäó├à┬á ├âΓäó├é┬ü├âΓäó├à┬á├â╦£├é┬¬├â╦£├é┬º' },
-    destinationlove: { arabicName: '├â╦£├é┬¡├â╦£├é┬¿ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬│├âΓäó├é┬ü├â╦£├é┬▒' },
-    classic: { arabicName: '├âΓäó├åΓÇÖ├âΓäó├óΓé¼┼╛├â╦£├é┬º├â╦£├é┬│├âΓäó├à┬á├âΓäó├åΓÇÖ' },
-    bab: { arabicName: '├â╦£├é┬¿├â╦£├é┬º├â╦£├é┬¿ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├é┬ü├â╦£├é┬▒├â╦£├é┬¡' },
-    reverie: { arabicName: '├â╦£├é┬¡├âΓäó├é┬Å├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬ª ├âΓäó├ïΓÇá├â╦£├é┬▒├â╦£├é┬»├âΓäó├à┬á' },
-    ring: { arabicName: '├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬«├â╦£├é┬º├â╦£├é┬¬├âΓäó├óΓé¼┬ª' },
-    letter: { arabicName: '├â╦£├é┬▒├â╦£├é┬│├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬⌐' },
-    disney: { arabicName: '├â╦£├é┬»├âΓäó├à┬á├â╦£├é┬▓├âΓäó├óΓé¼┬á├âΓäó├à┬á' },
-    rozana: { arabicName: '├â╦£├é┬▒├âΓäó├ïΓÇá├â╦£├é┬▓├âΓäó├óΓé¼┬á├â╦£├é┬⌐' },
-    hadeel: { arabicName: '├âΓäó├óΓé¼┬í├â╦£├é┬»├âΓäó├à┬á├âΓäó├óΓé¼┼╛' },
-    wisal: { arabicName: '├âΓäó├ïΓÇá├âΓäó├é┬É├â╦£├é┬╡├â╦£├é┬º├âΓäó├óΓé¼┼╛' },
-    vangogh: { arabicName: '├âΓäó├óΓé¼┼╛├âΓäó├à┬á├âΓäó├óΓé¼┼╛├â╦£├é┬⌐ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬á├â╦£├é┬¼├âΓäó├ïΓÇá├âΓäó├óΓé¼┬ª' },
-    blush: { arabicName: '├âΓäó├ïΓÇá├â╦£├é┬▒├â╦£├é┬»├â╦£├é┬⌐' },
+    jathuandthanu: { arabicName: 'Ã˜Â¬Ã˜Â§Ã˜Â«Ã™Ë† Ã™Ë†Ã˜Â«Ã˜Â§Ã™â€ Ã™Ë†' },
+    royal: { arabicName: 'Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Æ’Ã™Å ' },
+    majestic: { arabicName: 'Ã™â€¦Ã˜Â§Ã˜Â¬Ã˜Â³Ã˜ÂªÃ™Å Ã™Æ’' },
+    twilight: { arabicName: 'Ã˜ÂªÃ™Ë†Ã™Å Ã™â€žÃ˜Â§Ã™Å Ã˜Âª' },
+    imperial: { arabicName: 'Ã˜Â¥Ã™â€¦Ã˜Â¨Ã˜Â±Ã™Å Ã˜Â§Ã™â€ž' },
+    toscana: { arabicName: 'Ã˜ÂªÃ™Ë†Ã˜Â³Ã™Æ’Ã˜Â§Ã™â€ Ã˜Â§' },
+    sacredgarden: { arabicName: 'Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¯Ã™Å Ã™â€šÃ˜Â© Ã˜Â§Ã™â€žÃ™â€¦Ã™â€šÃ˜Â¯Ã˜Â³Ã˜Â©' },
+    blossomoud: { arabicName: 'Ã˜Â¨Ã™â€žÃ™Ë†Ã˜Â³Ã™Ë†Ã™â€¦ Ã˜Â¹Ã™Ë†Ã˜Â¯' },
+    dolcevita: { arabicName: 'Ã˜Â¯Ã™Ë†Ã™â€žÃ˜ÂªÃ˜Â´Ã™Å  Ã™ÂÃ™Å Ã˜ÂªÃ˜Â§' },
+    destinationlove: { arabicName: 'Ã˜Â­Ã˜Â¨ Ã˜Â§Ã™â€žÃ˜Â³Ã™ÂÃ˜Â±' },
+    classic: { arabicName: 'Ã™Æ’Ã™â€žÃ˜Â§Ã˜Â³Ã™Å Ã™Æ’' },
+    bab: { arabicName: 'Ã˜Â¨Ã˜Â§Ã˜Â¨ Ã˜Â§Ã™â€žÃ™ÂÃ˜Â±Ã˜Â­' },
+    reverie: { arabicName: 'Ã˜Â­Ã™ÂÃ™â€žÃ™â€¦ Ã™Ë†Ã˜Â±Ã˜Â¯Ã™Å ' },
+    ring: { arabicName: 'Ã˜Â§Ã™â€žÃ˜Â®Ã˜Â§Ã˜ÂªÃ™â€¦' },
+    letter: { arabicName: 'Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€žÃ˜Â©' },
+    disney: { arabicName: 'Ã˜Â¯Ã™Å Ã˜Â²Ã™â€ Ã™Å ' },
+    rozana: { arabicName: 'Ã˜Â±Ã™Ë†Ã˜Â²Ã™â€ Ã˜Â©' },
+    hadeel: { arabicName: 'Ã™â€¡Ã˜Â¯Ã™Å Ã™â€ž' },
+    wisal: { arabicName: 'Ã™Ë†Ã™ÂÃ˜ÂµÃ˜Â§Ã™â€ž' },
+    vangogh: { arabicName: 'Ã™â€žÃ™Å Ã™â€žÃ˜Â© Ã˜Â§Ã™â€žÃ™â€ Ã˜Â¬Ã™Ë†Ã™â€¦' },
+    blush: { arabicName: 'Ã™Ë†Ã˜Â±Ã˜Â¯Ã˜Â©' },
   };
 
   const MUSIC_SELECTORS = [
@@ -149,26 +149,26 @@
   ].join(', ');
 
   const FALLBACK_OVERLAY_FONT_LIBRARY = [
-    { id: 'tajawal', family: 'Tajawal', nameAr: '╪¬╪¼┘ê╪º┘ä', nameEn: 'Tajawal' },
-    { id: 'cairo', family: 'Cairo', nameAr: '╪º┘ä┘é╪º┘ç╪▒╪⌐', nameEn: 'Cairo' },
-    { id: 'noto-kufi-arabic', family: 'Noto Kufi Arabic', nameAr: '┘å┘ê╪¬┘ê ┘â┘ê┘ü┘è', nameEn: 'Noto Kufi Arabic' },
-    { id: 'noto-naskh-arabic', family: 'Noto Naskh Arabic', nameAr: '┘å┘ê╪¬┘ê ┘å╪│╪«', nameEn: 'Noto Naskh Arabic' },
-    { id: 'amiri', family: 'Amiri', nameAr: '╪ú┘à┘è╪▒┘è', nameEn: 'Amiri' },
-    { id: 'aref-ruqaa', family: 'Aref Ruqaa', nameAr: '╪╣╪▒┘ü ╪▒┘é╪╣╪⌐', nameEn: 'Aref Ruqaa' },
-    { id: 'reem-kufi', family: 'Reem Kufi', nameAr: '╪▒┘è┘à ┘â┘ê┘ü┘è', nameEn: 'Reem Kufi' },
-    { id: 'el-messiri', family: 'El Messiri', nameAr: '╪º┘ä┘à╪│┘è╪▒┘è', nameEn: 'El Messiri' },
-    { id: 'changa', family: 'Changa', nameAr: '╪¬╪┤╪º┘å╪║╪º', nameEn: 'Changa' },
-    { id: 'marhey', family: 'Marhey', nameAr: '┘à╪▒╪¡┘è', nameEn: 'Marhey' },
-    { id: 'playfair-display', family: 'Playfair Display', nameAr: '╪¿┘ä╪º┘è┘ü┘è╪▒', nameEn: 'Playfair Display' },
-    { id: 'cormorant-garamond', family: 'Cormorant Garamond', nameAr: '┘â┘ê╪▒┘à┘ê╪▒╪º┘å╪¬ ╪¼╪º╪▒╪º┘à┘ê┘å╪»', nameEn: 'Cormorant Garamond' },
-    { id: 'cinzel-decorative', family: 'Cinzel Decorative', nameAr: '╪│┘è┘å╪▓┘ä ╪»┘è┘â┘ê╪▒', nameEn: 'Cinzel Decorative' },
-    { id: 'great-vibes', family: 'Great Vibes', nameAr: '╪¼╪▒┘è╪¬ ┘ü╪º┘è╪¿╪▓', nameEn: 'Great Vibes' },
-    { id: 'dm-serif-display', family: 'DM Serif Display', nameAr: '╪»┘è ╪Ñ┘à ╪│┘è╪▒┘è┘ü', nameEn: 'DM Serif Display' },
-    { id: 'abril-fatface', family: 'Abril Fatface', nameAr: '╪ú╪¿╪▒┘è┘ä ┘ü╪º╪¬┘ü╪º┘è╪│', nameEn: 'Abril Fatface' },
-    { id: 'bodoni-moda', family: 'Bodoni Moda', nameAr: '╪¿┘ê╪»┘ê┘å┘è ┘à┘ê╪»╪º', nameEn: 'Bodoni Moda' },
-    { id: 'prata', family: 'Prata', nameAr: '╪¿╪▒╪º╪¬╪º', nameEn: 'Prata' },
-    { id: 'bellefair', family: 'Bellefair', nameAr: '╪¿┘è┘ä┘è┘ü┘è╪▒', nameEn: 'Bellefair' },
-    { id: 'libre-baskerville', family: 'Libre Baskerville', nameAr: '┘ä┘è╪¿╪▒ ╪¿╪º╪│┘â╪▒┘ü┘è┘ä', nameEn: 'Libre Baskerville' },
+    { id: 'tajawal', family: 'Tajawal', nameAr: 'تجوال', nameEn: 'Tajawal' },
+    { id: 'cairo', family: 'Cairo', nameAr: 'القاهرة', nameEn: 'Cairo' },
+    { id: 'noto-kufi-arabic', family: 'Noto Kufi Arabic', nameAr: 'نوتو كوفي', nameEn: 'Noto Kufi Arabic' },
+    { id: 'noto-naskh-arabic', family: 'Noto Naskh Arabic', nameAr: 'نوتو نسخ', nameEn: 'Noto Naskh Arabic' },
+    { id: 'amiri', family: 'Amiri', nameAr: 'أميري', nameEn: 'Amiri' },
+    { id: 'aref-ruqaa', family: 'Aref Ruqaa', nameAr: 'عرف رقعة', nameEn: 'Aref Ruqaa' },
+    { id: 'reem-kufi', family: 'Reem Kufi', nameAr: 'ريم كوفي', nameEn: 'Reem Kufi' },
+    { id: 'el-messiri', family: 'El Messiri', nameAr: 'المسيري', nameEn: 'El Messiri' },
+    { id: 'changa', family: 'Changa', nameAr: 'تشانغا', nameEn: 'Changa' },
+    { id: 'marhey', family: 'Marhey', nameAr: 'مرحي', nameEn: 'Marhey' },
+    { id: 'playfair-display', family: 'Playfair Display', nameAr: 'بلايفير', nameEn: 'Playfair Display' },
+    { id: 'cormorant-garamond', family: 'Cormorant Garamond', nameAr: 'كورمورانت جاراموند', nameEn: 'Cormorant Garamond' },
+    { id: 'cinzel-decorative', family: 'Cinzel Decorative', nameAr: 'سينزل ديكور', nameEn: 'Cinzel Decorative' },
+    { id: 'great-vibes', family: 'Great Vibes', nameAr: 'جريت فايبز', nameEn: 'Great Vibes' },
+    { id: 'dm-serif-display', family: 'DM Serif Display', nameAr: 'دي إم سيريف', nameEn: 'DM Serif Display' },
+    { id: 'abril-fatface', family: 'Abril Fatface', nameAr: 'أبريل فاتفايس', nameEn: 'Abril Fatface' },
+    { id: 'bodoni-moda', family: 'Bodoni Moda', nameAr: 'بودوني مودا', nameEn: 'Bodoni Moda' },
+    { id: 'prata', family: 'Prata', nameAr: 'براتا', nameEn: 'Prata' },
+    { id: 'bellefair', family: 'Bellefair', nameAr: 'بيليفير', nameEn: 'Bellefair' },
+    { id: 'libre-baskerville', family: 'Libre Baskerville', nameAr: 'ليبر باسكرفيل', nameEn: 'Libre Baskerville' },
   ];
 
   const runtimeState = {
@@ -303,24 +303,24 @@
 
   const STATIC_TEXT_TRANSLATIONS = {
     en: {
-      '├â╦£├é┬¿├â╦£├é┬╖├â╦£├é┬º├âΓäó├óΓé¼┼í├â╦£├é┬⌐ ├â╦£├é┬»├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬⌐': 'Invitation Card',
-      '├â╦£├é┬¿├â╦£├é┬º├â╦£├é┬¿ ├â╦£├é┬╣├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬░ ├âΓäó├é┬ü├â╦£├é┬▒├â╦£├é┬¡├âΓäó├óΓé¼┬á├â╦£├é┬º': 'A Door to Our Joy',
-      '├âΓäó├óΓé¼┬ª├âΓäó├åΓÇÖ├â╦£├é┬º├âΓäó├óΓé¼┬á ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¡├âΓäó├é┬ü├âΓäó├óΓé¼┼╛': 'Venue',
-      '├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬ª├âΓäó├åΓÇÖ├â╦£├é┬º├âΓäó├óΓé¼┬á': 'Venue',
-      '├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬ª├âΓäó├åΓÇÖ├â╦£├é┬º├âΓäó├óΓé¼┬á ├âΓäó├ïΓÇá├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬▓├âΓäó├óΓé¼┬ª├â╦£├é┬º├âΓäó├óΓé¼┬á': 'Venue & Time',
-      '├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬╣├â╦£├é┬» ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¬├âΓäó├óΓé¼┬á├â╦£├é┬º├â╦£├é┬▓├âΓäó├óΓé¼┼╛├âΓäó├à┬á': 'Countdown',
-      '├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬╣├â╦£├é┬º├â╦£├é┬ª├âΓäó├óΓé¼┼╛├â╦£├é┬º├â╦£├é┬¬': 'Families',
-      '├â╦£├é┬╣├â╦£├é┬º├â╦£├é┬ª├âΓäó├óΓé¼┼╛├â╦£├é┬º├â╦£├é┬¬├âΓäó├óΓé¼┬á├â╦£├é┬º': 'Our Families',
-      '├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¿├â╦£├é┬▒├âΓäó├óΓé¼┬á├â╦£├é┬º├âΓäó├óΓé¼┬ª├â╦£├é┬¼': 'Event Schedule',
-      '├â╦£├é┬¬├âΓäó├é┬ü├â╦£├é┬º├â╦£├é┬╡├âΓäó├à┬á├âΓäó├óΓé¼┼╛ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬»├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬⌐': 'Invitation Details',
-      '├â╦£├é┬¬├â╦£├é┬ú├âΓäó├åΓÇÖ├âΓäó├à┬á├â╦£├é┬» ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¡├â╦£├é┬╢├âΓäó├ïΓÇá├â╦£├é┬▒': 'RSVP',
-      '├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┼╛├â╦£├é┬¬├âΓäó├ïΓÇá├â╦£├é┬º├â╦£├é┬╡├âΓäó├óΓé¼┼╛ ├âΓäó├ïΓÇá├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¬├â╦£├é┬ú├âΓäó├åΓÇÖ├âΓäó├à┬á├â╦£├é┬»': 'Contact & RSVP',
-      '├â╦£├é┬º├â╦£├é┬╢├â╦£├é┬║├â╦£├é┬╖ ├âΓäó├óΓé¼┼╛├âΓäó├é┬ü├â╦£├é┬¬├â╦£├é┬¡ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬»├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬⌐': 'Tap to open the invitation',
-      '├â╦£├é┬º├â╦£├é┬╢├â╦£├é┬║├â╦£├é┬╖ ├âΓäó├óΓé¼┼╛├âΓäó├é┬ü├â╦£├é┬¬├â╦£├é┬¡ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬»├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬⌐...': 'Tap to open the invitation',
-      '├â╦£├é┬º├â╦£├é┬╢├â╦£├é┬║├â╦£├é┬╖ ├â╦£├é┬╣├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬░ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬┤├â╦£├é┬º├â╦£├é┬┤├â╦£├é┬⌐': 'Tap the screen',
-      '├â╦£├é┬º├â╦£├é┬╢├â╦£├é┬║├â╦£├é┬╖ ├â╦£├é┬╣├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬░ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬╕├â╦£├é┬▒├âΓäó├é┬ü': 'Tap the envelope',
-      '├â╦£├é┬»├âΓäó├óΓé¼┼í ├âΓäó├óΓé¼┼╛├âΓäó├é┬ü├â╦£├é┬¬├â╦£├é┬¡ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬»├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬⌐': 'Knock to open the invitation',
-      '├â╦£├é┬º├âΓäó├åΓÇÖ├â╦£├é┬¬├â╦£├é┬┤├âΓäó├é┬ü ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¬├âΓäó├é┬ü├â╦£├é┬º├â╦£├é┬╡├âΓäó├à┬á├âΓäó├óΓé¼┼╛': 'Discover the details',
+      'Ã˜Â¨Ã˜Â·Ã˜Â§Ã™â€šÃ˜Â© Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Invitation Card',
+      'Ã˜Â¨Ã˜Â§Ã˜Â¨ Ã˜Â¹Ã™â€žÃ™â€° Ã™ÂÃ˜Â±Ã˜Â­Ã™â€ Ã˜Â§': 'A Door to Our Joy',
+      'Ã™â€¦Ã™Æ’Ã˜Â§Ã™â€  Ã˜Â§Ã™â€žÃ˜Â­Ã™ÂÃ™â€ž': 'Venue',
+      'Ã˜Â§Ã™â€žÃ™â€¦Ã™Æ’Ã˜Â§Ã™â€ ': 'Venue',
+      'Ã˜Â§Ã™â€žÃ™â€¦Ã™Æ’Ã˜Â§Ã™â€  Ã™Ë†Ã˜Â§Ã™â€žÃ˜Â²Ã™â€¦Ã˜Â§Ã™â€ ': 'Venue & Time',
+      'Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â¯ Ã˜Â§Ã™â€žÃ˜ÂªÃ™â€ Ã˜Â§Ã˜Â²Ã™â€žÃ™Å ': 'Countdown',
+      'Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â§Ã˜Â¦Ã™â€žÃ˜Â§Ã˜Âª': 'Families',
+      'Ã˜Â¹Ã˜Â§Ã˜Â¦Ã™â€žÃ˜Â§Ã˜ÂªÃ™â€ Ã˜Â§': 'Our Families',
+      'Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬': 'Event Schedule',
+      'Ã˜ÂªÃ™ÂÃ˜Â§Ã˜ÂµÃ™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Invitation Details',
+      'Ã˜ÂªÃ˜Â£Ã™Æ’Ã™Å Ã˜Â¯ Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¶Ã™Ë†Ã˜Â±': 'RSVP',
+      'Ã™â€žÃ™â€žÃ˜ÂªÃ™Ë†Ã˜Â§Ã˜ÂµÃ™â€ž Ã™Ë†Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â£Ã™Æ’Ã™Å Ã˜Â¯': 'Contact & RSVP',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Tap to open the invitation',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©...': 'Tap to open the invitation',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã˜Â¹Ã™â€žÃ™â€° Ã˜Â§Ã™â€žÃ˜Â´Ã˜Â§Ã˜Â´Ã˜Â©': 'Tap the screen',
+      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã˜Â¹Ã™â€žÃ™â€° Ã˜Â§Ã™â€žÃ˜Â¸Ã˜Â±Ã™Â': 'Tap the envelope',
+      'Ã˜Â¯Ã™â€š Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Knock to open the invitation',
+      'Ã˜Â§Ã™Æ’Ã˜ÂªÃ˜Â´Ã™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ™ÂÃ˜Â§Ã˜ÂµÃ™Å Ã™â€ž': 'Discover the details',
     },
   };
 
@@ -485,7 +485,7 @@
 
     const defaultOption = document.createElement('option');
     defaultOption.value = '';
-    defaultOption.textContent = '╪º┘ä╪«╪╖ ╪º┘ä╪ú╪╡┘ä┘è';
+    defaultOption.textContent = 'الخط الأصلي';
     select.appendChild(defaultOption);
 
     fonts.forEach((font) => {
@@ -1083,7 +1083,7 @@
 
   function getNativeElementLabel(node) {
     if (!node) {
-      return '╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿';
+      return 'عنصر من القالب';
     }
 
     const textLabel = (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('alt') || '').trim();
@@ -1957,23 +1957,23 @@
       overlay.dataset.visible = 'false';
       overlay.innerHTML = `
         <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
-          <span class="farha-native-overlay__label" data-farha-native-role="label">╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿</span>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="╪¬╪¡╪▒┘è┘â ╪º┘ä╪╣┘å╪╡╪▒">╪¬╪¡╪▒┘è┘â</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="╪º╪│╪¬╪¿╪»╪º┘ä ╪º┘ä╪╡┘ê╪▒╪⌐">╪º╪│╪¬╪¿╪»╪º┘ä</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-text" aria-label="╪Ñ╪╢╪º┘ü╪⌐ ┘å╪╡ ┘ç┘å╪º">┘å╪╡</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-image" aria-label="╪Ñ╪╢╪º┘ü╪⌐ ╪╡┘ê╪▒╪⌐ ┘ç┘å╪º">╪╡┘ê╪▒╪⌐</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="╪¡╪░┘ü ╪º┘ä╪╣┘å╪╡╪▒">╪¡╪░┘ü</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="╪¬╪¡╪▒┘è╪▒ ╪º┘ä┘å╪╡">╪¬╪¡╪▒┘è╪▒</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="┘é╪╡ ╪º┘ä╪╡┘ê╪▒╪⌐">┘é╪╡</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="duplicate" aria-label="╪¬┘â╪▒╪º╪▒ ╪º┘ä╪╣┘å╪╡╪▒">╪¬┘â╪▒╪º╪▒</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="copy" aria-label="┘å╪│╪« ╪º┘ä╪╣┘å╪╡╪▒">┘å╪│╪«</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="paste" aria-label="┘ä╪╡┘é ╪╣┘å╪╡╪▒">┘ä╪╡┘é</button>
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="hide" aria-label="╪Ñ╪«┘ü╪º╪í ╪º┘ä╪╣┘å╪╡╪▒">╪Ñ╪«┘ü╪º╪í</button>
-          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="┘é┘ü┘ä ╪ú┘ê ┘ü╪¬╪¡ ╪º┘ä╪╣┘å╪╡╪▒">┘é┘ü┘ä</button>
-          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪╣┘å╪╡╪▒ ┘ä╪ú╪╡┘ä┘ç">╪ú╪╡┘ä</button>
+          <span class="farha-native-overlay__label" data-farha-native-role="label">عنصر القالب</span>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="move" aria-label="تحريك العنصر">تحريك</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="replace" aria-label="استبدال الصورة">استبدال</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-text" aria-label="إضافة نص هنا">نص</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="add-image" aria-label="إضافة صورة هنا">صورة</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="حذف العنصر">حذف</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="edit" aria-label="تحرير النص">تحرير</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="crop-toggle" aria-label="قص الصورة">قص</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="duplicate" aria-label="تكرار العنصر">تكرار</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="copy" aria-label="نسخ العنصر">نسخ</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="paste" aria-label="لصق عنصر">لصق</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--wide" data-farha-native-action="hide" aria-label="إخفاء العنصر">إخفاء</button>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="lock" aria-label="قفل أو فتح العنصر">قفل</button>
+          <button type="button" class="farha-native-overlay__btn" data-farha-native-action="reset" aria-label="إعادة العنصر لأصله">أصل</button>
         </div>
-        <button type="button" class="farha-native-overlay__handle farha-native-overlay__handle--rotate" data-farha-native-action="rotate" aria-label="╪¬╪»┘ê┘è╪▒ ╪º┘ä╪╣┘å╪╡╪▒">Γå╗</button>
-        <button type="button" class="farha-native-overlay__handle" data-farha-native-action="scale" aria-label="╪¬┘â╪¿┘è╪▒ ╪ú┘ê ╪¬╪╡╪║┘è╪▒ ╪º┘ä╪╣┘å╪╡╪▒">+</button>
+        <button type="button" class="farha-native-overlay__handle farha-native-overlay__handle--rotate" data-farha-native-action="rotate" aria-label="تدوير العنصر">↻</button>
+        <button type="button" class="farha-native-overlay__handle" data-farha-native-action="scale" aria-label="تكبير أو تصغير العنصر">+</button>
       `;
       document.body.appendChild(overlay);
 
@@ -1984,8 +1984,8 @@
         colorField.dataset.farhaNativeRole = 'color-field';
         colorField.dataset.visible = 'false';
         colorField.innerHTML = `
-          <span class="farha-native-overlay__field-label">┘ä┘ê┘å</span>
-          <input type="color" class="farha-native-overlay__color" data-farha-native-control="color" aria-label="┘ä┘ê┘å ╪º┘ä╪«╪╖" value="#7f2a1f" />
+          <span class="farha-native-overlay__field-label">لون</span>
+          <input type="color" class="farha-native-overlay__color" data-farha-native-control="color" aria-label="لون الخط" value="#7f2a1f" />
         `;
 
         const fontField = document.createElement('label');
@@ -1993,8 +1993,8 @@
         fontField.dataset.farhaNativeRole = 'font-field';
         fontField.dataset.visible = 'false';
         fontField.innerHTML = `
-          <span class="farha-native-overlay__field-label">╪«╪╖</span>
-          <select class="farha-native-overlay__select" data-farha-native-control="fontFamily" aria-label="┘å┘ê╪╣ ╪º┘ä╪«╪╖"></select>
+          <span class="farha-native-overlay__field-label">خط</span>
+          <select class="farha-native-overlay__select" data-farha-native-control="fontFamily" aria-label="نوع الخط"></select>
         `;
 
         toolbar.appendChild(colorField);
@@ -2216,7 +2216,7 @@
     }
     if (lockButton) {
       lockButton.dataset.locked = currentOverride.locked ? 'true' : 'false';
-      lockButton.textContent = currentOverride.locked ? '┘ü╪¬╪¡' : '┘é┘ü┘ä';
+      lockButton.textContent = currentOverride.locked ? 'فتح' : 'قفل';
     }
     if (editButton) {
       editButton.style.display = isNativeTextEditableNode(selectedNode) ? 'inline-flex' : 'none';
@@ -3300,7 +3300,7 @@
         img.src = imageUrl;
         img.loading = 'lazy';
         img.decoding = 'async';
-        img.alt = `├â╦£├é┬░├âΓäó├åΓÇÖ├â╦£├é┬▒├âΓäó├óΓé¼┬░ ${index + 1}`;
+        img.alt = `Ã˜Â°Ã™Æ’Ã˜Â±Ã™â€° ${index + 1}`;
         figure.appendChild(img);
         host.appendChild(figure);
       });
@@ -3527,14 +3527,14 @@
     const hidden = sections?.countdown === false;
     const section = mountDynamicSectionPortal(
       'farha-dynamic-countdown',
-      String(fields.titleCountdown || '╪º┘ä╪╣╪» ╪º┘ä╪¬┘å╪º╪▓┘ä┘è'),
+      String(fields.titleCountdown || 'العد التنازلي'),
       `
-        <p>╪¿╪º┘é┘è ╪╣┘ä┘ë ┘à┘ê╪╣╪» ╪º┘ä╪¡┘ü┘ä</p>
+        <p>باقي على موعد الحفل</p>
         <div class="farha-dynamic-grid" id="farha-dynamic-countdown-grid">
-          <div class="farha-dynamic-box"><strong data-unit="days">00</strong><span>┘è┘ê┘à</span></div>
-          <div class="farha-dynamic-box"><strong data-unit="hours">00</strong><span>╪│╪º╪╣╪⌐</span></div>
-          <div class="farha-dynamic-box"><strong data-unit="minutes">00</strong><span>╪»┘é┘è┘é╪⌐</span></div>
-          <div class="farha-dynamic-box"><strong data-unit="seconds">00</strong><span>╪½╪º┘å┘è╪⌐</span></div>
+          <div class="farha-dynamic-box"><strong data-unit="days">00</strong><span>يوم</span></div>
+          <div class="farha-dynamic-box"><strong data-unit="hours">00</strong><span>ساعة</span></div>
+          <div class="farha-dynamic-box"><strong data-unit="minutes">00</strong><span>دقيقة</span></div>
+          <div class="farha-dynamic-box"><strong data-unit="seconds">00</strong><span>ثانية</span></div>
         </div>
       `,
       { hidden },
@@ -3580,7 +3580,7 @@
     const hidden = sections?.notes === false;
     mountDynamicSectionPortal(
       'farha-dynamic-notes',
-      String(fields.titleNotes || '╪º┘ä╪ú╪│╪ª┘ä╪⌐ ┘ê╪º┘ä┘à┘ä╪º╪¡╪╕╪º╪¬'),
+      String(fields.titleNotes || 'الأسئلة والملاحظات'),
       `
         <div class="farha-dynamic-list">
           ${notes.map((note) => `<div class="farha-dynamic-note">${String(note)}</div>`).join('')}
@@ -3600,19 +3600,19 @@
     const hidden = sections?.rsvp === false;
     const section = mountDynamicSectionPortal(
       'farha-dynamic-rsvp',
-      String(fields.contactLabel || '╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒'),
+      String(fields.contactLabel || 'تأكيد الحضور'),
       `
-        <p>${String(fields.contactName || '┘è┘à┘â┘å┘â ╪¬╪ú┘â┘è╪» ╪¡╪╢┘ê╪▒┘â ┘à┘å ╪«┘ä╪º┘ä ╪º┘ä┘å┘à┘ê╪░╪¼ ╪º┘ä╪¬╪º┘ä┘è.')}</p>
+        <p>${String(fields.contactName || 'يمكنك تأكيد حضورك من خلال النموذج التالي.')}</p>
         <form class="farha-dynamic-form rsvp-form" id="farha-dynamic-rsvp-form">
-          <input type="text" name="guestName" placeholder="╪º╪│┘à ╪º┘ä╪╢┘è┘ü" />
-          <input type="tel" name="phone" placeholder="╪▒┘é┘à ╪º┘ä╪¼┘ê╪º┘ä" />
+          <input type="text" name="guestName" placeholder="اسم الضيف" />
+          <input type="tel" name="phone" placeholder="رقم الجوال" />
           <select name="status">
-            <option value="confirmed">╪│╪ú╪¡╪╢╪▒</option>
-            <option value="declined">┘ä┘å ╪ú╪¬┘à┘â┘å ┘à┘å ╪º┘ä╪¡╪╢┘ê╪▒</option>
+            <option value="confirmed">سأحضر</option>
+            <option value="declined">لن أتمكن من الحضور</option>
           </select>
-          <input type="number" name="companions" min="0" step="1" placeholder="╪╣╪»╪» ╪º┘ä┘à╪▒╪º┘ü┘é┘è┘å" />
-          <textarea name="message" rows="3" placeholder="╪▒╪│╪º┘ä╪⌐ ╪ú┘ê ┘à┘ä╪º╪¡╪╕╪⌐ ╪Ñ╪╢╪º┘ü┘è╪⌐"></textarea>
-          <button type="submit">╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪¬╪ú┘â┘è╪»</button>
+          <input type="number" name="companions" min="0" step="1" placeholder="عدد المرافقين" />
+          <textarea name="message" rows="3" placeholder="رسالة أو ملاحظة إضافية"></textarea>
+          <button type="submit">إرسال التأكيد</button>
           <div class="farha-dynamic-feedback" id="farha-dynamic-rsvp-feedback"></div>
         </form>
       `,
@@ -3788,7 +3788,7 @@
 
   function syncAudioToggleState(audio) {
     if (!audio || !runtimeState.audioToggle) return;
-    runtimeState.audioToggle.textContent = audio.paused ? '├â╦£├é┬¬├â╦£├é┬┤├â╦£├é┬║├âΓäó├à┬á├âΓäó├óΓé¼┼╛ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬╡├âΓäó├ïΓÇá├â╦£├é┬¬' : '├âΓäó├åΓÇÖ├â╦£├é┬¬├âΓäó├óΓé¼┬ª ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬╡├âΓäó├ïΓÇá├â╦£├é┬¬';
+    runtimeState.audioToggle.textContent = audio.paused ? 'Ã˜ÂªÃ˜Â´Ã˜ÂºÃ™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂµÃ™Ë†Ã˜Âª' : 'Ã™Æ’Ã˜ÂªÃ™â€¦ Ã˜Â§Ã™â€žÃ˜ÂµÃ™Ë†Ã˜Âª';
     runtimeState.audioToggle.setAttribute('aria-pressed', audio.paused ? 'false' : 'true');
   }
 
@@ -4052,8 +4052,8 @@
     overlay.innerHTML = `
       <div class="fmo-card">
         <div class="fmo-mark">FARHA</div>
-        <p class="fmo-text">├âΓäó├óΓé¼┼╛├â╦£├é┬¡├â╦£├é┬╕├â╦£├é┬⌐ ├âΓäó├ïΓÇá├â╦£├é┬º├â╦£├é┬¡├â╦£├é┬»├â╦£├é┬⌐... ├â╦£├é┬»├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬¬├âΓäó├åΓÇÖ├âΓäó├óΓé¼┬ª ├â╦£├é┬¬├âΓäó├é┬Å├âΓäó├é┬ü├â╦£├é┬¬├â╦£├é┬¡ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬ó├âΓäó├óΓé¼┬á</p>
-        <button type="button" class="fmo-skip">├â╦£├é┬¬├â╦£├é┬«├â╦£├é┬╖├âΓäó├à┬á</button>
+        <p class="fmo-text">Ã™â€žÃ˜Â­Ã˜Â¸Ã˜Â© Ã™Ë†Ã˜Â§Ã˜Â­Ã˜Â¯Ã˜Â©... Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜ÂªÃ™Æ’Ã™â€¦ Ã˜ÂªÃ™ÂÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€ </p>
+        <button type="button" class="fmo-skip">Ã˜ÂªÃ˜Â®Ã˜Â·Ã™Å </button>
       </div>
     `;
 
@@ -4128,9 +4128,9 @@
     const interactionMode = String(config.interactionMode || (config.requiresUserInteraction ? 'tap-button' : 'auto'));
     const requiredKnocks = Math.max(Number(config.requiredKnocks || 3), 1);
     const title = String(fields.openingNames || fields.groomName || '').trim();
-    const hint = String(fields.openingHint || config.interactionHint || '╪º╪╢╪║╪╖ ┘ä┘ü╪¬╪¡ ╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è╪⌐').trim();
+    const hint = String(fields.openingHint || config.interactionHint || 'اضغط لفتح الافتتاحية').trim();
     const kicker = String(fields.openingKicker || '').trim();
-    const buttonLabel = String(fields.openButtonLabel || '┘ü╪¬╪¡ ╪º┘ä╪»╪╣┘ê╪⌐').trim();
+    const buttonLabel = String(fields.openButtonLabel || 'فتح الدعوة').trim();
     const videoUrl = String(fields.openingVideo || '').trim();
     const posterUrl = String(fields.openingPoster || fields.openingBackgroundImage || fields['images.background'] || '').trim();
     const primaryColor = String(theme.primaryColor || '#7f2a1f').trim();
@@ -4141,7 +4141,7 @@
     overlay.innerHTML = `
       ${videoUrl ? `<video class="fio-video" src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} muted playsinline preload="auto"></video>` : ''}
       <div class="fio-scrim"></div>
-      ${(interactionMode === 'knock' || interactionMode === 'tap-anywhere') ? '<button type="button" class="fio-hitarea" aria-label="╪º┘ä╪¬┘ü╪º╪╣┘ä ┘à╪╣ ╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è╪⌐"></button>' : ''}
+      ${(interactionMode === 'knock' || interactionMode === 'tap-anywhere') ? '<button type="button" class="fio-hitarea" aria-label="التفاعل مع الافتتاحية"></button>' : ''}
       <div class="fio-card">
         ${kicker ? `<div class="fio-mark">${kicker}</div>` : ''}
         ${title ? `<h2 class="fio-title">${title}</h2>` : ''}
@@ -4343,18 +4343,18 @@
         const originalText = submitButton ? submitButton.textContent : '';
 
         if (!data.invitationId && !data.invitationSlug) {
-          showFeedback(feedback, '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.', false);
+          showFeedback(feedback, 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.', false);
           return;
         }
 
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = runtimeState.preview ? '├âΓäó├óΓé¼┬ª├â╦£├é┬╣├â╦£├é┬º├âΓäó├à┬á├âΓäó├óΓé¼┬á├â╦£├é┬⌐...' : '├â╦£├é┬¼├â╦£├é┬º├â╦£├é┬▒├âΓäó├à┬á ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬Ñ├â╦£├é┬▒├â╦£├é┬│├â╦£├é┬º├âΓäó├óΓé¼┼╛...';
+          submitButton.textContent = runtimeState.preview ? 'Ã™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â©...' : 'Ã˜Â¬Ã˜Â§Ã˜Â±Ã™Å  Ã˜Â§Ã™â€žÃ˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž...';
         }
 
         try {
           if (runtimeState.preview) {
-            showFeedback(feedback, '├âΓäó├óΓé¼┬í├â╦£├é┬░├âΓäó├óΓé¼┬í ├âΓäó├óΓé¼┬ª├â╦£├é┬╣├â╦£├é┬º├âΓäó├à┬á├âΓäó├óΓé¼┬á├â╦£├é┬⌐ ├âΓäó├é┬ü├âΓäó├óΓé¼┼í├â╦£├é┬╖. ├â╦£├é┬¬├âΓäó├óΓé¼┬ª ├â╦£├é┬¡├âΓäó├é┬ü├â╦£├é┬╕ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬▒├â╦£├é┬» ├â╦£├é┬¬├â╦£├é┬¼├â╦£├é┬▒├âΓäó├à┬á├â╦£├é┬¿├âΓäó├à┬á├âΓäó├óΓé¼┬╣├â╦£├é┬º ├â╦£├é┬»├â╦£├é┬º├â╦£├é┬«├âΓäó├óΓé¼┼╛ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬ª├â╦£├é┬╣├â╦£├é┬º├âΓäó├à┬á├âΓäó├óΓé¼┬á├â╦£├é┬⌐.', true);
+            showFeedback(feedback, 'Ã™â€¡Ã˜Â°Ã™â€¡ Ã™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â© Ã™ÂÃ™â€šÃ˜Â·. Ã˜ÂªÃ™â€¦ Ã˜Â­Ã™ÂÃ˜Â¸ Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯ Ã˜ÂªÃ˜Â¬Ã˜Â±Ã™Å Ã˜Â¨Ã™Å Ã™â€¹Ã˜Â§ Ã˜Â¯Ã˜Â§Ã˜Â®Ã™â€ž Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â©.', true);
             form.reset();
             return;
           }
@@ -4367,19 +4367,19 @@
           const result = await response.json();
 
           if (!response.ok) {
-            throw new Error(result.error || '├â╦£├é┬¬├â╦£├é┬╣├â╦£├é┬░├â╦£├é┬▒ ├â╦£├é┬Ñ├â╦£├é┬▒├â╦£├é┬│├â╦£├é┬º├âΓäó├óΓé¼┼╛ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬▒├â╦£├é┬»');
+            throw new Error(result.error || 'Ã˜ÂªÃ˜Â¹Ã˜Â°Ã˜Â± Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯');
           }
 
-          showFeedback(feedback, result.message || '├â╦£├é┬¬├âΓäó├óΓé¼┬ª ├â╦£├é┬º├â╦£├é┬│├â╦£├é┬¬├âΓäó├óΓé¼┼╛├â╦£├é┬º├âΓäó├óΓé¼┬ª ├â╦£├é┬▒├â╦£├é┬»├âΓäó├åΓÇÖ├âΓäó├óΓé¼┬ª ├â╦£├é┬¿├âΓäó├óΓé¼┬á├â╦£├é┬¼├â╦£├é┬º├â╦£├é┬¡.', true);
+          showFeedback(feedback, result.message || 'Ã˜ÂªÃ™â€¦ Ã˜Â§Ã˜Â³Ã˜ÂªÃ™â€žÃ˜Â§Ã™â€¦ Ã˜Â±Ã˜Â¯Ã™Æ’Ã™â€¦ Ã˜Â¨Ã™â€ Ã˜Â¬Ã˜Â§Ã˜Â­.', true);
           renderRsvpQrTicket(form, result);
           form.reset();
         } catch (error) {
           console.error('RSVP submit failed:', error);
-          showFeedback(feedback, error.message || '├â╦£├é┬¡├â╦£├é┬»├â╦£├é┬½ ├â╦£├é┬«├â╦£├é┬╖├â╦£├é┬ú ├â╦£├é┬ú├â╦£├é┬½├âΓäó├óΓé¼┬á├â╦£├é┬º├â╦£├é┬í ├â╦£├é┬Ñ├â╦£├é┬▒├â╦£├é┬│├â╦£├é┬º├âΓäó├óΓé¼┼╛ ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬▒├â╦£├é┬».', false);
+          showFeedback(feedback, error.message || 'Ã˜Â­Ã˜Â¯Ã˜Â« Ã˜Â®Ã˜Â·Ã˜Â£ Ã˜Â£Ã˜Â«Ã™â€ Ã˜Â§Ã˜Â¡ Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯.', false);
         } finally {
           if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = originalText || '├â╦£├é┬Ñ├â╦£├é┬▒├â╦£├é┬│├â╦£├é┬º├âΓäó├óΓé¼┼╛';
+            submitButton.textContent = originalText || 'Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž';
           }
         }
       }, true);
@@ -4493,15 +4493,15 @@
     if (!value) return value;
 
     const dictionary = new Map([
-      ['Invitation reference is required.', '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.'],
-      ['Invitation reference is required', '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.'],
-      ['Invitation not found.', '┘ä┘à ┘è╪¬┘à ╪º┘ä╪╣╪½┘ê╪▒ ╪╣┘ä┘ë ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐.'],
-      ['Failed to submit RSVP.', '╪¬╪╣╪░╪▒ ╪Ñ╪▒╪│╪º┘ä ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒.'],
-      ['Invalid RSVP payload.', '╪¿┘è╪º┘å╪º╪¬ ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐.'],
-      ['Too many RSVP attempts. Please try again later.', '╪¬┘à ╪¬╪¼╪º┘ê╪▓ ╪╣╪»╪» ╪º┘ä┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä┘à╪│┘à┘ê╪¡. ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë ┘ä╪º╪¡┘é┘ï╪º.'],
-      ['╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪▒╪»┘â┘à ╪¿┘å╪¼╪º╪¡. ┘å╪┤┘â╪▒┘â┘à ╪╣┘ä┘ë ╪º┘ä╪¬╪ú┘â┘è╪».', '╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒ ╪¿┘å╪¼╪º╪¡.'],
-      ['├ÿ┬¬├ÖΓÇª ├ÿ┬º├ÿ┬│├ÿ┬¬├ÖΓÇ₧├ÿ┬º├ÖΓÇª ├ÿ┬▒├ÿ┬»├Ö╞Æ├ÖΓÇª ├ÿ┬¿├ÖΓÇá├ÿ┬¼├ÿ┬º├ÿ┬¡. ├ÖΓÇá├ÿ┬┤├Ö╞Æ├ÿ┬▒├Ö╞Æ├ÖΓÇª ├ÿ┬╣├ÖΓÇ₧├ÖΓÇ░ ├ÿ┬º├ÖΓÇ₧├ÿ┬¬├ÿ┬ú├Ö╞Æ├Ö┼á├ÿ┬».', '╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒ ╪¿┘å╪¼╪º╪¡.'],
-      ['├ÿ┬¬├ÿ┬╣├ÿ┬░├ÿ┬▒ ├ÿ┬¬├ÿ┬¡├ÿ┬»├Ö┼á├ÿ┬» ├ÿ┬º├ÖΓÇ₧├ÿ┬»├ÿ┬╣├Ö╦å├ÿ┬⌐ ├ÿ┬º├ÖΓÇ₧├ÿ┬¡├ÿ┬º├ÖΓÇ₧├Ö┼á├ÿ┬⌐. ├ÿ┬ú├ÿ┬╣├ÿ┬» ├ÿ┬¬├ÿ┬¡├ÖΓÇª├Ö┼á├ÖΓÇ₧ ├ÿ┬º├ÖΓÇ₧├ÿ┬╡├Ö┬ü├ÿ┬¡├ÿ┬⌐ ├ÿ┬½├ÖΓÇª ├ÿ┬¡├ÿ┬º├Ö╦å├ÖΓÇ₧ ├ÖΓÇª├ÿ┬▒├ÿ┬⌐ ├ÿ┬ú├ÿ┬«├ÿ┬▒├ÖΓÇ░.', '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.'],
+      ['Invitation reference is required.', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation reference is required', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation not found.', 'لم يتم العثور على الدعوة الحالية.'],
+      ['Failed to submit RSVP.', 'تعذر إرسال تأكيد الحضور.'],
+      ['Invalid RSVP payload.', 'بيانات تأكيد الحضور غير مكتملة.'],
+      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح. حاول مرة أخرى لاحقًا.'],
+      ['تم استلام ردكم بنجاح. نشكركم على التأكيد.', 'تم استلام تأكيد الحضور بنجاح.'],
+      ['ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø±Ø¯ÙƒÙ… Ø¨Ù†Ø¬Ø§Ø­. Ù†Ø´ÙƒØ±ÙƒÙ… Ø¹Ù„Ù‰ Ø§Ù„ØªØ£ÙƒÙŠØ¯.', 'تم استلام تأكيد الحضور بنجاح.'],
+      ['ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¯Ø¹ÙˆØ© Ø§Ù„Ø­Ø§Ù„ÙŠØ©. Ø£Ø¹Ø¯ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙØ­Ø© Ø«Ù… Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
     ]);
 
     if (dictionary.has(value)) {
@@ -4509,11 +4509,11 @@
     }
 
     if (value.includes('Invitation reference is required')) {
-      return '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.';
+      return 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.';
     }
 
-    if (/[├â├ÿ├Ö]/.test(value)) {
-      return '╪¬┘à ╪¬┘å┘ü┘è╪░ ╪º┘ä╪╣┘à┘ä┘è╪⌐╪î ┘ä┘â┘å ╪º┘ä┘å╪╡ ╪º┘ä┘ê╪º╪▒╪» ┘à┘å ╪º┘ä┘é╪º┘ä╪¿ ┘é╪»┘è┘à ╪º┘ä╪¬╪▒┘à┘è╪▓.';
+    if (/[ÃØÙ]/.test(value)) {
+      return 'تم تنفيذ العملية، لكن النص الوارد من القالب قديم الترميز.';
     }
 
     return value;
@@ -4599,14 +4599,14 @@
     host.style.color = '';
 
     host.innerHTML = `
-      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">QR Code ╪º┘ä╪«╪º╪╡ ╪¿╪¡╪╢┘ê╪▒┘â</div>
+      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">QR Code الخاص بحضورك</div>
       <img
         src="${result.qrCodeDataUrl}"
         alt="RSVP QR Code"
         style="width:min(72vw,220px);height:auto;display:block;margin:0 auto 12px;background:#fff;padding:10px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.08)"
       />
       <div style="font-size:13px;color:#6b7280;line-height:1.8;margin-bottom:12px;">
-        ┘ç╪░╪º ╪º┘ä┘â┘ê╪» ┘ü╪▒┘è╪» ┘ä┘ç╪░╪º ╪º┘ä┘à╪│╪¬╪«╪»┘à ┘ü┘é╪╖ ┘ê┘è┘à┘â┘å ╪¬┘å╪▓┘è┘ä┘ç ┘ê╪º┘ä╪º╪¡╪¬┘ü╪º╪╕ ╪¿┘ç.
+        هذا الكود فريد لهذا المستخدم فقط ويمكن تنزيله والاحتفاظ به.
       </div>
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
         <a
@@ -4614,7 +4614,7 @@
           download="${result.qrCodeDownloadName || 'farha-rsvp-qr.png'}"
           style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700;"
         >
-          ╪¬╪¡┘à┘è┘ä QR
+          تحميل QR
         </a>
         <a
           href="${result.qrCodeViewUrl || '#'}"
@@ -4622,16 +4622,16 @@
           rel="noreferrer"
           style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18);"
         >
-          ┘ü╪¬╪¡ ╪º┘ä┘â┘ê╪»
+          فتح الكود
         </a>
       </div>
     `;
 
     host.innerHTML = host.innerHTML
-      .replace('QR Code ├ÿ┬º├ÖΓÇ₧├ÿ┬«├ÿ┬º├ÿ┬╡ ├ÿ┬¿├ÿ┬¡├ÿ┬╢├Ö╦å├ÿ┬▒├Ö╞Æ', '╪▒┘à╪▓ QR ╪º┘ä╪«╪º╪╡ ╪¿╪¡╪╢┘ê╪▒┘â')
-      .replace('├ÖΓÇí├ÿ┬░├ÿ┬º ├ÿ┬º├ÖΓÇ₧├Ö╞Æ├Ö╦å├ÿ┬» ├Ö┬ü├ÿ┬▒├Ö┼á├ÿ┬» ├ÖΓÇ₧├ÖΓÇí├ÿ┬░├ÿ┬º ├ÿ┬º├ÖΓÇ₧├ÖΓÇª├ÿ┬│├ÿ┬¬├ÿ┬«├ÿ┬»├ÖΓÇª ├Ö┬ü├ÖΓÇÜ├ÿ┬╖ ├Ö╦å├Ö┼á├ÖΓÇª├Ö╞Æ├ÖΓÇá ├ÿ┬¬├ÖΓÇá├ÿ┬▓├Ö┼á├ÖΓÇ₧├ÖΓÇí ├Ö╦å├ÿ┬º├ÖΓÇ₧├ÿ┬º├ÿ┬¡├ÿ┬¬├Ö┬ü├ÿ┬º├ÿ┬╕ ├ÿ┬¿├ÖΓÇí.', '┘ç╪░╪º ╪º┘ä╪▒┘à╪▓ ╪«╪º╪╡ ╪¿╪¡╪╢┘ê╪▒┘â ┘ü┘é╪╖╪î ┘ê┘è┘à┘â┘å┘â ╪¬┘å╪▓┘è┘ä┘ç ┘ê╪º┘ä╪º╪¡╪¬┘ü╪º╪╕ ╪¿┘ç.')
-      .replace('├ÿ┬¬├ÿ┬¡├ÖΓÇª├Ö┼á├ÖΓÇ₧ QR', '╪¬╪¡┘à┘è┘ä QR')
-      .replace('├Ö┬ü├ÿ┬¬├ÿ┬¡ ├ÿ┬º├ÖΓÇ₧├Ö╞Æ├Ö╦å├ÿ┬»', '┘ü╪¬╪¡ ╪º┘ä┘â┘ê╪»');
+      .replace('QR Code Ø§Ù„Ø®Ø§Øµ Ø¨Ø­Ø¶ÙˆØ±Ùƒ', 'رمز QR الخاص بحضورك')
+      .replace('Ù‡Ø°Ø§ Ø§Ù„ÙƒÙˆØ¯ ÙØ±ÙŠØ¯ Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙÙ‚Ø· ÙˆÙŠÙ…ÙƒÙ† ØªÙ†Ø²ÙŠÙ„Ù‡ ÙˆØ§Ù„Ø§Ø­ØªÙØ§Ø¸ Ø¨Ù‡.', 'هذا الرمز خاص بحضورك فقط، ويمكنك تنزيله والاحتفاظ به.')
+      .replace('ØªØ­Ù…ÙŠÙ„ QR', 'تحميل QR')
+      .replace('ÙØªØ­ Ø§Ù„ÙƒÙˆØ¯', 'فتح الكود');
 
     persistRsvpTicket(result);
 
@@ -4677,9 +4677,9 @@
 
     const publicData = await loadPublicTemplateBarData();
     const whatsappNumber = publicData.whatsapp || '201001473345';
-    const priceLabel = publicData.minPriceLabel ? `├â╦£├é┬¬├â╦£├é┬¿├â╦£├é┬»├â╦£├é┬ú ├âΓäó├óΓé¼┬ª├âΓäó├óΓé¼┬á ${publicData.minPriceLabel} - ` : '';
+    const priceLabel = publicData.minPriceLabel ? `Ã˜ÂªÃ˜Â¨Ã˜Â¯Ã˜Â£ Ã™â€¦Ã™â€  ${publicData.minPriceLabel} - ` : '';
     const whatsappText = encodeURIComponent(
-      `├âΓäó├óΓé¼┬ª├â╦£├é┬▒├â╦£├é┬¡├â╦£├é┬¿├â╦£├é┬º├âΓäó├óΓé¼┬╣├â╦£├àΓÇÖ ├â╦£├é┬ú├â╦£├é┬╣├â╦£├é┬¼├â╦£├é┬¿├âΓäó├óΓé¼┬á├âΓäó├à┬á ├âΓäó├óΓé¼┼í├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¿ ├âΓÇÜ├é┬½${TEMPLATE_META[runtimeState.templateSlug].arabicName}├âΓÇÜ├é┬╗ ├âΓäó├ïΓÇá├â╦£├é┬ú├â╦£├é┬▒├â╦£├é┬║├â╦£├é┬¿ ├âΓäó├é┬ü├âΓäó├à┬á ├â╦£├é┬╖├âΓäó├óΓé¼┼╛├â╦£├é┬¿├âΓäó├óΓé¼┬í ├âΓäó├óΓé¼┬ª├âΓäó├óΓé¼┬á FARHA.`,
+      `Ã™â€¦Ã˜Â±Ã˜Â­Ã˜Â¨Ã˜Â§Ã™â€¹Ã˜Å’ Ã˜Â£Ã˜Â¹Ã˜Â¬Ã˜Â¨Ã™â€ Ã™Å  Ã™â€šÃ˜Â§Ã™â€žÃ˜Â¨ Ã‚Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Ã‚Â» Ã™Ë†Ã˜Â£Ã˜Â±Ã˜ÂºÃ˜Â¨ Ã™ÂÃ™Å  Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã™â€¦Ã™â€  FARHA.`,
     );
     const orderUrl = `/order?tpl=${runtimeState.templateSlug}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappText}`;
@@ -4806,18 +4806,18 @@
     bar.id = 'farha-template-bar';
     bar.innerHTML = `
       <div class="ftb-copy">
-        <p class="ftb-title">├â╦£├é┬ú├â╦£├é┬╣├â╦£├é┬¼├â╦£├é┬¿├âΓäó├åΓÇÖ ├âΓäó├óΓé¼┼í├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬¿ ├âΓÇÜ├é┬½${TEMPLATE_META[runtimeState.templateSlug].arabicName}├âΓÇÜ├é┬╗├â╦£├à┬╕</p>
-        <p class="ftb-sub">${priceLabel}├â╦£├é┬º├â╦£├é┬╖├âΓäó├óΓé¼┼╛├â╦£├é┬¿├âΓäó├óΓé¼┬í ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬ó├âΓäó├óΓé¼┬á ├âΓäó├óΓé¼┬ª├âΓäó├óΓé¼┬á FARHA ├âΓäó├ïΓÇá├âΓäó├óΓé¼┬á├â╦£├é┬¼├âΓäó├óΓé¼┬í├â╦£├é┬▓├âΓäó├óΓé¼┬í ├âΓäó├óΓé¼┼╛├âΓäó├à┬á├â╦£├é┬¬├âΓäó├óΓé¼┬á├â╦£├é┬º├â╦£├é┬│├â╦£├é┬¿ ├âΓäó├óΓé¼┬ª├â╦£├é┬╣ ├âΓäó├óΓé¼┬ª├âΓäó├óΓé¼┬á├â╦£├é┬º├â╦£├é┬│├â╦£├é┬¿├â╦£├é┬¬├âΓäó├åΓÇÖ├âΓäó├óΓé¼┬ª</p>
-        <p class="ftb-note">├âΓäó├óΓé¼┬í├â╦£├é┬░├â╦£├é┬º ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬┤├â╦£├é┬▒├âΓäó├à┬á├â╦£├é┬╖ ├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┼╛├â╦£├é┬╣├â╦£├é┬▒├â╦£├é┬╢ ├âΓäó├é┬ü├âΓäó├óΓé¼┼í├â╦£├é┬╖ - ├â╦£├é┬»├â╦£├é┬╣├âΓäó├ïΓÇá├â╦£├é┬¬├âΓäó├åΓÇÖ├âΓäó├óΓé¼┬ª ├â╦£├é┬º├âΓäó├óΓé¼┼╛├âΓäó├óΓé¼┬á├âΓäó├óΓé¼┬í├â╦£├é┬º├â╦£├é┬ª├âΓäó├à┬á├â╦£├é┬⌐ ├â╦£├é┬¬├â╦£├é┬╡├âΓäó├óΓé¼┼╛├âΓäó├åΓÇÖ├âΓäó├óΓé¼┬ª ├âΓäó├óΓé¼┬á├â╦£├é┬╕├âΓäó├à┬á├âΓäó├é┬ü├â╦£├é┬⌐ ├â╦£├é┬¿├â╦£├é┬»├âΓäó├ïΓÇá├âΓäó├óΓé¼┬á├âΓäó├óΓé¼┬í</p>
+        <p class="ftb-title">Ã˜Â£Ã˜Â¹Ã˜Â¬Ã˜Â¨Ã™Æ’ Ã™â€šÃ˜Â§Ã™â€žÃ˜Â¨ Ã‚Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Ã‚Â»Ã˜Å¸</p>
+        <p class="ftb-sub">${priceLabel}Ã˜Â§Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€  Ã™â€¦Ã™â€  FARHA Ã™Ë†Ã™â€ Ã˜Â¬Ã™â€¡Ã˜Â²Ã™â€¡ Ã™â€žÃ™Å Ã˜ÂªÃ™â€ Ã˜Â§Ã˜Â³Ã˜Â¨ Ã™â€¦Ã˜Â¹ Ã™â€¦Ã™â€ Ã˜Â§Ã˜Â³Ã˜Â¨Ã˜ÂªÃ™Æ’Ã™â€¦</p>
+        <p class="ftb-note">Ã™â€¡Ã˜Â°Ã˜Â§ Ã˜Â§Ã™â€žÃ˜Â´Ã˜Â±Ã™Å Ã˜Â· Ã™â€žÃ™â€žÃ˜Â¹Ã˜Â±Ã˜Â¶ Ã™ÂÃ™â€šÃ˜Â· - Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜ÂªÃ™Æ’Ã™â€¦ Ã˜Â§Ã™â€žÃ™â€ Ã™â€¡Ã˜Â§Ã˜Â¦Ã™Å Ã˜Â© Ã˜ÂªÃ˜ÂµÃ™â€žÃ™Æ’Ã™â€¦ Ã™â€ Ã˜Â¸Ã™Å Ã™ÂÃ˜Â© Ã˜Â¨Ã˜Â¯Ã™Ë†Ã™â€ Ã™â€¡</p>
       </div>
       <div class="ftb-actions">
-        <button class="ftb-close" type="button" aria-label="├â╦£├é┬Ñ├â╦£├é┬║├âΓäó├óΓé¼┼╛├â╦£├é┬º├âΓäó├óΓé¼┼í">├â╞Æ├óΓé¼ΓÇ¥</button>
-        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="├âΓäó├ïΓÇá├â╦£├é┬º├â╦£├é┬¬├â╦£├é┬│├â╦£├é┬º├â╦£├é┬¿">
+        <button class="ftb-close" type="button" aria-label="Ã˜Â¥Ã˜ÂºÃ™â€žÃ˜Â§Ã™â€š">Ãƒâ€”</button>
+        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="Ã™Ë†Ã˜Â§Ã˜ÂªÃ˜Â³Ã˜Â§Ã˜Â¨">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
           </svg>
         </a>
-        <a class="ftb-order" href="${orderUrl}">├â╦£├é┬º├â╦£├é┬╖├âΓäó├óΓé¼┼╛├â╦£├é┬¿├âΓäó├óΓé¼┬í ├â╦£├é┬º├âΓäó├óΓé¼┼╛├â╦£├é┬ó├âΓäó├óΓé¼┬á</a>
+        <a class="ftb-order" href="${orderUrl}">Ã˜Â§Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€ </a>
       </div>
     `;
 
@@ -4863,7 +4863,7 @@
             .sort((a, b) => a.price - b.price)[0];
 
           if (cheapest) {
-            const currencyLabel = cheapest.currency === 'EGP' ? '├â╦£├é┬¼.├âΓäó├óΓé¼┬ª' : cheapest.currency || '';
+            const currencyLabel = cheapest.currency === 'EGP' ? 'Ã˜Â¬.Ã™â€¦' : cheapest.currency || '';
             defaults.minPriceLabel = `${cheapest.price} ${currencyLabel}`.trim();
           }
         }
@@ -4908,7 +4908,7 @@
           filter: saturate(0.86);
         }
         .farha-studio-editable::after {
-          content: '├ÿ┬¬├ÿ┬╣├ÿ┬»├Ö┼á├ÖΓÇ₧';
+          content: 'ØªØ¹Ø¯ÙŠÙ„';
           position: absolute;
           top: -24px;
           right: 0;
@@ -4931,7 +4931,7 @@
           opacity: 1;
         }
         .farha-studio-editable[data-farha-locked="true"]::after {
-          content: '┘à┘é┘ü┘ê┘ä';
+          content: 'مقفول';
           background: #7f2a1f;
         }
         .farha-studio-editable[contenteditable="true"]:focus {
@@ -6170,7 +6170,7 @@
           payload: {
             scope: 'custom',
             id: wrapper.dataset.id,
-            label: wrapper.dataset.name || '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐',
+            label: wrapper.dataset.name || 'صورة حرة',
           },
         }, '*');
         return;
@@ -6185,7 +6185,7 @@
           payload: {
             scope: 'custom',
             id: wrapper.dataset.id,
-            label: wrapper.dataset.name || '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐',
+            label: wrapper.dataset.name || 'صورة حرة',
             previewUrl: customImageNode?.currentSrc || customImageNode?.src || '',
             basePreviewUrl: customImageNode?.currentSrc || customImageNode?.src || '',
             cropX: toPxNumber(wrapper.dataset.cropX, 50),
@@ -6850,13 +6850,13 @@
 
         const label = document.createElement('span');
         label.className = 'farha-native-overlay__label';
-        label.textContent = wrapper.dataset.name || (el.type === 'text' ? '┘å╪╡ ╪¡╪▒' : '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐');
+        label.textContent = wrapper.dataset.name || (el.type === 'text' ? 'نص حر' : 'صورة حرة');
         label.title = wrapper.dataset.name || '';
         meta.appendChild(label);
 
         const hint = document.createElement('span');
         hint.className = 'farha-native-overlay__hint';
-        hint.textContent = el.type === 'text' ? '╪╣┘å╪╡╪▒ ╪¡╪▒ ┘é╪º╪¿┘ä ┘ä┘ä╪¬╪¡╪▒┘è╪▒ ╪º┘ä┘à╪¿╪º╪┤╪▒' : '╪╣┘å╪╡╪▒ ╪¡╪▒ ┘é╪º╪¿┘ä ┘ä┘ä╪º╪│╪¬╪¿╪»╪º┘ä ┘ê╪º┘ä╪¬╪¡╪▒┘è┘â';
+        hint.textContent = el.type === 'text' ? 'عنصر حر قابل للتحرير المباشر' : 'عنصر حر قابل للاستبدال والتحريك';
         meta.appendChild(hint);
         controlsRoot.appendChild(meta);
 
@@ -6875,52 +6875,52 @@
 
         controlsRoot.style.alignItems = 'center';
         controlsRoot.style.justifyContent = 'flex-start';
-        controlsRoot.appendChild(makeActionButton({ label: '╪¬╪¡╪▒┘è┘â', action: 'move', ariaLabel: '╪¬╪¡╪▒┘è┘â ╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä╪¡╪▒' }));
+        controlsRoot.appendChild(makeActionButton({ label: 'تحريك', action: 'move', ariaLabel: 'تحريك العنصر الحر' }));
 
         if (el.type === 'text') {
-          controlsRoot.appendChild(makeActionButton({ label: '╪¬╪¡╪▒┘è╪▒', action: 'edit', ariaLabel: '╪¬╪¡╪▒┘è╪▒ ╪º┘ä┘å╪╡' }));
+          controlsRoot.appendChild(makeActionButton({ label: 'تحرير', action: 'edit', ariaLabel: 'تحرير النص' }));
 
           const colorInput = document.createElement('input');
           colorInput.type = 'color';
           colorInput.className = 'farha-native-overlay__color';
           colorInput.dataset.farhaCustomControl = 'color';
-          colorInput.setAttribute('aria-label', '┘ä┘ê┘å ╪º┘ä┘å╪╡');
+          colorInput.setAttribute('aria-label', 'لون النص');
           colorInput.value = cssColorToHex(el.color || '#111827');
-          appendTextField('┘ä┘ê┘å', 'color', colorInput);
+          appendTextField('لون', 'color', colorInput);
 
           const fontSelect = document.createElement('select');
           fontSelect.className = 'farha-native-overlay__select';
           fontSelect.dataset.farhaCustomControl = 'fontFamily';
-          fontSelect.setAttribute('aria-label', '┘å┘ê╪╣ ╪º┘ä╪«╪╖');
+          fontSelect.setAttribute('aria-label', 'نوع الخط');
           populateNativeOverlayFontSelect(fontSelect, el.fontFamily || '');
-          appendTextField('╪«╪╖', 'fontFamily', fontSelect);
+          appendTextField('خط', 'fontFamily', fontSelect);
         }
 
         if (el.type === 'image') {
-          controlsRoot.appendChild(makeActionButton({ label: '╪º╪│╪¬╪¿╪»╪º┘ä', action: 'replace', ariaLabel: '╪º╪│╪¬╪¿╪»╪º┘ä ╪º┘ä╪╡┘ê╪▒╪⌐' }));
+          controlsRoot.appendChild(makeActionButton({ label: 'استبدال', action: 'replace', ariaLabel: 'استبدال الصورة' }));
           controlsRoot.appendChild(makeActionButton({
-            label: '┘é╪╡',
+            label: 'قص',
             action: 'crop-toggle',
             active: wrapper.dataset.cropMode === 'true',
-            ariaLabel: '┘é╪╡ ╪º┘ä╪╡┘ê╪▒╪⌐',
+            ariaLabel: 'قص الصورة',
           }));
         }
 
-        controlsRoot.appendChild(makeActionButton({ label: '╪¬┘â╪▒╪º╪▒', action: 'duplicate', ariaLabel: '╪¬┘â╪▒╪º╪▒ ╪º┘ä╪╣┘å╪╡╪▒' }));
-        controlsRoot.appendChild(makeActionButton({ label: '┘å╪│╪«', action: 'copy', ariaLabel: '┘å╪│╪« ╪º┘ä╪╣┘å╪╡╪▒' }));
-        controlsRoot.appendChild(makeActionButton({ label: '┘ä╪╡┘é', action: 'paste', ariaLabel: '┘ä╪╡┘é ╪╣┘å╪╡╪▒' }));
-        controlsRoot.appendChild(makeActionButton({ label: '╪Ñ╪«┘ü╪º╪í', action: 'hide', ariaLabel: '╪Ñ╪«┘ü╪º╪í ╪º┘ä╪╣┘å╪╡╪▒' }));
+        controlsRoot.appendChild(makeActionButton({ label: 'تكرار', action: 'duplicate', ariaLabel: 'تكرار العنصر' }));
+        controlsRoot.appendChild(makeActionButton({ label: 'نسخ', action: 'copy', ariaLabel: 'نسخ العنصر' }));
+        controlsRoot.appendChild(makeActionButton({ label: 'لصق', action: 'paste', ariaLabel: 'لصق عنصر' }));
+        controlsRoot.appendChild(makeActionButton({ label: 'إخفاء', action: 'hide', ariaLabel: 'إخفاء العنصر' }));
         controlsRoot.appendChild(makeActionButton({
-          label: el.locked ? '┘ü╪¬╪¡' : '┘é┘ü┘ä',
+          label: el.locked ? 'فتح' : 'قفل',
           action: 'lock',
           active: el.locked,
-          ariaLabel: el.locked ? '┘ü╪¬╪¡ ┘é┘ü┘ä ╪º┘ä╪╣┘å╪╡╪▒' : '┘é┘ü┘ä ╪º┘ä╪╣┘å╪╡╪▒',
+          ariaLabel: el.locked ? 'فتح قفل العنصر' : 'قفل العنصر',
         }));
         controlsRoot.appendChild(makeActionButton({
-          label: '╪¡╪░┘ü',
+          label: 'حذف',
           action: 'delete',
           danger: true,
-          ariaLabel: '╪¡╪░┘ü ╪º┘ä╪╣┘å╪╡╪▒',
+          ariaLabel: 'حذف العنصر',
         }));
 
         resizeHandle.style.position = 'absolute';
@@ -6958,18 +6958,18 @@
         const originalText = submitButton ? submitButton.textContent : '';
 
         if (!data.invitationId && !data.invitationSlug) {
-          showFeedback(feedback, '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.', false);
+          showFeedback(feedback, 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.', false);
           return;
         }
 
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = runtimeState.preview ? '┘à╪╣╪º┘è┘å╪⌐ ┘ü┘é╪╖...' : '╪¼╪º╪▒┘ì ╪º┘ä╪Ñ╪▒╪│╪º┘ä...';
+          submitButton.textContent = runtimeState.preview ? 'معاينة فقط...' : 'جارٍ الإرسال...';
         }
 
         try {
           if (runtimeState.preview) {
-            showFeedback(feedback, '┘ç╪░┘ç ┘à╪╣╪º┘è┘å╪⌐ ┘ü┘é╪╖. ╪¬┘à ╪¡┘ü╪╕ ╪º┘ä╪▒╪» ╪¬╪¼╪▒┘è╪¿┘è┘ï╪º ╪»╪º╪«┘ä ┘ê╪╢╪╣ ╪º┘ä┘à╪╣╪º┘è┘å╪⌐.', true);
+            showFeedback(feedback, 'هذه معاينة فقط. تم حفظ الرد تجريبيًا داخل وضع المعاينة.', true);
             form.reset();
             return;
           }
@@ -6982,19 +6982,19 @@
           const result = await response.json();
 
           if (!response.ok) {
-            throw new Error(result.error || '╪¬╪╣╪░╪▒ ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪»');
+            throw new Error(result.error || 'تعذر إرسال الرد');
           }
 
-          showFeedback(feedback, result.message || '╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪▒╪»┘â┘à ╪¿┘å╪¼╪º╪¡.', true);
+          showFeedback(feedback, result.message || 'تم استلام ردكم بنجاح.', true);
           renderRsvpQrTicket(form, result);
           form.reset();
         } catch (error) {
           console.error('RSVP submit failed:', error);
-          showFeedback(feedback, error.message || '╪¡╪»╪½ ╪«╪╖╪ú ╪ú╪½┘å╪º╪í ╪Ñ╪▒╪│╪º┘ä ╪º┘ä╪▒╪».', false);
+          showFeedback(feedback, error.message || 'حدث خطأ أثناء إرسال الرد.', false);
         } finally {
           if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = originalText || '╪Ñ╪▒╪│╪º┘ä';
+            submitButton.textContent = originalText || 'إرسال';
           }
         }
       }, true);
@@ -7006,16 +7006,16 @@
     if (!value) return value;
 
     const dictionary = new Map([
-      ['Invitation reference is required.', '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.'],
-      ['Invitation reference is required', '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.'],
-      ['Invitation not found.', '┘ä┘à ┘è╪¬┘à ╪º┘ä╪╣╪½┘ê╪▒ ╪╣┘ä┘ë ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐.'],
-      ['Failed to submit RSVP.', '╪¬╪╣╪░╪▒ ╪Ñ╪▒╪│╪º┘ä ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒.'],
-      ['Invalid RSVP payload.', '╪¿┘è╪º┘å╪º╪¬ ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒ ╪║┘è╪▒ ┘à┘â╪¬┘à┘ä╪⌐.'],
-      ['Too many RSVP attempts. Please try again later.', '╪¬┘à ╪¬╪¼╪º┘ê╪▓ ╪╣╪»╪» ╪º┘ä┘à╪¡╪º┘ê┘ä╪º╪¬ ╪º┘ä┘à╪│┘à┘ê╪¡. ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë ┘ä╪º╪¡┘é┘ï╪º.'],
-      ['Invitation is not accepting RSVP responses right now.', '┘ç╪░┘ç ╪º┘ä╪»╪╣┘ê╪⌐ ┘ä╪º ╪¬╪│╪¬┘é╪¿┘ä ╪¬╪ú┘â┘è╪»╪º╪¬ ╪¡╪╢┘ê╪▒ ╪º┘ä╪ó┘å.'],
-      ['╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒ ╪¿┘å╪¼╪º╪¡.', '╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪¬╪ú┘â┘è╪» ╪º┘ä╪¡╪╢┘ê╪▒ ╪¿┘å╪¼╪º╪¡.'],
-      ['╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪▒╪»┘â┘à ╪¿┘å╪¼╪º╪¡.', '╪¬┘à ╪º╪│╪¬┘ä╪º┘à ╪▒╪»┘â┘à ╪¿┘å╪¼╪º╪¡.'],
-      ['This RSVP does not have an active entry pass.', '┘ä╪º ╪¬┘ê╪¼╪» ╪¿╪╖╪º┘é╪⌐ ╪»╪«┘ê┘ä ┘å╪┤╪╖╪⌐ ┘ä┘ç╪░╪º ╪º┘ä╪▒╪».'],
+      ['Invitation reference is required.', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation reference is required', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Invitation not found.', 'لم يتم العثور على الدعوة الحالية.'],
+      ['Failed to submit RSVP.', 'تعذر إرسال تأكيد الحضور.'],
+      ['Invalid RSVP payload.', 'بيانات تأكيد الحضور غير مكتملة.'],
+      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح. حاول مرة أخرى لاحقًا.'],
+      ['Invitation is not accepting RSVP responses right now.', 'هذه الدعوة لا تستقبل تأكيدات حضور الآن.'],
+      ['تم استلام تأكيد الحضور بنجاح.', 'تم استلام تأكيد الحضور بنجاح.'],
+      ['تم استلام ردكم بنجاح.', 'تم استلام ردكم بنجاح.'],
+      ['This RSVP does not have an active entry pass.', 'لا توجد بطاقة دخول نشطة لهذا الرد.'],
     ]);
 
     if (dictionary.has(value)) {
@@ -7023,15 +7023,15 @@
     }
 
     if (value.includes('Invitation reference is required')) {
-      return '╪¬╪╣╪░╪▒ ╪¬╪¡╪»┘è╪» ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ╪ú╪╣╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐ ╪½┘à ╪¡╪º┘ê┘ä ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.';
+      return 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.';
     }
 
     if (value.includes('Invitation not found')) {
-      return '┘ä┘à ┘è╪¬┘à ╪º┘ä╪╣╪½┘ê╪▒ ╪╣┘ä┘ë ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐.';
+      return 'لم يتم العثور على الدعوة الحالية.';
     }
 
-    if (/[├â├ÿ├Ö]/.test(value)) {
-      return '╪¬┘à╪¬ ╪º┘ä╪╣┘à┘ä┘è╪⌐ ╪¿┘å╪¼╪º╪¡╪î ┘ä┘â┘å ╪º┘ä┘å╪╡ ╪º┘ä┘é╪»┘è┘à ┘ü┘è ╪º┘ä┘é╪º┘ä╪¿ ┘â╪º┘å ╪¿╪¬╪▒┘à┘è╪▓ ╪║┘è╪▒ ╪╡╪¡┘è╪¡.';
+    if (/[ÃØÙ]/.test(value)) {
+      return 'تمت العملية بنجاح، لكن النص القديم في القالب كان بترميز غير صحيح.';
     }
 
     return value;
@@ -7065,14 +7065,14 @@
     host.style.color = '';
 
     host.innerHTML = `
-      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">╪▒┘à╪▓ QR ╪º┘ä╪«╪º╪╡ ╪¿╪º┘ä╪»╪«┘ê┘ä</div>
+      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">رمز QR الخاص بالدخول</div>
       <img
         src="${result.qrCodeDataUrl}"
         alt="Entry QR Code"
         style="width:min(72vw,220px);height:auto;display:block;margin:0 auto 12px;background:#fff;padding:10px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.08)"
       />
       <div style="font-size:13px;color:#6b7280;line-height:1.8;margin-bottom:12px;">
-        ${entryPass ? `╪º┘ä┘â┘ê╪»: ${entryPass.passCode || '-'}${remainingEntries != null ? ` ΓÇó ╪º┘ä┘à╪¬╪¿┘é┘è: ${remainingEntries}` : ''}` : '┘ç╪░╪º ╪º┘ä╪▒┘à╪▓ ╪«╪º╪╡ ╪¿╪¡╪╢┘ê╪▒┘â ┘ü┘é╪╖╪î ┘ê┘è┘à┘â┘å┘â ╪¬┘å╪▓┘è┘ä┘ç ┘ê╪º┘ä╪º╪¡╪¬┘ü╪º╪╕ ╪¿┘ç.'}
+        ${entryPass ? `الكود: ${entryPass.passCode || '-'}${remainingEntries != null ? ` • المتبقي: ${remainingEntries}` : ''}` : 'هذا الرمز خاص بحضورك فقط، ويمكنك تنزيله والاحتفاظ به.'}
       </div>
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
         <a
@@ -7080,7 +7080,7 @@
           download="${result.qrCodeDownloadName || 'farha-entry-pass.png'}"
           style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700;"
         >
-          ╪¬╪¡┘à┘è┘ä QR
+          تحميل QR
         </a>
         ${result.qrCodeViewUrl ? `
           <a
@@ -7089,7 +7089,7 @@
             rel="noreferrer"
             style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18);"
           >
-            ┘ü╪¬╪¡ ╪º┘ä┘â┘ê╪»
+            فتح الكود
           </a>
         ` : ''}
         ${entryPass?.publicLink ? `
@@ -7099,7 +7099,7 @@
             rel="noreferrer"
             style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#ecfdf5;color:#065f46;text-decoration:none;font-weight:700;border:1px solid rgba(6,95,70,.18);"
           >
-            ╪º┘ä╪▒╪º╪¿╪╖ ╪º┘ä┘ü╪▒╪»┘è
+            الرابط الفردي
           </a>
         ` : ''}
       </div>
@@ -7138,12 +7138,12 @@
     const portal = existing || document.createElement('section');
     portal.id = 'farha-entry-pass-portal';
     portal.innerHTML = `
-      <h3 class="farha-entry-pass-title">╪¿╪╖╪º┘é╪⌐ ╪º┘ä╪»╪«┘ê┘ä</h3>
+      <h3 class="farha-entry-pass-title">بطاقة الدخول</h3>
       <p class="farha-entry-pass-sub">
-        ${entryPass.guestName ? `┘ç╪░┘ç ╪º┘ä╪¿╪╖╪º┘é╪⌐ ┘à╪«╪╡╪╡╪⌐ ┘ä┘Ç ${entryPass.guestName}. ` : ''}
-        ${entryPass.remainingEntries != null ? `╪º┘ä┘à╪¬╪¿┘é┘è: ${entryPass.remainingEntries} ┘à┘å ${entryPass.allowedEntries}.` : ''}
+        ${entryPass.guestName ? `هذه البطاقة مخصصة لـ ${entryPass.guestName}. ` : ''}
+        ${entryPass.remainingEntries != null ? `المتبقي: ${entryPass.remainingEntries} من ${entryPass.allowedEntries}.` : ''}
       </p>
-      <button type="button" class="farha-entry-pass-open">╪Ñ╪╕┘ç╪º╪▒ QR ╪º┘ä╪»╪«┘ê┘ä</button>
+      <button type="button" class="farha-entry-pass-open">إظهار QR الدخول</button>
     `;
 
     const anchor = document.querySelector('#da3wa-rsvp, #rsvp-section, form.rsvp-form, #da3wa-rsvp-form');
@@ -7173,21 +7173,21 @@
         <div class="sheet">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px">
             <div style="text-align:right">
-              <div style="font-weight:800;color:#111827;font-size:20px">QR ╪º┘ä╪»╪«┘ê┘ä</div>
+              <div style="font-weight:800;color:#111827;font-size:20px">QR الدخول</div>
               <div style="color:#6b7280;font-size:13px">${entryPass.passCode || ''}</div>
             </div>
-            <button type="button" class="close" aria-label="╪Ñ╪║┘ä╪º┘é">├ù</button>
+            <button type="button" class="close" aria-label="إغلاق">×</button>
           </div>
           <img src="${entryPass.qrCodeDataUrl}" alt="Entry QR Code" style="width:min(74vw,240px);height:auto;display:block;margin:0 auto 14px;background:#fff;padding:10px;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.08)" />
           <div style="font-size:14px;color:#374151;line-height:1.9;margin-bottom:14px">
-            ${entryPass.guestName ? `<div><strong>╪º┘ä╪º╪│┘à:</strong> ${entryPass.guestName}</div>` : ''}
-            <div><strong>╪º┘ä┘à╪│┘à┘ê╪¡:</strong> ${entryPass.allowedEntries || 0}</div>
-            <div><strong>╪º┘ä┘à╪¬╪¿┘é┘è:</strong> ${entryPass.remainingEntries || 0}</div>
-            ${entryPass.tableNumber ? `<div><strong>╪º┘ä╪╖╪º┘ê┘ä╪⌐:</strong> ${entryPass.tableNumber}</div>` : ''}
+            ${entryPass.guestName ? `<div><strong>الاسم:</strong> ${entryPass.guestName}</div>` : ''}
+            <div><strong>المسموح:</strong> ${entryPass.allowedEntries || 0}</div>
+            <div><strong>المتبقي:</strong> ${entryPass.remainingEntries || 0}</div>
+            ${entryPass.tableNumber ? `<div><strong>الطاولة:</strong> ${entryPass.tableNumber}</div>` : ''}
           </div>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-            <a href="${entryPass.qrCodeDownloadUrl || entryPass.qrCodeViewUrl || '#'}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700">┘ü╪¬╪¡ / ╪¬╪¡┘à┘è┘ä QR</a>
-            ${entryPass.publicLink ? `<a href="${entryPass.publicLink}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18)">╪º┘ä╪▒╪º╪¿╪╖ ╪º┘ä┘ü╪▒╪»┘è</a>` : ''}
+            <a href="${entryPass.qrCodeDownloadUrl || entryPass.qrCodeViewUrl || '#'}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700">فتح / تحميل QR</a>
+            ${entryPass.publicLink ? `<a href="${entryPass.publicLink}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18)">الرابط الفردي</a>` : ''}
           </div>
         </div>
       `;

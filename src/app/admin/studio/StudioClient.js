@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { startTransition, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -12,9 +12,9 @@ import {
 import { buildInvitationRenderConfig, getOpeningBySlug } from '@/lib/template-system';
 
 const DEVICE_PRESETS = {
-  mobile: { label: '┘ç╪º╪¬┘ü', width: 390, height: 844 },
-  tablet: { label: '╪¬╪º╪¿┘ä╪¬', width: 768, height: 1024 },
-  desktop: { label: '╪│╪╖╪¡ ┘à┘â╪¬╪¿', width: 1280, height: 860 },
+  mobile: { label: 'هاتف', width: 390, height: 844 },
+  tablet: { label: 'تابلت', width: 768, height: 1024 },
+  desktop: { label: 'سطح مكتب', width: 1280, height: 860 },
 };
 const RESPONSIVE_ELEMENT_KEYS = new Set(['x', 'y', 'width', 'height', 'fontSize', 'opacity', 'rotation', 'cropX', 'cropY']);
 const RESPONSIVE_NUMERIC_KEYS = new Set(['x', 'y', 'opacity', 'rotation', 'cropX', 'cropY']);
@@ -56,23 +56,23 @@ const NATIVE_TEXT_STYLE_KEYS = [
 const NATIVE_MEDIA_STYLE_KEYS = ['objectFit', 'cropX', 'cropY'];
 
 const SECTION_META = {
-  'custom-elements': { icon: 'Γ£Ü', label: '╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪¡╪▒╪⌐', description: '╪Ñ╪╢╪º┘ü╪⌐ ┘å╪╡┘ê╪╡ ┘ê╪╡┘ê╪▒ ┘à╪¬╪¡╪▒┘â╪⌐ ┘ü┘ê┘é ╪º┘ä┘é╪º┘ä╪¿' },
-  layers: { icon: '≡ƒùé', label: '╪º┘ä╪╖╪¿┘é╪º╪¬', description: '╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪¡╪▒╪⌐ ┘ê╪¬╪▒╪¬┘è╪¿┘ç╪º ┘ê╪º┘ä╪¬╪¡┘â┘à ╪¿┘ç╪º' },
-  'template-elements': { icon: '≡ƒ¬ä', label: '╪╣┘å╪º╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿', description: '╪¬╪¡╪▒┘è┘â ┘ê╪¬╪½╪¿┘è╪¬ ╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪ú╪╡┘ä┘è╪⌐ ┘ê╪º┘ä╪▓╪«╪º╪▒┘ü ╪»╪º╪«┘ä ╪º┘ä┘é╪º┘ä╪¿ ┘å┘ü╪│┘ç' },
-  'template-text': { icon: '≡ƒöñ', label: '┘å╪╡ ╪º┘ä┘é╪º┘ä╪¿', description: '╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä┘å╪╡┘è ╪º┘ä┘à╪¡╪»╪» ┘à┘å ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘à╪¿╪º╪┤╪▒╪⌐' },
-  history: { icon: '≡ƒòÿ', label: '╪º┘ä╪│╪¼┘ä', description: '┘à┘ä╪«╪╡ ┘à╪▒╪ª┘è ┘ä╪ó╪«╪▒ ╪º┘ä╪¬╪╣╪»┘è┘ä╪º╪¬ ┘ê╪º┘ä╪Ñ╪╡╪»╪º╪▒╪º╪¬ ╪º┘ä┘à╪╡╪║╪▒╪⌐' },
-  basic: { icon: '≡ƒæñ', label: '╪º┘ä╪ú╪│╪º╪│┘è╪º╪¬', description: '╪ú╪│┘à╪º╪í ╪º┘ä╪╣╪▒┘ê╪│┘è┘å ┘ê╪¿┘è╪º┘å╪º╪¬ ╪º┘ä┘à┘å╪º╪│╪¿╪⌐' },
-  wording: { icon: '≡ƒô¥', label: '╪º┘ä┘å╪╡┘ê╪╡', description: '╪▒╪│╪º╪ª┘ä ╪º┘ä╪»╪╣┘ê╪⌐ ┘ê╪º┘ä╪╣┘å╪º┘ê┘è┘å' },
-  families: { icon: '≡ƒæ¬', label: '╪º┘ä╪╣╪º╪ª┘ä╪º╪¬', description: '╪ú╪│┘à╪º╪í ┘ê╪¬┘ê╪º┘é┘è╪╣ ╪º┘ä╪╣╪º╪ª┘ä╪¬┘è┘å' },
-  details: { icon: '≡ƒôì', label: '╪º┘ä┘à┘â╪º┘å ┘ê╪º┘ä╪▓┘à╪º┘å', description: '╪º┘ä╪¬╪º╪▒┘è╪« ┘ê╪º┘ä┘é╪º╪╣╪⌐ ┘ê╪▒╪º╪¿╪╖ ╪º┘ä╪«╪▒┘è╪╖╪⌐' },
-  schedule: { icon: '≡ƒùô', label: '╪º┘ä╪¿╪▒┘å╪º┘à╪¼', description: '┘ü┘é╪▒╪º╪¬ ╪º┘ä┘è┘ê┘à ┘ê╪¼╪»┘ê┘ä┘ç' },
-  media: { icon: '≡ƒû╝', label: '╪º┘ä┘ê╪│╪º╪ª╪╖', description: '╪╡┘ê╪▒ ┘ê┘ü┘è╪»┘è┘ê┘ç╪º╪¬ ┘ê┘à┘ê╪│┘è┘é┘ë ╪º┘ä╪»╪╣┘ê╪⌐' },
-  contact: { icon: '≡ƒô₧', label: '╪º┘ä╪¬┘ê╪º╪╡┘ä', description: '╪º╪│┘à ┘ê╪▒┘é┘à ╪¼┘ç╪⌐ ╪º┘ä╪¬┘å╪│┘è┘é ┘ê╪º┘ä╪º╪│╪¬┘ü╪│╪º╪▒' },
-  closing: { icon: 'Γ£Æ', label: '╪º┘ä╪«╪º╪¬┘à╪⌐', description: '╪«╪º╪¬┘à╪⌐ ╪º┘ä╪»╪╣┘ê╪⌐ ┘ê╪º┘ä┘ç╪º╪┤╪¬╪º╪║ ┘ê╪º┘ä╪¬┘ê┘é┘è╪╣' },
-  opening: { icon: 'Γ£¿', label: '╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è╪⌐', description: '╪º┘ä┘à╪┤┘ç╪» ╪º┘ä╪ú┘ê┘ä ┘ê╪╖╪▒┘è┘é╪⌐ ╪º┘ä╪»╪«┘ê┘ä' },
-  design: { icon: '≡ƒÄ¿', label: '╪º┘ä╪¬╪╡┘à┘è┘à', description: '╪º┘ä╪ú┘ä┘ê╪º┘å ┘ê╪º┘ä╪«╪╖┘ê╪╖ ┘ê╪º┘ä┘à╪╕┘ç╪▒ ╪º┘ä╪╣╪º┘à' },
-  sections: { icon: 'Γÿ░', label: '╪º┘ä╪ú┘é╪│╪º┘à', description: '╪Ñ╪╕┘ç╪º╪▒ ┘ê╪Ñ╪«┘ü╪º╪í ┘ê╪¬╪▒╪¬┘è╪¿ ╪ú╪¼╪▓╪º╪í ╪º┘ä╪»╪╣┘ê╪⌐' },
-  advanced: { icon: 'ΓÜÖ', label: '╪Ñ╪╣╪»╪º╪»╪º╪¬ ┘à╪¬┘é╪»┘à╪⌐', description: '╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪ú╪│╪º╪│┘è ┘ê╪«┘è╪º╪▒╪º╪¬ ╪º┘ä╪╣┘à┘ä' },
+  'custom-elements': { icon: '✚', label: 'العناصر الحرة', description: 'إضافة نصوص وصور متحركة فوق القالب' },
+  layers: { icon: '🗂', label: 'الطبقات', description: 'إدارة العناصر الحرة وترتيبها والتحكم بها' },
+  'template-elements': { icon: '🪄', label: 'عناصر القالب', description: 'تحريك وتثبيت العناصر الأصلية والزخارف داخل القالب نفسه' },
+  'template-text': { icon: '🔤', label: 'نص القالب', description: 'العنصر النصي المحدد من داخل المعاينة المباشرة' },
+  history: { icon: '🕘', label: 'السجل', description: 'ملخص مرئي لآخر التعديلات والإصدارات المصغرة' },
+  basic: { icon: '👤', label: 'الأساسيات', description: 'أسماء العروسين وبيانات المناسبة' },
+  wording: { icon: '📝', label: 'النصوص', description: 'رسائل الدعوة والعناوين' },
+  families: { icon: '👪', label: 'العائلات', description: 'أسماء وتواقيع العائلتين' },
+  details: { icon: '📍', label: 'المكان والزمان', description: 'التاريخ والقاعة ورابط الخريطة' },
+  schedule: { icon: '🗓', label: 'البرنامج', description: 'فقرات اليوم وجدوله' },
+  media: { icon: '🖼', label: 'الوسائط', description: 'صور وفيديوهات وموسيقى الدعوة' },
+  contact: { icon: '📞', label: 'التواصل', description: 'اسم ورقم جهة التنسيق والاستفسار' },
+  closing: { icon: '✒', label: 'الخاتمة', description: 'خاتمة الدعوة والهاشتاغ والتوقيع' },
+  opening: { icon: '✨', label: 'الافتتاحية', description: 'المشهد الأول وطريقة الدخول' },
+  design: { icon: '🎨', label: 'التصميم', description: 'الألوان والخطوط والمظهر العام' },
+  sections: { icon: '☰', label: 'الأقسام', description: 'إظهار وإخفاء وترتيب أجزاء الدعوة' },
+  advanced: { icon: '⚙', label: 'إعدادات متقدمة', description: 'القالب الأساسي وخيارات العمل' },
 };
 
 function arrayValue(value) {
@@ -127,7 +127,7 @@ function getCustomElementLabel(element, index) {
     return element.name;
   }
 
-  const baseLabel = element?.type === 'text' ? '┘å╪╡ ╪¡╪▒' : element?.type === 'image' ? '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐' : '╪╣┘å╪╡╪▒ ╪¡╪▒';
+  const baseLabel = element?.type === 'text' ? 'نص حر' : element?.type === 'image' ? 'صورة حرة' : 'عنصر حر';
   return `${baseLabel} ${index + 1}`;
 }
 
@@ -426,7 +426,7 @@ function normalizeElementClipboardPayload(payload) {
 
   return {
     source: payload.source || 'custom',
-    label: payload.label || (elementType === 'text' ? '┘å╪╡ ╪¡╪▒' : '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐'),
+    label: payload.label || (elementType === 'text' ? 'نص حر' : 'صورة حرة'),
     element: normalizedElement,
   };
 }
@@ -589,7 +589,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
       return (
         <div className="studio-bilingual-stack">
           <label className="studio-subfield">
-            <span>╪º┘ä╪╣╪▒╪¿┘è</span>
+            <span>العربي</span>
             <textarea
               rows={4}
               value={value || ''}
@@ -625,7 +625,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
         {items.map((item, index) => (
           <div key={`${field.key}-${index}`} className="array-row">
             <MediaPicker
-              label="╪º╪«╪¬┘è╪º╪▒ ╪╡┘ê╪▒╪⌐"
+              label="اختيار صورة"
               value={item || ''}
               accept="image"
               folder="studio-gallery"
@@ -645,7 +645,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
                 }
               }}
             >
-              ╪¡╪░┘ü
+              حذف
             </button>
           </div>
         ))}
@@ -659,7 +659,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             }
           }}
         >
-          ╪Ñ╪╢╪º┘ü╪⌐ ╪╡┘ê╪▒╪⌐
+          إضافة صورة
         </button>
       </div>
     );
@@ -675,13 +675,13 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             <input
               type="text"
               value={item.time || ''}
-              placeholder="╪º┘ä┘ê┘é╪¬"
+              placeholder="الوقت"
               onChange={(event) => onScheduleChange(field.key, index, 'time', event.target.value)}
             />
             <input
               type="text"
               value={item.title || ''}
-              placeholder="╪º┘ä┘ü┘é╪▒╪⌐"
+              placeholder="الفقرة"
               onChange={(event) => onScheduleChange(field.key, index, 'title', event.target.value)}
             />
             {bilingualEnabled ? (
@@ -703,7 +703,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
                 }
               }}
             >
-              ╪¡╪░┘ü
+              حذف
             </button>
           </div>
         ))}
@@ -717,7 +717,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             }
           }}
         >
-          ╪Ñ╪╢╪º┘ü╪⌐ ┘ü┘é╪▒╪⌐
+          إضافة فقرة
         </button>
       </div>
     );
@@ -733,7 +733,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             <input
               type="text"
               value={item || ''}
-              placeholder="╪╣┘å╪╡╪▒"
+              placeholder="عنصر"
               onChange={(event) => onListChange(field.key, index, event.target.value)}
             />
             {bilingualEnabled ? (
@@ -755,7 +755,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
                 }
               }}
             >
-              ╪¡╪░┘ü
+              حذف
             </button>
           </div>
         ))}
@@ -769,7 +769,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
             }
           }}
         >
-          ╪Ñ╪╢╪º┘ü╪⌐ ╪╣┘å╪╡╪▒
+          إضافة عنصر
         </button>
       </div>
     );
@@ -778,7 +778,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
   if (field.type === 'image' || field.type === 'audio' || field.type === 'video') {
     return (
       <MediaPicker
-        label={`╪º╪«╪¬┘è╪º╪▒ ${field.type === 'image' ? '╪╡┘ê╪▒╪⌐' : field.type === 'audio' ? '╪╡┘ê╪¬' : '┘ü┘è╪»┘è┘ê'}`}
+        label={`اختيار ${field.type === 'image' ? 'صورة' : field.type === 'audio' ? 'صوت' : 'فيديو'}`}
         value={value || ''}
         accept={field.type}
         folder={`studio-${field.type}`}
@@ -795,7 +795,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
           checked={Boolean(value)}
           onChange={(event) => onContentChange(field.key, event.target.checked)}
         />
-        <span>{value ? '┘à┘ü╪╣┘ä' : '╪║┘è╪▒ ┘à┘ü╪╣┘ä'}</span>
+        <span>{value ? 'مفعل' : 'غير مفعل'}</span>
       </label>
     );
   }
@@ -809,7 +809,7 @@ function renderField({ field, draft, onContentChange, onScheduleChange, onListCh
     return (
       <div className="studio-bilingual-stack">
         <label className="studio-subfield">
-          <span>╪º┘ä╪╣╪▒╪¿┘è</span>
+          <span>العربي</span>
           <input
             type="text"
             value={value || ''}
@@ -844,17 +844,17 @@ function MediaSummaryCard({ label, value, type, onClear, onChange }) {
     <div className="studio-media-card">
       <div className="studio-media-card__head">
         <strong>{label}</strong>
-        {value ? <span className="studio-media-status">┘à╪▒╪¿┘ê╪╖</span> : <span className="studio-media-status empty">┘ü╪º╪▒╪║</span>}
+        {value ? <span className="studio-media-status">مربوط</span> : <span className="studio-media-status empty">فارغ</span>}
       </div>
       <MediaPicker
-        label="╪º╪«╪¬┘è╪º╪▒"
+        label="اختيار"
         value={value || ''}
         accept={type}
         folder={`studio-${type}`}
         onChange={onChange}
       />
       <div className="studio-media-card__actions">
-        <button type="button" className="mini-btn" onClick={onClear}>╪¡╪░┘ü</button>
+        <button type="button" className="mini-btn" onClick={onClear}>حذف</button>
       </div>
     </div>
   );
@@ -1361,7 +1361,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         const response = await fetch('/api/public/font-library', { cache: 'no-store' });
         const payload = await response.json();
         if (!response.ok || !payload.success) {
-          throw new Error(payload.message || '╪¬╪╣╪░╪▒ ╪¬╪¡┘à┘è┘ä ┘à┘â╪¬╪¿╪⌐ ╪º┘ä╪«╪╖┘ê╪╖.');
+          throw new Error(payload.message || 'تعذر تحميل مكتبة الخطوط.');
         }
 
         if (!ignore && Array.isArray(payload.data?.all) && payload.data.all.length) {
@@ -1546,7 +1546,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     setActivityLog((current) => [entry, ...current].slice(0, 18));
   }
 
-  function appendVersionSnapshot(snapshot, label = '┘å╪│╪«╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐') {
+  function appendVersionSnapshot(snapshot, label = 'نسخة تلقائية') {
     const entry = {
       id: `version-${Date.now()}-${versionCounterRef.current}`,
       snapshot,
@@ -1607,8 +1607,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         },
       };
     });
-    setNotice(locked ? `╪¬┘à ┘é┘ü┘ä ╪º┘ä┘å╪╡: ${getTextFieldLabel(path)}` : `╪¬┘à ┘ü╪¬╪¡ ╪º┘ä┘å╪╡: ${getTextFieldLabel(path)}`);
-    recordActivity(locked ? '┘é┘ü┘ä ┘å╪╡ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿' : '┘ü╪¬╪¡ ┘å╪╡ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿', getTextFieldLabel(path));
+    setNotice(locked ? `تم قفل النص: ${getTextFieldLabel(path)}` : `تم فتح النص: ${getTextFieldLabel(path)}`);
+    recordActivity(locked ? 'قفل نص من القالب' : 'فتح نص من القالب', getTextFieldLabel(path));
   }
 
   function resetTemplateText(path) {
@@ -1633,8 +1633,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         },
       };
     });
-    setNotice(`╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘å╪╡ ╪Ñ┘ä┘ë ╪º┘ä┘é┘è┘à╪⌐ ╪º┘ä╪ú╪╡┘ä┘è╪⌐: ${getTextFieldLabel(path)}`);
-    recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ┘å╪╡ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿', getTextFieldLabel(path));
+    setNotice(`تمت إعادة النص إلى القيمة الأصلية: ${getTextFieldLabel(path)}`);
+    recordActivity('إعادة ضبط نص من القالب', getTextFieldLabel(path));
   }
 
   function restoreVersionSnapshot(snapshot, label) {
@@ -1650,9 +1650,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     historyRef.current.current = snapshot;
     syncHistoryMeta();
     setDraft(normalizeDraftState(JSON.parse(snapshot)));
-    setNotice(`╪¬┘à╪¬ ╪º╪│╪¬╪╣╪º╪»╪⌐ ╪º┘ä┘å╪│╪«╪⌐: ${label}`);
-    recordActivity('╪º╪│╪¬╪╣╪º╪»╪⌐ ┘å╪│╪«╪⌐', label);
-    appendVersionSnapshot(snapshot, `╪º╪│╪¬╪╣╪º╪»╪⌐ ${label}`);
+    setNotice(`تمت استعادة النسخة: ${label}`);
+    recordActivity('استعادة نسخة', label);
+    appendVersionSnapshot(snapshot, `استعادة ${label}`);
   }
 
   function updateTemplateTextOverride(path, value) {
@@ -1730,7 +1730,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     setSelectedTemplateTextPath(null);
     setSelectedTemplateTextLabel('');
     setPreviewReloadToken((value) => value + 1);
-    setNotice('╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘é╪º┘ä╪¿ ╪¿╪º┘ä┘â╪º┘à┘ä ╪Ñ┘ä┘ë ╪¡╪º┘ä╪¬┘ç ╪º┘ä╪ú╪╡┘ä┘è╪⌐.');
+    setNotice('تمت إعادة القالب بالكامل إلى حالته الأصلية.');
     recordActivity('Reset Template', currentManifest.nameAr);
   }
 
@@ -1753,9 +1753,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     historyRef.current.current = serializedSnapshot;
     syncHistoryMeta();
     setDraft(normalizeDraftState(JSON.parse(serializedSnapshot)));
-    setNotice(direction === 'undo' ? '╪¬┘à ╪º┘ä╪¬╪▒╪º╪¼╪╣ ╪╣┘å ╪ó╪«╪▒ ╪¬╪╣╪»┘è┘ä.' : '╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪¬╪╣╪»┘è┘ä.');
-    recordActivity(direction === 'undo' ? 'Undo' : 'Redo', direction === 'undo' ? '╪º┘ä╪▒╪¼┘ê╪╣ ╪Ñ┘ä┘ë ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪│╪º╪¿┘é╪⌐' : '╪º╪│╪¬╪╣╪º╪»╪⌐ ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä╪¬╪º┘ä┘è╪⌐');
-    appendVersionSnapshot(serializedSnapshot, direction === 'undo' ? '┘å╪│╪«╪⌐ ╪¿╪╣╪» ╪º┘ä╪¬╪▒╪º╪¼╪╣' : '┘å╪│╪«╪⌐ ╪¿╪╣╪» ╪º┘ä╪Ñ╪╣╪º╪»╪⌐');
+    setNotice(direction === 'undo' ? 'تم التراجع عن آخر تعديل.' : 'تمت إعادة التعديل.');
+    recordActivity(direction === 'undo' ? 'Undo' : 'Redo', direction === 'undo' ? 'الرجوع إلى النسخة السابقة' : 'استعادة النسخة التالية');
+    appendVersionSnapshot(serializedSnapshot, direction === 'undo' ? 'نسخة بعد التراجع' : 'نسخة بعد الإعادة');
   }
 
   function handleUndo() {
@@ -2113,8 +2113,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       setSelectedElementId(replaceMediaRequest.id);
       setSelectedNativeElementId(null);
       setSelectedNativeElementLabel('');
-      setNotice(`╪¬┘à ╪º╪│╪¬╪¿╪»╪º┘ä ╪╡┘ê╪▒╪⌐ ╪º┘ä╪╣┘å╪╡╪▒: ${replaceMediaRequest.label || '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐'}`);
-      recordActivity('╪º╪│╪¬╪¿╪»╪º┘ä ╪╡┘ê╪▒╪⌐ ╪╣┘å╪╡╪▒ ╪¡╪▒', replaceMediaRequest.label || replaceMediaRequest.id);
+      setNotice(`تم استبدال صورة العنصر: ${replaceMediaRequest.label || 'صورة حرة'}`);
+      recordActivity('استبدال صورة عنصر حر', replaceMediaRequest.label || replaceMediaRequest.id);
       setOpenSection('layers');
     } else if (replaceMediaRequest.scope === 'native') {
       patchNativeElement(replaceMediaRequest.id, { mediaUrl: url, hidden: false });
@@ -2122,8 +2122,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       setSelectedNativeElementLabel(replaceMediaRequest.label || '');
       setSelectedNativeElementPreviewUrl(url);
       setSelectedElementId(null);
-      setNotice(`╪¬┘à ╪º╪│╪¬╪¿╪»╪º┘ä ╪╡┘ê╪▒╪⌐ ╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä╪ú╪╡┘ä┘è: ${replaceMediaRequest.label || '╪╣┘å╪╡╪▒ ╪╡┘ê╪▒┘è'}`);
-      recordActivity('╪º╪│╪¬╪¿╪»╪º┘ä ╪╡┘ê╪▒╪⌐ ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿', replaceMediaRequest.label || replaceMediaRequest.id);
+      setNotice(`تم استبدال صورة العنصر الأصلي: ${replaceMediaRequest.label || 'عنصر صوري'}`);
+      recordActivity('استبدال صورة عنصر قالب', replaceMediaRequest.label || replaceMediaRequest.id);
       setOpenSection('template-elements');
     }
 
@@ -2201,8 +2201,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     }
 
     patchNativeElement(selectedNativeElementId, { hidden: true });
-    setNotice(`╪¬┘à ╪Ñ╪«┘ü╪º╪í ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿: ${selectedNativeElement.label || selectedNativeElementId}`);
-    recordActivity('╪Ñ╪«┘ü╪º╪í ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿', selectedNativeElement.label || selectedNativeElementId || '╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿');
+    setNotice(`تم إخفاء عنصر القالب: ${selectedNativeElement.label || selectedNativeElementId}`);
+    recordActivity('إخفاء عنصر قالب', selectedNativeElement.label || selectedNativeElementId || 'عنصر قالب');
   }
 
   function resetSelectedNativeElement() {
@@ -2221,8 +2221,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       };
     });
     setSelectedNativeElementPreviewUrl(selectedNativeElementBasePreviewUrl || '');
-    setNotice(`╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿: ${selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId}`);
-    recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿', selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId);
+    setNotice(`تمت إعادة ضبط عنصر القالب: ${selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId}`);
+    recordActivity('إعادة ضبط عنصر قالب', selectedNativeElement?.label || selectedNativeElementLabel || selectedNativeElementId);
   }
 
   function resetNativeElementById(id, label = '') {
@@ -2246,8 +2246,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     const resolvedLabel =
       label
       || (id === selectedNativeElementId ? selectedNativeElement?.label || selectedNativeElementLabel || id : id);
-    setNotice(`╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿: ${resolvedLabel}`);
-    recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿', resolvedLabel);
+    setNotice(`تمت إعادة ضبط عنصر القالب: ${resolvedLabel}`);
+    recordActivity('إعادة ضبط عنصر قالب', resolvedLabel);
   }
 
   function clearDeviceOverride(id, deviceMode = currentDeviceMode) {
@@ -2268,8 +2268,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         };
       }),
     );
-    setNotice(`╪¬┘à ╪¡╪░┘ü ╪¬╪«╪╡┘è╪╡ ${label} ┘à┘å ╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä┘à╪¡╪»╪».`);
-    recordActivity('╪¡╪░┘ü ╪¬╪«╪╡┘è╪╡ ╪¼┘ç╪º╪▓', label);
+    setNotice(`تم حذف تخصيص ${label} من العنصر المحدد.`);
+    recordActivity('حذف تخصيص جهاز', label);
   }
 
   function removeCustomElement(id) {
@@ -2277,8 +2277,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     updateCustomElements((elements) => elements.filter((element) => element.id !== id));
     setSelectedElementId((current) => (current === id ? null : current));
     if (removedElement) {
-      setNotice(`╪¬┘à ╪¡╪░┘ü ╪º┘ä╪╣┘å╪╡╪▒: ${removedElement.name}`);
-      recordActivity('╪¡╪░┘ü ╪╣┘å╪╡╪▒ ╪¡╪▒', removedElement.name);
+      setNotice(`تم حذف العنصر: ${removedElement.name}`);
+      recordActivity('حذف عنصر حر', removedElement.name);
     }
   }
 
@@ -2301,7 +2301,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     });
     setSelectedElementId(id);
     setOpenSection('layers');
-    recordActivity(direction > 0 ? '╪▒┘ü╪╣ ╪╖╪¿┘é╪⌐' : '╪«┘ü╪╢ ╪╖╪¿┘é╪⌐', orderedLayerElements.find((element) => element.id === id)?.name || '╪╣┘å╪╡╪▒ ╪¡╪▒');
+    recordActivity(direction > 0 ? 'رفع طبقة' : 'خفض طبقة', orderedLayerElements.find((element) => element.id === id)?.name || 'عنصر حر');
   }
 
   function duplicateCustomElement(id) {
@@ -2316,7 +2316,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       {
         ...source,
         id: duplicateId,
-        name: `${source.name || getCustomElementLabel(source, elements.length)} (┘å╪│╪«╪⌐)`,
+        name: `${source.name || getCustomElementLabel(source, elements.length)} (نسخة)`,
         x: Math.max(12, toFiniteNumber(source.x, 40) + 18),
         y: Math.max(12, toFiniteNumber(source.y, 40) + 18),
         hidden: false,
@@ -2329,24 +2329,24 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     setOpenSection('layers');
     setSelectedTemplateTextPath(null);
     setSelectedTemplateTextLabel('');
-    recordActivity('┘å╪│╪« ╪╣┘å╪╡╪▒ ╪¡╪▒', source.name || '╪╣┘å╪╡╪▒ ╪¡╪▒');
+    recordActivity('نسخ عنصر حر', source.name || 'عنصر حر');
   }
 
   function setElementClipboardPayload(payload, options = {}) {
     const normalized = normalizeElementClipboardPayload(payload);
-    const fallbackLabel = options.label || payload?.label || '╪º┘ä╪╣┘å╪╡╪▒';
+    const fallbackLabel = options.label || payload?.label || 'العنصر';
     if (!normalized) {
       if (!options.silent) {
-        setNotice(options.errorNotice || `┘ä╪º ┘è┘à┘â┘å ┘å╪│╪« ${fallbackLabel} ┘â╪╣┘å╪╡╪▒ ╪¡╪▒ ╪¿╪╡╪▒┘è ╪º┘ä╪ó┘å.`);
-        recordActivity('╪¬╪╣╪░╪▒ ┘å╪│╪« ╪╣┘å╪╡╪▒', fallbackLabel);
+        setNotice(options.errorNotice || `لا يمكن نسخ ${fallbackLabel} كعنصر حر بصري الآن.`);
+        recordActivity('تعذر نسخ عنصر', fallbackLabel);
       }
       return null;
     }
 
     setElementClipboard(normalized);
     if (!options.silent) {
-      setNotice(options.notice || `╪¬┘à ┘å╪│╪« ╪º┘ä╪╣┘å╪╡╪▒: ${normalized.label}`);
-      recordActivity(options.activity || '┘å╪│╪« ╪╣┘å╪╡╪▒', normalized.label);
+      setNotice(options.notice || `تم نسخ العنصر: ${normalized.label}`);
+      recordActivity(options.activity || 'نسخ عنصر', normalized.label);
     }
     return normalized;
   }
@@ -2355,13 +2355,13 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     const normalized = normalizeElementClipboardPayload(clipboardSource);
     if (!normalized) {
       if (!options.silent) {
-        setNotice('┘ä╪º ┘è┘ê╪¼╪» ╪╣┘å╪╡╪▒ ┘à┘å╪│┘ê╪« ┘ä┘ä╪╡┘é┘ç ╪»╪º╪«┘ä ╪º┘ä┘é╪º┘ä╪¿.');
+        setNotice('لا يوجد عنصر منسوخ للصقه داخل القالب.');
       }
       return null;
     }
 
     const nextId = `custom-${Math.random().toString(36).slice(2, 11)}`;
-    const nextLabelBase = String(options.label || normalized.label || (normalized.element.type === 'text' ? '┘å╪╡ ╪¡╪▒' : '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐')).trim();
+    const nextLabelBase = String(options.label || normalized.label || (normalized.element.type === 'text' ? 'نص حر' : 'صورة حرة')).trim();
     const fallbackX = Math.max(12, Math.round(toFiniteNumber(normalized.element.x, 40) + 18));
     const fallbackY = Math.max(12, Math.round(toFiniteNumber(normalized.element.y, 40) + 18));
     const resolvedPosition = {
@@ -2375,7 +2375,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         ...buildDefaultCustomElement(normalized.element.type, {}),
         ...cloneValue(normalized.element),
         id: nextId,
-        name: options.name || `${nextLabelBase} (┘å╪│╪«╪⌐)`,
+        name: options.name || `${nextLabelBase} (نسخة)`,
         x: resolvedPosition.x,
         y: resolvedPosition.y,
         zIndex: elements.length + 1,
@@ -2401,8 +2401,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     setEditorOpen(true);
 
     if (!options.silent) {
-      setNotice(options.notice || `╪¬┘à╪¬ ╪Ñ╪╢╪º┘ü╪⌐ ┘å╪│╪«╪⌐ ╪¼╪»┘è╪»╪⌐ ┘à┘å: ${nextLabelBase}`);
-      recordActivity(options.activity || '┘ä╪╡┘é ╪╣┘å╪╡╪▒ ╪¡╪▒', nextLabelBase);
+      setNotice(options.notice || `تمت إضافة نسخة جديدة من: ${nextLabelBase}`);
+      recordActivity(options.activity || 'لصق عنصر حر', nextLabelBase);
     }
 
     return nextId;
@@ -2417,8 +2417,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     }
 
     return setElementClipboardPayload(getCustomElementClipboardPayload(source), {
-      notice: options.notice || `╪¬┘à ┘å╪│╪« ╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä╪¡╪▒: ${source.name}`,
-      activity: options.activity || '┘å╪│╪« ╪╣┘å╪╡╪▒ ╪¡╪▒',
+      notice: options.notice || `تم نسخ العنصر الحر: ${source.name}`,
+      activity: options.activity || 'نسخ عنصر حر',
       label: source.name,
       silent: options.silent,
     });
@@ -2429,7 +2429,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       return null;
     }
 
-    const label = selectedNativeElement.label || selectedNativeElementId || '╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿';
+    const label = selectedNativeElement.label || selectedNativeElementId || 'عنصر من القالب';
     const previewUrl = selectedNativeElementPreviewUrl || selectedNativeElement.mediaUrl || '';
     const resolvedKind =
       selectedNativeElement.kind === 'native'
@@ -2482,10 +2482,10 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   function copySelectedNativeElementToClipboard() {
     const payload = buildSelectedNativeElementClipboardPayload();
     return setElementClipboardPayload(payload, {
-      notice: `╪¬┘à ┘å╪│╪« ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿: ${selectedNativeElement?.label || selectedNativeElementId || '╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿'}`,
-      activity: '┘å╪│╪« ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿',
-      label: selectedNativeElement?.label || selectedNativeElementId || '╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿',
-      errorNotice: '┘ç╪░╪º ╪º┘ä╪╣┘å╪╡╪▒ ┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä┘ç ╪º┘ä╪ó┘å ╪Ñ┘ä┘ë ╪╣┘å╪╡╪▒ ╪¡╪▒ ┘é╪º╪¿┘ä ┘ä┘ä╪╡┘é.',
+      notice: `تم نسخ عنصر القالب: ${selectedNativeElement?.label || selectedNativeElementId || 'عنصر من القالب'}`,
+      activity: 'نسخ عنصر قالب',
+      label: selectedNativeElement?.label || selectedNativeElementId || 'عنصر من القالب',
+      errorNotice: 'هذا العنصر لا يمكن تحويله الآن إلى عنصر حر قابل للصق.',
     });
   }
 
@@ -2493,16 +2493,16 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     const payload = clipboardPayload || buildSelectedNativeElementClipboardPayload();
     const normalized = setElementClipboardPayload(payload, {
       silent: true,
-      label: label || selectedNativeElement?.label || selectedNativeElementId || '╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿',
+      label: label || selectedNativeElement?.label || selectedNativeElementId || 'عنصر من القالب',
     });
     if (!normalized) {
-      setNotice('┘ç╪░╪º ╪º┘ä╪╣┘å╪╡╪▒ ┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä┘ç ╪º┘ä╪ó┘å ╪Ñ┘ä┘ë ┘å╪│╪«╪⌐ ╪¡╪▒╪⌐ ╪»╪º╪«┘ä ╪º┘ä┘é╪º┘ä╪¿.');
+      setNotice('هذا العنصر لا يمكن تحويله الآن إلى نسخة حرة داخل القالب.');
       return;
     }
 
     pasteElementClipboardAt(position, normalized, {
-      notice: `╪¬┘à ╪Ñ┘å╪┤╪º╪í ┘å╪│╪«╪⌐ ╪¡╪▒╪⌐ ┘à┘å: ${normalized.label}`,
-      activity: '╪Ñ┘å╪┤╪º╪í ┘å╪│╪«╪⌐ ╪¡╪▒╪⌐ ┘à┘å ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿',
+      notice: `تم إنشاء نسخة حرة من: ${normalized.label}`,
+      activity: 'إنشاء نسخة حرة من عنصر قالب',
       label: normalized.label,
     });
   }
@@ -2539,7 +2539,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     setOpenSection('layers');
     setSelectedTemplateTextPath(null);
     setSelectedTemplateTextLabel('');
-    recordActivity(type === 'text' ? '╪Ñ╪╢╪º┘ü╪⌐ ┘å╪╡ ╪¡╪▒' : '╪Ñ╪╢╪º┘ü╪⌐ ╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐', getCustomElementLabel({ type }, orderedLayerElements.length));
+    recordActivity(type === 'text' ? 'إضافة نص حر' : 'إضافة صورة حرة', getCustomElementLabel({ type }, orderedLayerElements.length));
   }
 
   useEffect(() => {
@@ -2583,7 +2583,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   }, [orderedLayerElements, selectedElementId]);
 
   useEffect(() => {
-    recordActivity('┘ü╪¬╪¡ ╪º┘ä╪º╪│╪¬┘ê╪»┘è┘ê', session.name);
+    recordActivity('فتح الاستوديو', session.name);
   }, [session.name]);
 
   useEffect(() => {
@@ -2591,7 +2591,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     if (historyRef.current.current == null) {
       historyRef.current.current = serialized;
       syncHistoryMeta();
-      appendVersionSnapshot(serialized, '╪¿╪»╪º┘è╪⌐ ╪º┘ä╪¼┘ä╪│╪⌐');
+      appendVersionSnapshot(serialized, 'بداية الجلسة');
       return;
     }
 
@@ -2611,7 +2611,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     historyRef.current.future = [];
     historyRef.current.current = serialized;
     syncHistoryMeta();
-    appendVersionSnapshot(serialized, '╪¬╪¡╪»┘è╪½ ╪»╪º╪«┘ä ╪º┘ä╪º╪│╪¬┘ê╪»┘è┘ê');
+    appendVersionSnapshot(serialized, 'تحديث داخل الاستوديو');
   }, [draft]);
 
   useEffect(() => {
@@ -2655,14 +2655,14 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
-        throw new Error(payload.message || '╪¬╪╣╪░╪▒ ╪¡┘ü╪╕ ╪º┘ä╪¼┘ä╪│╪⌐.');
+        throw new Error(payload.message || 'تعذر حفظ الجلسة.');
       }
 
       lastSavedRef.current = JSON.stringify(nextDraft);
       setSaveState('saved');
     } catch (error) {
       setSaveState('error');
-      setNotice(error.message || '╪¬╪╣╪░╪▒ ╪¡┘ü╪╕ ╪º┘ä╪¼┘ä╪│╪⌐.');
+      setNotice(error.message || 'تعذر حفظ الجلسة.');
     }
   });
 
@@ -2726,10 +2726,10 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           copyCustomElementToClipboardById(event.data.payload?.id || null);
         } else if (scope === 'native') {
           setElementClipboardPayload(event.data.payload?.clipboard, {
-            notice: `╪¬┘à ┘å╪│╪« ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿: ${event.data.payload?.label || '╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿'}`,
-            activity: '┘å╪│╪« ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿',
-            label: event.data.payload?.label || '╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿',
-            errorNotice: '┘ç╪░╪º ╪º┘ä╪╣┘å╪╡╪▒ ┘ä╪º ┘è┘à┘â┘å ╪¬╪¡┘ê┘è┘ä┘ç ╪º┘ä╪ó┘å ╪Ñ┘ä┘ë ╪╣┘å╪╡╪▒ ╪¡╪▒ ┘é╪º╪¿┘ä ┘ä┘ä╪╡┘é.',
+            notice: `تم نسخ عنصر القالب: ${event.data.payload?.label || 'عنصر من القالب'}`,
+            activity: 'نسخ عنصر قالب',
+            label: event.data.payload?.label || 'عنصر من القالب',
+            errorNotice: 'هذا العنصر لا يمكن تحويله الآن إلى عنصر حر قابل للصق.',
           });
         }
       } else if (event.data?.type === 'FARHA_ELEMENT_DUPLICATE_REQUEST') {
@@ -2852,7 +2852,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           ...(event.data.payload?.updates || {}),
         });
         setOpenSection('template-elements');
-        recordActivity('╪¬╪¡╪▒┘è┘â ╪╣┘å╪╡╪▒ ┘à┘å ╪º┘ä┘é╪º┘ä╪¿', event.data.payload?.label || nextId);
+        recordActivity('تحريك عنصر من القالب', event.data.payload?.label || nextId);
       } else if (event.data?.type === 'FARHA_NATIVE_ELEMENT_RESET') {
         const nextId = event.data.payload?.id || null;
         if (!nextId) {
@@ -2883,7 +2883,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           setSelectedNativeElementLabel('');
           setSelectedNativeElementMeta(null);
           setOpenSection('template-text');
-          recordActivity('╪¬╪╣╪»┘è┘ä ┘å╪╡ ┘à┘å ╪º┘ä┘à╪╣╪º┘è┘å╪⌐', label || path);
+          recordActivity('تعديل نص من المعاينة', label || path);
         }
       } else if (event.data?.type === 'FARHA_EMULATOR_TOOL_ACTION') {
         const action = event.data.payload?.action || '';
@@ -2897,7 +2897,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           }));
           setCanvasClickMenu(null);
           setOpenSection('custom-elements');
-          setNotice('┘ê╪╢╪╣ ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä┘å╪╡ ┘à┘ü╪╣┘ä. ╪º╪╢╪║╪╖ ╪»╪º╪«┘ä ╪º┘ä┘à╪¡╪º┘â┘è ┘ä╪¬╪½╪¿┘è╪¬ ╪º┘ä┘å╪╡ ╪º┘ä╪¼╪»┘è╪».');
+          setNotice('وضع إضافة النص مفعل. اضغط داخل المحاكي لتثبيت النص الجديد.');
           setEditorOpen(true);
           return;
         }
@@ -2911,7 +2911,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           }));
           setCanvasClickMenu(null);
           setOpenSection('custom-elements');
-          setNotice('┘ê╪╢╪╣ ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä╪╡┘ê╪▒╪⌐ ┘à┘ü╪╣┘ä. ╪º╪╢╪║╪╖ ╪»╪º╪«┘ä ╪º┘ä┘à╪¡╪º┘â┘è ┘ä╪º╪«╪¬┘è╪º╪▒ ╪º┘ä╪╡┘ê╪▒╪⌐ ┘ê┘à┘ê╪╢╪╣┘ç╪º.');
+          setNotice('وضع إضافة الصورة مفعل. اضغط داخل المحاكي لاختيار الصورة وموضعها.');
           setEditorOpen(true);
           return;
         }
@@ -2924,7 +2924,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             },
           }));
           setCanvasClickMenu(null);
-          setNotice('╪¬┘à ╪Ñ┘ä╪║╪º╪í ┘ê╪╢╪╣ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘à┘å ╪º┘ä┘à╪¡╪º┘â┘è.');
+          setNotice('تم إلغاء وضع الإضافة من المحاكي.');
           return;
         }
         if (action === 'paste-element') {
@@ -2941,7 +2941,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       } else if (event.data?.type === 'FARHA_CANVAS_CLICK') {
         const { x, y } = event.data.payload;
         if (draft.ui?.addCustomElementMode === 'text') {
-          addCustomElement('text', { x, y }, '┘å╪╡ ╪¼╪»┘è╪»');
+          addCustomElement('text', { x, y }, 'نص جديد');
           setCanvasClickMenu(null);
           return;
         }
@@ -3103,8 +3103,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         zIndex: toFiniteNumber(element.zIndex, 1),
       }),
     }));
-    setNotice(`╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪º┘ä╪╣┘å╪╡╪▒: ${selectedCustomElement.name}`);
-    recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪╣┘å╪╡╪▒ ╪¡╪▒', selectedCustomElement.name);
+    setNotice(`تمت إعادة ضبط العنصر: ${selectedCustomElement.name}`);
+    recordActivity('إعادة ضبط عنصر حر', selectedCustomElement.name);
   }
 
   function copySelectedElementStyles() {
@@ -3114,8 +3114,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
     const payload = getElementStyleClipboardPayload(selectedCustomElement);
     setStyleClipboard(payload);
-    setNotice(`╪¬┘à ┘å╪│╪« ╪¬┘å╪│┘è┘é ╪º┘ä╪╣┘å╪╡╪▒: ${selectedCustomElement.name}`);
-    recordActivity('┘å╪│╪« ╪¬┘å╪│┘è┘é ╪╣┘å╪╡╪▒', selectedCustomElement.name);
+    setNotice(`تم نسخ تنسيق العنصر: ${selectedCustomElement.name}`);
+    recordActivity('نسخ تنسيق عنصر', selectedCustomElement.name);
   }
 
   function pasteStylesToSelectedElement() {
@@ -3125,8 +3125,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
     if (styleClipboard.type !== selectedCustomElement.type) {
       patchCustomElement(selectedCustomElement.id, pickStyleSubset(styleClipboard.styles, SHARED_STYLE_KEYS));
-      setNotice('╪¬┘à ┘ä╪╡┘é ╪º┘ä╪¬┘å╪│┘è┘é ╪º┘ä┘à╪┤╪¬╪▒┘â ┘ü┘é╪╖ ┘ä╪ú┘å ┘å┘ê╪╣ ╪º┘ä╪╣┘å╪╡╪▒ ┘à╪«╪¬┘ä┘ü.');
-      recordActivity('┘ä╪╡┘é ╪¬┘å╪│┘è┘é ┘à╪┤╪¬╪▒┘â', selectedCustomElement.name);
+      setNotice('تم لصق التنسيق المشترك فقط لأن نوع العنصر مختلف.');
+      recordActivity('لصق تنسيق مشترك', selectedCustomElement.name);
       return;
     }
 
@@ -3136,8 +3136,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         : pickStyleSubset(styleClipboard.styles, ['opacity', 'rotation', 'width', 'height', 'cropX', 'cropY']);
 
     patchCustomElement(selectedCustomElement.id, nextStyles);
-    setNotice(`╪¬┘à ┘ä╪╡┘é ╪º┘ä╪¬┘å╪│┘è┘é ╪╣┘ä┘ë: ${selectedCustomElement.name}`);
-    recordActivity('┘ä╪╡┘é ╪¬┘å╪│┘è┘é ╪╣┘å╪╡╪▒', selectedCustomElement.name);
+    setNotice(`تم لصق التنسيق على: ${selectedCustomElement.name}`);
+    recordActivity('لصق تنسيق عنصر', selectedCustomElement.name);
   }
 
   function copySelectedNativeElementStyles() {
@@ -3147,8 +3147,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
     const payload = getNativeElementStyleClipboardPayload(selectedNativeElement);
     setStyleClipboard(payload);
-    setNotice(`╪¬┘à ┘å╪│╪« ╪¬┘å╪│┘è┘é ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿: ${selectedNativeElement.label || selectedNativeElementId}`);
-    recordActivity('┘å╪│╪« ╪¬┘å╪│┘è┘é ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿', selectedNativeElement.label || selectedNativeElementId || '╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿');
+    setNotice(`تم نسخ تنسيق عنصر القالب: ${selectedNativeElement.label || selectedNativeElementId}`);
+    recordActivity('نسخ تنسيق عنصر قالب', selectedNativeElement.label || selectedNativeElementId || 'عنصر قالب');
   }
 
   function pasteStylesToSelectedNativeElement() {
@@ -3177,8 +3177,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     }
 
     patchNativeElement(selectedNativeElementId, nextStyles);
-    setNotice(`╪¬┘à ┘ä╪╡┘é ╪º┘ä╪¬┘å╪│┘è┘é ╪╣┘ä┘ë ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿: ${selectedNativeElement.label || selectedNativeElementId}`);
-    recordActivity('┘ä╪╡┘é ╪¬┘å╪│┘è┘é ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿', selectedNativeElement.label || selectedNativeElementId || '╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿');
+    setNotice(`تم لصق التنسيق على عنصر القالب: ${selectedNativeElement.label || selectedNativeElementId}`);
+    recordActivity('لصق تنسيق عنصر قالب', selectedNativeElement.label || selectedNativeElementId || 'عنصر قالب');
   }
 
   function canResetSection(sectionKey) {
@@ -3191,8 +3191,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         ...current,
         themeConfig: cloneValue(currentManifest.defaultValues?.theme || {}),
       }));
-      setNotice('╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪¬╪╡┘à┘è┘à.');
-      recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ┘é╪│┘à', '╪º┘ä╪¬╪╡┘à┘è┘à');
+      setNotice('تمت إعادة ضبط إعدادات التصميم.');
+      recordActivity('إعادة ضبط قسم', 'التصميم');
       return;
     }
 
@@ -3201,8 +3201,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         ...current,
         sectionConfig: cloneValue(currentManifest.defaultValues?.sections || {}),
       }));
-      setNotice('╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪ú┘é╪│╪º┘à.');
-      recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ┘é╪│┘à', '╪º┘ä╪ú┘é╪│╪º┘à');
+      setNotice('تمت إعادة ضبط إعدادات الأقسام.');
+      recordActivity('إعادة ضبط قسم', 'الأقسام');
       return;
     }
 
@@ -3226,8 +3226,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         },
       }));
       setPreviewReloadToken((value) => value + 1);
-      setNotice('╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è╪⌐.');
-      recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ┘é╪│┘à', '╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è╪⌐');
+      setNotice('تمت إعادة ضبط الافتتاحية.');
+      recordActivity('إعادة ضبط قسم', 'الافتتاحية');
       return;
     }
 
@@ -3237,8 +3237,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         customElements: [],
       }));
       setSelectedElementId(null);
-      setNotice('╪¬┘à ╪¡╪░┘ü ╪¼┘à┘è╪╣ ╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪¡╪▒╪⌐ ┘à┘å ┘ç╪░┘ç ╪º┘ä╪¼┘ä╪│╪⌐.');
-      recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ┘é╪│┘à', '╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪¡╪▒╪⌐');
+      setNotice('تم حذف جميع العناصر الحرة من هذه الجلسة.');
+      recordActivity('إعادة ضبط قسم', 'العناصر الحرة');
       return;
     }
 
@@ -3291,8 +3291,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         contentConfig: nextContentConfig,
       };
     });
-    setNotice(`╪¬┘à╪¬ ╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ┘é╪│┘à: ${SECTION_META[sectionKey]?.label || sectionKey}`);
-    recordActivity('╪Ñ╪╣╪º╪»╪⌐ ╪╢╪¿╪╖ ┘é╪│┘à', SECTION_META[sectionKey]?.label || sectionKey);
+    setNotice(`تمت إعادة ضبط قسم: ${SECTION_META[sectionKey]?.label || sectionKey}`);
+    recordActivity('إعادة ضبط قسم', SECTION_META[sectionKey]?.label || sectionKey);
   }
 
   function handleOpenSection(sectionKey) {
@@ -3306,7 +3306,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   }
 
   async function saveVariant() {
-    const name = window.prompt('╪º╪│┘à ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪»╪º╪«┘ä┘è ╪º┘ä╪¼╪»┘è╪»', `${currentManifest.nameAr} - ┘å╪│╪«╪⌐ ╪»╪º╪«┘ä┘è╪⌐`);
+    const name = window.prompt('اسم القالب الداخلي الجديد', `${currentManifest.nameAr} - نسخة داخلية`);
     if (!name) return;
 
     setBusy(true);
@@ -3319,24 +3319,24 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
-        throw new Error(payload.message || '╪¬╪╣╪░╪▒ ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪»╪º╪«┘ä┘è.');
+        throw new Error(payload.message || 'تعذر حفظ القالب الداخلي.');
       }
 
-      setNotice(`╪¬┘à ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪»╪º╪«┘ä┘è: ${payload.data.variant.name}`);
+      setNotice(`تم حفظ القالب الداخلي: ${payload.data.variant.name}`);
       router.refresh();
     } catch (error) {
-      setNotice(error.message || '╪¬╪╣╪░╪▒ ╪¡┘ü╪╕ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪»╪º╪«┘ä┘è.');
+      setNotice(error.message || 'تعذر حفظ القالب الداخلي.');
     } finally {
       setBusy(false);
     }
   }
 
   async function createInvitation() {
-    const slug = window.prompt('Slug ╪º┘ä╪»╪╣┘ê╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐', `${draft.templateSlug}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
+    const slug = window.prompt('Slug الدعوة الجديدة', `${draft.templateSlug}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
     if (!slug) return;
-    const clientName = window.prompt('╪º╪│┘à ╪º┘ä╪╣┘à┘è┘ä');
+    const clientName = window.prompt('اسم العميل');
     if (!clientName) return;
-    const title = window.prompt('╪╣┘å┘ê╪º┘å ╪º┘ä╪»╪╣┘ê╪⌐', `${draft.contentConfig.groomName || ''} & ${draft.contentConfig.brideName || ''}`.trim());
+    const title = window.prompt('عنوان الدعوة', `${draft.contentConfig.groomName || ''} & ${draft.contentConfig.brideName || ''}`.trim());
 
     setBusy(true);
     setNotice('');
@@ -3353,15 +3353,15 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
-        throw new Error(payload.message || '╪¬╪╣╪░╪▒ ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪»╪╣┘ê╪⌐.');
+        throw new Error(payload.message || 'تعذر إنشاء الدعوة.');
       }
 
-      setNotice(`╪¬┘à ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪»╪╣┘ê╪⌐: ${payload.data.invitation.slug}`);
+      setNotice(`تم إنشاء الدعوة: ${payload.data.invitation.slug}`);
       startTransition(() => {
         router.push(payload.data.editUrl);
       });
     } catch (error) {
-      setNotice(error.message || '╪¬╪╣╪░╪▒ ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪»╪╣┘ê╪⌐.');
+      setNotice(error.message || 'تعذر إنشاء الدعوة.');
     } finally {
       setBusy(false);
     }
@@ -3383,7 +3383,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             <strong>{sectionMeta.label}</strong>
             <small>{sectionMeta.description}</small>
           </span>
-          <span className="studio-accordion__arrow">{isOpen ? 'ΓêÆ' : '+'}</span>
+          <span className="studio-accordion__arrow">{isOpen ? '−' : '+'}</span>
         </button>
 
         {isOpen ? (
@@ -3433,12 +3433,12 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     <small>{currentOpening.type}</small>
                   </div>
                   <div className="studio-opening-card__actions">
-                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>┘à╪╣╪º┘è┘å╪⌐</button>
-                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>╪Ñ╪╣╪º╪»╪⌐ ╪¬╪┤╪║┘è┘ä</button>
+                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>معاينة</button>
+                    <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>إعادة تشغيل</button>
                   </div>
                 </div>
                 <label className="studio-field">
-                  <span>┘å┘ê╪╣ ╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è╪⌐</span>
+                  <span>نوع الافتتاحية</span>
                   <select
                     value={draft.openingSlug}
                     onChange={(event) => {
@@ -3467,7 +3467,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   </div>
                 ) : null}
                 <label className="studio-field">
-                  <span>╪º┘ä╪│┘à╪º╪¡ ╪¿╪º┘ä╪¬╪«╪╖┘è</span>
+                  <span>السماح بالتخطي</span>
                   <select
                     value={draft.openingConfig.allowSkip ? 'yes' : 'no'}
                     onChange={(event) =>
@@ -3480,8 +3480,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       }))
                     }
                   >
-                    <option value="yes">┘å╪╣┘à</option>
-                    <option value="no">┘ä╪º</option>
+                    <option value="yes">نعم</option>
+                    <option value="no">لا</option>
                   </select>
                 </label>
               </div>
@@ -3498,7 +3498,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     }}
                     style={{ flex: 1 }}
                   >
-                    ╪Ñ╪╢╪º┘ü╪⌐ ┘å╪╡ ╪¡╪▒
+                    إضافة نص حر
                   </button>
                   <button
                     type="button"
@@ -3508,26 +3508,26 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     }}
                     style={{ flex: 1 }}
                   >
-                    ╪Ñ╪╢╪º┘ü╪⌐ ╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐
+                    إضافة صورة حرة
                   </button>
                 </div>
                 {draft.ui?.addCustomElementMode ? (
                   <p className="studio-help-text studio-help-text--success">
-                    Γ£à ┘ê╪╢╪╣ ╪º┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘à┘ü╪╣┘ä. ╪º╪╢╪║╪╖ ┘ü┘è ╪ú┘è ┘à┘â╪º┘å ╪╣┘ä┘ë ╪º┘ä┘à╪¡╪º┘â┘è ┘ä╪¬╪½╪¿┘è╪¬ ╪º┘ä╪╣┘å╪╡╪▒!
+                    ✅ وضع الإضافة مفعل. اضغط في أي مكان على المحاكي لتثبيت العنصر!
                   </p>
                 ) : (
                   <p className="studio-help-text">
-                    ≡ƒÆí ╪º╪╢╪║╪╖ ╪╣┘ä┘ë ┘à┘â╪º┘å ┘ü╪º╪▒╪║ ┘ü┘è ╪º┘ä┘à╪¡╪º┘â┘è ┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘å╪╡ ╪ú┘ê ╪╡┘ê╪▒╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐╪î ╪½┘à ╪º╪«╪¬╪▒ ╪º┘ä╪╣┘å╪╡╪▒ ┘à┘å ┘ä┘ê╪¡╪⌐ ╪º┘ä╪╖╪¿┘é╪º╪¬ ┘ä╪¬╪╣╪»┘è┘ä┘ç ╪¿╪»┘é╪⌐.
+                    💡 اضغط على مكان فارغ في المحاكي لإضافة نص أو صورة مباشرة، ثم اختر العنصر من لوحة الطبقات لتعديله بدقة.
                   </p>
                 )}
                 <div className="studio-element-summary-grid">
                   <div className="studio-element-summary-card">
-                    <span>╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪¡╪▒╪⌐</span>
+                    <span>العناصر الحرة</span>
                     <strong>{orderedLayerElements.length}</strong>
                   </div>
                   <div className="studio-element-summary-card">
-                    <span>╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä┘à╪¡╪»╪»</span>
-                    <strong>{selectedCustomElement ? selectedCustomElement.name : '┘ä╪º ┘è┘ê╪¼╪»'}</strong>
+                    <span>العنصر المحدد</span>
+                    <strong>{selectedCustomElement ? selectedCustomElement.name : 'لا يوجد'}</strong>
                   </div>
                 </div>
                 <div className="studio-selection-summary">
@@ -3536,19 +3536,19 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       <div className="studio-selection-summary__meta">
                         <strong>{selectedCustomElement.name}</strong>
                         <small>
-                          {selectedCustomElement.type === 'text' ? '┘å╪╡ ╪¡╪▒' : '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐'}
-                          {' ┬╖ '}
+                          {selectedCustomElement.type === 'text' ? 'نص حر' : 'صورة حرة'}
+                          {' · '}
                           X:{Math.round(toFiniteNumber(selectedCustomElement.x, 0))}
                           {' / '}
                           Y:{Math.round(toFiniteNumber(selectedCustomElement.y, 0))}
                         </small>
                       </div>
                       <button type="button" className="mini-btn" onClick={() => setOpenSection('layers')}>
-                        ╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪╖╪¿┘é╪º╪¬
+                        إدارة الطبقات
                       </button>
                     </>
                   ) : (
-                    <p className="studio-layer-empty">╪º╪«╪¬╪▒ ╪╣┘å╪╡╪▒┘ï╪º ┘à┘å ╪º┘ä┘à╪¡╪º┘â┘è ╪ú┘ê ╪ú╪╢┘ü ╪╣┘å╪╡╪▒┘ï╪º ╪¼╪»┘è╪»┘ï╪º ┘ä┘è╪╕┘ç╪▒ ┘ç┘å╪º.</p>
+                    <p className="studio-layer-empty">اختر عنصرًا من المحاكي أو أضف عنصرًا جديدًا ليظهر هنا.</p>
                   )}
                 </div>
               </div>
@@ -3557,14 +3557,14 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             {sectionKey === 'layers' ? (
               <div className="studio-stack">
                 <div className="studio-layers-toolbar">
-                  <span className="studio-layer-count">╪╣╪»╪» ╪º┘ä╪╖╪¿┘é╪º╪¬: {orderedLayerElements.length}</span>
+                  <span className="studio-layer-count">عدد الطبقات: {orderedLayerElements.length}</span>
                   {selectedCustomElement ? (
                     <div className="studio-inline-actions">
                       <button type="button" className="mini-btn" onClick={() => duplicateCustomElement(selectedCustomElement.id)}>
-                        ┘å╪│╪« ╪º┘ä╪╣┘å╪╡╪▒
+                        نسخ العنصر
                       </button>
                       <button type="button" className="mini-btn danger" onClick={() => removeCustomElement(selectedCustomElement.id)}>
-                        ╪¡╪░┘ü
+                        حذف
                       </button>
                     </div>
                   ) : null}
@@ -3595,33 +3595,33 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           <span className="studio-layer-row__meta">
                             <strong>{element.name}</strong>
                             <small>
-                              ╪╖╪¿┘é╪⌐ {element.zIndex}
-                              {element.hidden ? ' ┬╖ ┘à╪«┘ü┘è╪⌐' : ''}
-                              {element.locked ? ' ┬╖ ┘à┘é┘ü┘ä╪⌐' : ''}
+                              طبقة {element.zIndex}
+                              {element.hidden ? ' · مخفية' : ''}
+                              {element.locked ? ' · مقفلة' : ''}
                             </small>
                           </span>
                         </button>
 
                         <div className="studio-layer-row__actions">
                           <button type="button" className="mini-btn" disabled={!canRaise} onClick={() => moveCustomElement(element.id, 1)}>
-                            ╪▒┘ü╪╣
+                            رفع
                           </button>
                           <button type="button" className="mini-btn" disabled={!canLower} onClick={() => moveCustomElement(element.id, -1)}>
-                            ╪«┘ü╪╢
+                            خفض
                           </button>
                           <button
                             type="button"
                             className={`mini-btn ${element.hidden ? 'active' : ''}`}
                             onClick={() => patchCustomElement(element.id, { hidden: !element.hidden })}
                           >
-                            {element.hidden ? '╪Ñ╪╕┘ç╪º╪▒' : '╪Ñ╪«┘ü╪º╪í'}
+                            {element.hidden ? 'إظهار' : 'إخفاء'}
                           </button>
                           <button
                             type="button"
                             className={`mini-btn ${element.locked ? 'active' : ''}`}
                             onClick={() => patchCustomElement(element.id, { locked: !element.locked })}
                           >
-                            {element.locked ? '┘ü╪¬╪¡' : '┘é┘ü┘ä'}
+                            {element.locked ? 'فتح' : 'قفل'}
                           </button>
                         </div>
                       </div>
@@ -3629,7 +3629,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   })}
 
                   {!layerElementsForPanel.length ? (
-                    <p className="studio-layer-empty">┘ä╪º ╪¬┘ê╪¼╪» ╪╖╪¿┘é╪º╪¬ ╪¡╪▒╪⌐ ╪¿╪╣╪». ╪ú╪╢┘ü ┘å╪╡┘ï╪º ╪ú┘ê ╪╡┘ê╪▒╪⌐ ┘à┘å ┘é╪│┘à ╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪¡╪▒╪⌐.</p>
+                    <p className="studio-layer-empty">لا توجد طبقات حرة بعد. أضف نصًا أو صورة من قسم العناصر الحرة.</p>
                   ) : null}
                 </div>
 
@@ -3639,7 +3639,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       <div>
                         <strong>{selectedCustomElement.name}</strong>
                         <small>
-                          {selectedCustomElement.type === 'text' ? '┘å╪╡ ╪¡╪▒ ┘é╪º╪¿┘ä ┘ä┘ä╪¬╪¡╪▒┘è┘â' : '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐ ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪¬╪¡╪▒┘è┘â'}
+                          {selectedCustomElement.type === 'text' ? 'نص حر قابل للتحريك' : 'صورة حرة قابلة للتحريك'}
                         </small>
                       </div>
                       <div className="studio-inline-actions">
@@ -3648,7 +3648,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           className="mini-btn"
                           onClick={() => copyCustomElementToClipboardById(selectedCustomElement.id)}
                         >
-                          ┘å╪│╪« ╪º┘ä╪╣┘å╪╡╪▒
+                          نسخ العنصر
                         </button>
                         <button
                           type="button"
@@ -3661,10 +3661,10 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           }
                           disabled={!elementClipboard}
                         >
-                          ┘ä╪╡┘é ╪╣┘å╪╡╪▒
+                          لصق عنصر
                         </button>
                         <button type="button" className="mini-btn" onClick={copySelectedElementStyles}>
-                          ┘å╪│╪« ╪º┘ä╪¬┘å╪│┘è┘é
+                          نسخ التنسيق
                         </button>
                         <button
                           type="button"
@@ -3672,28 +3672,28 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           onClick={pasteStylesToSelectedElement}
                           disabled={!styleClipboard}
                         >
-                          ┘ä╪╡┘é ╪º┘ä╪¬┘å╪│┘è┘é
+                          لصق التنسيق
                         </button>
                         <button type="button" className="mini-btn" onClick={resetSelectedCustomElement}>
                           Reset Element
                         </button>
                         <button type="button" className="mini-btn" onClick={() => duplicateCustomElement(selectedCustomElement.id)}>
-                          ╪¬┘â╪▒╪º╪▒
+                          تكرار
                         </button>
                         <button type="button" className="mini-btn danger" onClick={() => removeCustomElement(selectedCustomElement.id)}>
-                          ╪¡╪░┘ü
+                          حذف
                         </button>
                       </div>
                     </div>
 
                     <div className="studio-element-summary-grid">
                       <div className="studio-element-summary-card">
-                        <span>╪º┘ä╪¼┘ç╪º╪▓ ╪º┘ä╪¡╪º┘ä┘è</span>
+                        <span>الجهاز الحالي</span>
                         <strong>{DEVICE_PRESETS[currentDeviceMode]?.label || currentDeviceMode}</strong>
                       </div>
                       <div className="studio-element-summary-card">
-                        <span>╪¬╪«╪╡┘è╪╡ ┘ç╪░╪º ╪º┘ä╪¼┘ç╪º╪▓</span>
-                        <strong>{selectedCustomElementDeviceOverride ? '┘à┘ü╪╣┘ä' : '┘è╪│╪¬╪«╪»┘à ╪º┘ä╪Ñ╪╣╪»╪º╪» ╪º┘ä╪╣╪º┘à'}</strong>
+                        <span>تخصيص هذا الجهاز</span>
+                        <strong>{selectedCustomElementDeviceOverride ? 'مفعل' : 'يستخدم الإعداد العام'}</strong>
                       </div>
                     </div>
 
@@ -3704,13 +3704,13 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         disabled={!selectedCustomElementDeviceOverride}
                         onClick={() => clearDeviceOverride(selectedCustomElement.id, currentDeviceMode)}
                       >
-                        ╪Ñ╪▓╪º┘ä╪⌐ ╪¬╪«╪╡┘è╪╡ {DEVICE_PRESETS[currentDeviceMode]?.label || currentDeviceMode}
+                        إزالة تخصيص {DEVICE_PRESETS[currentDeviceMode]?.label || currentDeviceMode}
                       </button>
                     </div>
 
                     <div className="studio-form-grid">
                       <label className="studio-field">
-                        <span>╪º╪│┘à ╪º┘ä╪╖╪¿┘é╪⌐</span>
+                        <span>اسم الطبقة</span>
                         <input
                           type="text"
                           value={selectedCustomElement.name || ''}
@@ -3718,15 +3718,15 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä┘å┘ê╪╣</span>
+                        <span>النوع</span>
                         <input
                           type="text"
-                          value={selectedCustomElement.type === 'text' ? '┘å╪╡ ╪¡╪▒' : '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐'}
+                          value={selectedCustomElement.type === 'text' ? 'نص حر' : 'صورة حرة'}
                           readOnly
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä┘à┘ê╪╢╪╣ ╪º┘ä╪ú┘ü┘é┘è X</span>
+                        <span>الموضع الأفقي X</span>
                         <input
                           type="number"
                           value={Math.round(toFiniteNumber(selectedCustomElement.x, 0))}
@@ -3734,7 +3734,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä┘à┘ê╪╢╪╣ ╪º┘ä╪▒╪ú╪│┘è Y</span>
+                        <span>الموضع الرأسي Y</span>
                         <input
                           type="number"
                           value={Math.round(toFiniteNumber(selectedCustomElement.y, 0))}
@@ -3742,7 +3742,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä╪┤┘ü╪º┘ü┘è╪⌐ %</span>
+                        <span>الشفافية %</span>
                         <input
                           type="number"
                           min="5"
@@ -3756,7 +3756,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä╪»┘ê╪▒╪º┘å</span>
+                        <span>الدوران</span>
                         <input
                           type="number"
                           min="-180"
@@ -3766,7 +3766,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <div className="studio-field studio-field--switch">
-                        <span>╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä╪╖╪¿┘é╪⌐</span>
+                        <span>إظهار الطبقة</span>
                         <label className="studio-switch">
                           <input
                             type="checkbox"
@@ -3777,7 +3777,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         </label>
                       </div>
                       <div className="studio-field studio-field--switch">
-                        <span>╪º┘ä╪│┘à╪º╪¡ ╪¿╪º┘ä╪¡╪▒┘â╪⌐</span>
+                        <span>السماح بالحركة</span>
                         <label className="studio-switch">
                           <input
                             type="checkbox"
@@ -3791,7 +3791,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       {selectedCustomElement.type === 'text' ? (
                         <>
                           <label className="studio-field studio-field--full">
-                            <span>┘à╪¡╪¬┘ê┘ë ╪º┘ä┘å╪╡</span>
+                            <span>محتوى النص</span>
                             <textarea
                               rows={4}
                               value={selectedCustomElement.content || ''}
@@ -3799,7 +3799,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>╪¡╪¼┘à ╪º┘ä╪«╪╖</span>
+                            <span>حجم الخط</span>
                             <input
                               type="text"
                               value={selectedCustomElement.fontSize || '24px'}
@@ -3807,7 +3807,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field studio-field--compact">
-                            <span>┘ä┘ê┘å ╪º┘ä┘å╪╡</span>
+                            <span>لون النص</span>
                             <input
                               type="color"
                               value={selectedCustomElement.color || '#1f2937'}
@@ -3816,36 +3816,36 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           </label>
                           
                             <label className="studio-field">
-                              <span>┘ê╪▓┘å ╪º┘ä╪«╪╖</span>
+                              <span>وزن الخط</span>
                               <select
                                 value={selectedCustomElement.fontWeight || ''}
                                 onChange={(event) => patchCustomElement(selectedCustomElement.id, { fontWeight: event.target.value })}
                               >
-                                <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
-                                <option value="300">╪«┘ü┘è┘ü (300)</option>
-                                <option value="400">╪╣╪º╪»┘è (400)</option>
-                                <option value="500">┘à╪¬┘ê╪│╪╖ (500)</option>
-                                <option value="600">╪┤╪¿┘ç ╪║╪º┘à┘é (600)</option>
-                                <option value="700">╪║╪º┘à┘é (700)</option>
-                                <option value="800">╪╣╪▒┘è╪╢ (800)</option>
-                                <option value="900">╪ú╪│┘ê╪» (900)</option>
+                                <option value="">افتراضي</option>
+                                <option value="300">خفيف (300)</option>
+                                <option value="400">عادي (400)</option>
+                                <option value="500">متوسط (500)</option>
+                                <option value="600">شبه غامق (600)</option>
+                                <option value="700">غامق (700)</option>
+                                <option value="800">عريض (800)</option>
+                                <option value="900">أسود (900)</option>
                               </select>
                             </label>
                             <label className="studio-field">
-                              <span>┘à╪¡╪º╪░╪º╪⌐ ╪º┘ä┘å╪╡</span>
+                              <span>محاذاة النص</span>
                               <select
                                 value={selectedCustomElement.textAlign || ''}
                                 onChange={(event) => patchCustomElement(selectedCustomElement.id, { textAlign: event.target.value })}
                               >
-                                <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
-                                <option value="right">┘è┘à┘è┘å</option>
-                                <option value="center">┘ê╪│╪╖</option>
-                                <option value="left">┘è╪│╪º╪▒</option>
-                                <option value="justify">╪╢╪¿╪╖</option>
+                                <option value="">افتراضي</option>
+                                <option value="right">يمين</option>
+                                <option value="center">وسط</option>
+                                <option value="left">يسار</option>
+                                <option value="justify">ضبط</option>
                               </select>
                             </label>
                             <label className="studio-field">
-                              <span>╪¬╪¿╪º╪╣╪» ╪º┘ä╪ú╪¡╪▒┘ü</span>
+                              <span>تباعد الأحرف</span>
                               <input
                                 type="text"
                                 value={selectedCustomElement.letterSpacing || ''}
@@ -3854,7 +3854,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               />
                             </label>
                             <label className="studio-field">
-                              <span>╪º╪▒╪¬┘ü╪º╪╣ ╪º┘ä╪│╪╖╪▒</span>
+                              <span>ارتفاع السطر</span>
                               <input
                                 type="text"
                                 value={selectedCustomElement.lineHeight || ''}
@@ -3869,7 +3869,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               type="text"
                               dir="ltr"
                               value={selectedCustomElement.fontFamily || ''}
-                              placeholder="┘à╪½╪º┘ä: Tajawal, serif"
+                              placeholder="مثال: Tajawal, serif"
                               onChange={(event) => patchCustomElement(selectedCustomElement.id, { fontFamily: event.target.value })}
                             />
                           </label>
@@ -3877,9 +3877,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       ) : (
                         <>
                           <label className="studio-field studio-field--full">
-                            <span>╪º┘ä╪╡┘ê╪▒╪⌐</span>
+                            <span>الصورة</span>
                             <MediaPicker
-                              label="╪º╪«╪¬┘è╪º╪▒ ╪╡┘ê╪▒╪⌐"
+                              label="اختيار صورة"
                               value={selectedCustomElement.content}
                               accept="image"
                               folder="studio-free-elements"
@@ -3891,7 +3891,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>╪º┘ä╪╣╪▒╪╢</span>
+                            <span>العرض</span>
                             <input
                               type="text"
                               value={selectedCustomElement.width || '150px'}
@@ -3899,7 +3899,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>╪º┘ä╪º╪▒╪¬┘ü╪º╪╣</span>
+                            <span>الارتفاع</span>
                             <input
                               type="text"
                               value={selectedCustomElement.height || '150px'}
@@ -3907,7 +3907,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>┘é╪╡ ╪ú┘ü┘é┘è</span>
+                            <span>قص أفقي</span>
                             <input
                               type="number"
                               min="0"
@@ -3917,7 +3917,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>┘é╪╡ ╪▒╪ú╪│┘è</span>
+                            <span>قص رأسي</span>
                             <input
                               type="number"
                               min="0"
@@ -3943,22 +3943,22 @@ export default function StudioClient({ session, manifests, openings, inventory, 
               <div className="studio-stack">
                 <div className="studio-text-inspector">
                   <div className="studio-text-inspector__meta">
-                    <strong>╪╣┘å╪º╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä┘à╪¬╪º╪¡╪⌐</strong>
-                    <small>╪º╪«╪¬╪▒ ┘à┘å ┘ç┘å╪º ╪ú┘è ╪╣┘å╪╡╪▒ ╪ú╪╡┘ä┘è ┘ä┘è╪¬┘à ╪¬╪¡╪»┘è╪»┘ç ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐.</small>
+                    <strong>عناصر القالب المتاحة</strong>
+                    <small>اختر من هنا أي عنصر أصلي ليتم تحديده داخل المعاينة مباشرة.</small>
                   </div>
                   <div className="studio-version-list">
                     {availableNativeElements.length ? availableNativeElements.map((item) => (
                       <div key={item.id} className={`studio-version-item ${selectedNativeElementId === item.id ? 'current' : ''}`}>
                         <div className="studio-version-item__meta">
                           <strong>{item.label || item.id}</strong>
-                          <small>{item.kind === 'media' ? '┘ê╪│╪º╪ª╪╖/╪▓╪«╪▒┘ü╪⌐' : item.kind === 'text' ? '╪╣┘å╪╡╪▒ ┘å╪╡┘è' : '╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿'}</small>
+                          <small>{item.kind === 'media' ? 'وسائط/زخرفة' : item.kind === 'text' ? 'عنصر نصي' : 'عنصر قالب'}</small>
                         </div>
                         <button type="button" className="mini-btn" onClick={() => requestNativeElementSelection(item)}>
-                          {selectedNativeElementId === item.id ? '┘à╪¡╪»╪»' : '╪¬╪¡╪»┘è╪»'}
+                          {selectedNativeElementId === item.id ? 'محدد' : 'تحديد'}
                         </button>
                       </div>
                     )) : (
-                      <p className="studio-layer-empty">┘ä┘à ┘è╪¬┘à ┘ü┘ç╪▒╪│╪⌐ ╪╣┘å╪º╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿ ╪¿╪╣╪». ╪º╪╢╪║╪╖ ╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú╪»┘ê╪º╪¬ ╪ú┘ê ╪º╪«╪¬╪▒ ╪╣┘å╪╡╪▒┘ï╪º ┘à┘å ╪º┘ä┘à╪╣╪º┘è┘å╪⌐.</p>
+                      <p className="studio-layer-empty">لم يتم فهرسة عناصر القالب بعد. اضغط تحديث الأدوات أو اختر عنصرًا من المعاينة.</p>
                     )}
                   </div>
                 </div>
@@ -3967,7 +3967,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     <div className="studio-text-inspector">
                       <div className="studio-text-inspector__meta">
                         <strong>{selectedNativeElement.label}</strong>
-                        <small>{selectedNativeElement.kind === 'media' ? '╪╣┘å╪╡╪▒ ┘ê╪│╪º╪ª╪╖ ╪ú╪╡┘ä┘è' : '╪╣┘å╪╡╪▒ ╪ú╪╡┘ä┘è ┘à┘å ╪º┘ä┘é╪º┘ä╪¿'}</small>
+                        <small>{selectedNativeElement.kind === 'media' ? 'عنصر وسائط أصلي' : 'عنصر أصلي من القالب'}</small>
                       </div>
                       <div className="studio-inline-actions">
                         <button
@@ -3975,7 +3975,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           className="mini-btn"
                           onClick={copySelectedNativeElementToClipboard}
                         >
-                          ┘å╪│╪« ╪º┘ä╪╣┘å╪╡╪▒
+                          نسخ العنصر
                         </button>
                         <button
                           type="button"
@@ -3987,7 +3987,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             })
                           }
                         >
-                          ╪Ñ┘å╪┤╪º╪í ┘å╪│╪«╪⌐ ╪¡╪▒╪⌐
+                          إنشاء نسخة حرة
                         </button>
                         <button
                           type="button"
@@ -4000,7 +4000,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           }
                           disabled={!elementClipboard}
                         >
-                          ┘ä╪╡┘é ╪╣┘å╪╡╪▒
+                          لصق عنصر
                         </button>
                         <button
                           type="button"
@@ -4011,7 +4011,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             })
                           }
                         >
-                          {selectedNativeElement.locked ? '┘ü╪¬╪¡ ╪º┘ä╪¡╪▒┘â╪⌐' : '┘é┘ü┘ä ╪º┘ä╪¡╪▒┘â╪⌐'}
+                          {selectedNativeElement.locked ? 'فتح الحركة' : 'قفل الحركة'}
                         </button>
                         <button
                           type="button"
@@ -4022,7 +4022,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             })
                           }
                         >
-                          {selectedNativeElement.hidden ? '╪Ñ╪╕┘ç╪º╪▒' : '╪Ñ╪«┘ü╪º╪í'}
+                          {selectedNativeElement.hidden ? 'إظهار' : 'إخفاء'}
                         </button>
                         {selectedNativeElement.kind === 'media' ? (
                           <button
@@ -4030,7 +4030,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             className="mini-btn"
                             onClick={openSelectedNativeReplacePicker}
                           >
-                            ╪º╪│╪¬╪¿╪»╪º┘ä
+                            استبدال
                           </button>
                         ) : null}
                         {selectedNativeElement.kind === 'media' ? (
@@ -4039,7 +4039,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             className="mini-btn"
                             onClick={openSelectedNativeCropEditor}
                           >
-                            ┘é╪╡
+                            قص
                           </button>
                         ) : null}
                         <button
@@ -4047,21 +4047,21 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           className="mini-btn danger"
                           onClick={removeSelectedNativeElement}
                         >
-                          ╪¡╪░┘ü
+                          حذف
                         </button>
                         <button
                           type="button"
                           className="mini-btn"
                           onClick={resetSelectedNativeElement}
                         >
-                          ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪ú╪╡┘ä
+                          إعادة الأصل
                         </button>
                         <button
                           type="button"
                           className="mini-btn"
                           onClick={copySelectedNativeElementStyles}
                         >
-                          ┘å╪│╪« ╪º┘ä╪¬┘å╪│┘è┘é
+                          نسخ التنسيق
                         </button>
                         <button
                           type="button"
@@ -4069,19 +4069,19 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           onClick={pasteStylesToSelectedNativeElement}
                           disabled={!styleClipboard}
                         >
-                          ┘ä╪╡┘é ╪º┘ä╪¬┘å╪│┘è┘é
+                          لصق التنسيق
                         </button>
                       </div>
                     </div>
 
                     <div className="studio-element-summary-grid">
                       <div className="studio-element-summary-card">
-                        <span>╪º┘ä┘à┘ê╪╢╪╣</span>
+                        <span>الموضع</span>
                         <strong>{Math.round(selectedNativeElement.x)} / {Math.round(selectedNativeElement.y)}</strong>
                       </div>
                       <div className="studio-element-summary-card">
-                        <span>╪º┘ä╪¡╪º┘ä╪⌐</span>
-                        <strong>{selectedNativeElement.locked ? '┘à┘é┘ü┘ê┘ä' : '┘é╪º╪¿┘ä ┘ä┘ä╪¬╪¡╪▒┘è┘â'}</strong>
+                        <span>الحالة</span>
+                        <strong>{selectedNativeElement.locked ? 'مقفول' : 'قابل للتحريك'}</strong>
                       </div>
                     </div>
 
@@ -4093,7 +4093,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
                     <div className="studio-form-grid">
                       <label className="studio-field">
-                        <span>╪º┘ä╪╣┘å┘ê╪º┘å</span>
+                        <span>العنوان</span>
                         <input
                           type="text"
                           value={selectedNativeElement.label || ''}
@@ -4104,15 +4104,15 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä┘å┘ê╪╣</span>
+                        <span>النوع</span>
                         <input
                           type="text"
-                          value={selectedNativeElement.kind === 'media' ? '┘ê╪│╪º╪ª╪╖/╪▓╪«╪▒┘ü╪⌐' : '╪╣┘å╪╡╪▒ ╪ú╪╡┘ä┘è'}
+                          value={selectedNativeElement.kind === 'media' ? 'وسائط/زخرفة' : 'عنصر أصلي'}
                           readOnly
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä┘à┘ê╪╢╪╣ ╪º┘ä╪ú┘ü┘é┘è X</span>
+                        <span>الموضع الأفقي X</span>
                         <input
                           type="number"
                           value={Math.round(toFiniteNumber(selectedNativeElement.x, 0))}
@@ -4120,7 +4120,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä┘à┘ê╪╢╪╣ ╪º┘ä╪▒╪ú╪│┘è Y</span>
+                        <span>الموضع الرأسي Y</span>
                         <input
                           type="number"
                           value={Math.round(toFiniteNumber(selectedNativeElement.y, 0))}
@@ -4128,7 +4128,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä╪¬┘â╪¿┘è╪▒ %</span>
+                        <span>التكبير %</span>
                         <input
                           type="number"
                           min="10"
@@ -4142,7 +4142,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä╪»┘ê╪▒╪º┘å</span>
+                        <span>الدوران</span>
                         <input
                           type="number"
                           min="-180"
@@ -4152,7 +4152,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä╪┤┘ü╪º┘ü┘è╪⌐ %</span>
+                        <span>الشفافية %</span>
                         <input
                           type="number"
                           min="5"
@@ -4166,7 +4166,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä╪╣╪▒╪╢</span>
+                        <span>العرض</span>
                         <input
                           type="text"
                           value={selectedNativeElement.width || ''}
@@ -4175,7 +4175,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º┘ä╪º╪▒╪¬┘ü╪º╪╣</span>
+                        <span>الارتفاع</span>
                         <input
                           type="text"
                           value={selectedNativeElement.height || ''}
@@ -4197,7 +4197,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>┘ä┘ê┘å ╪º┘ä╪«┘ä┘ü┘è╪⌐</span>
+                        <span>لون الخلفية</span>
                         <input
                           type="text"
                           value={selectedNativeElement.backgroundColor || ''}
@@ -4206,7 +4206,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪º╪│╪¬╪»╪º╪▒╪⌐ ╪º┘ä╪¡┘ê╪º┘ü</span>
+                        <span>استدارة الحواف</span>
                         <input
                           type="text"
                           value={selectedNativeElement.borderRadius || ''}
@@ -4215,7 +4215,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>╪│┘à┘â ╪º┘ä╪Ñ╪╖╪º╪▒</span>
+                        <span>سمك الإطار</span>
                         <input
                           type="text"
                           value={selectedNativeElement.borderWidth || ''}
@@ -4224,7 +4224,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field">
-                        <span>┘ä┘ê┘å ╪º┘ä╪Ñ╪╖╪º╪▒</span>
+                        <span>لون الإطار</span>
                         <input
                           type="text"
                           value={selectedNativeElement.borderColor || ''}
@@ -4233,7 +4233,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field studio-field--full">
-                        <span>╪º┘ä╪╕┘ä</span>
+                        <span>الظل</span>
                         <input
                           type="text"
                           value={selectedNativeElement.boxShadow || ''}
@@ -4242,13 +4242,13 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         />
                       </label>
                       <label className="studio-field studio-field--full">
-                        <span>╪º┘ä┘à╪╣╪▒┘æ┘ü/╪º┘ä┘à╪│╪º╪▒</span>
+                        <span>المعرّف/المسار</span>
                         <input type="text" dir="ltr" value={selectedNativeElement.selector || selectedNativeElementId || ''} readOnly />
                       </label>
                       {selectedNativeElement.kind === 'text' ? (
                         <>
                           <label className="studio-field studio-field--full">
-                            <span>╪º┘ä┘å╪╡ ╪»╪º╪«┘ä ╪╣┘å╪╡╪▒ ╪º┘ä┘é╪º┘ä╪¿</span>
+                            <span>النص داخل عنصر القالب</span>
                             <textarea
                               rows={4}
                               value={selectedNativeElement.textContent || ''}
@@ -4260,7 +4260,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>╪º┘ä╪«╪╖</span>
+                            <span>الخط</span>
                             <input
                               type="text"
                               list="studio-font-options"
@@ -4270,7 +4270,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>╪¡╪¼┘à ╪º┘ä╪«╪╖</span>
+                            <span>حجم الخط</span>
                             <input
                               type="text"
                               value={selectedNativeElement.fontSize || ''}
@@ -4279,31 +4279,31 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>┘ê╪▓┘å ╪º┘ä╪«╪╖</span>
+                            <span>وزن الخط</span>
                             <select
                               value={selectedNativeElement.fontWeight || ''}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { fontWeight: event.target.value })}
                             >
-                              <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
+                              <option value="">افتراضي</option>
                               {FONT_WEIGHT_OPTIONS.map((option) => (
                                 <option key={option} value={option}>{option}</option>
                               ))}
                             </select>
                           </label>
                           <label className="studio-field">
-                            <span>┘å┘à╪╖ ╪º┘ä╪«╪╖</span>
+                            <span>نمط الخط</span>
                             <select
                               value={selectedNativeElement.fontStyle || ''}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { fontStyle: event.target.value })}
                             >
-                              <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
+                              <option value="">افتراضي</option>
                               {FONT_STYLE_OPTIONS.map((option) => (
                                 <option key={option} value={option}>{option}</option>
                               ))}
                             </select>
                           </label>
                           <label className="studio-field">
-                            <span>┘ä┘ê┘å ╪º┘ä┘å╪╡</span>
+                            <span>لون النص</span>
                             <input
                               type="text"
                               value={selectedNativeElement.color || ''}
@@ -4312,7 +4312,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>╪º╪▒╪¬┘ü╪º╪╣ ╪º┘ä╪│╪╖╪▒</span>
+                            <span>ارتفاع السطر</span>
                             <input
                               type="text"
                               value={selectedNativeElement.lineHeight || ''}
@@ -4321,7 +4321,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>╪¬╪¿╪º╪╣╪» ╪º┘ä╪¡╪▒┘ê┘ü</span>
+                            <span>تباعد الحروف</span>
                             <input
                               type="text"
                               value={selectedNativeElement.letterSpacing || ''}
@@ -4330,55 +4330,55 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                             />
                           </label>
                           <label className="studio-field">
-                            <span>┘à╪¡╪º╪░╪º╪⌐ ╪º┘ä┘å╪╡</span>
+                            <span>محاذاة النص</span>
                             <select
                               value={selectedNativeElement.textAlign || ''}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { textAlign: event.target.value })}
                             >
-                              <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
+                              <option value="">افتراضي</option>
                               {TEXT_ALIGN_OPTIONS.map((option) => (
                                 <option key={option} value={option}>{option}</option>
                               ))}
                             </select>
                           </label>
                           <label className="studio-field">
-                            <span>╪º╪¬╪¼╪º┘ç ╪º┘ä┘å╪╡</span>
+                            <span>اتجاه النص</span>
                             <select
                               value={selectedNativeElement.direction || ''}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { direction: event.target.value })}
                             >
-                              <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
+                              <option value="">افتراضي</option>
                               {DIRECTION_OPTIONS.map((option) => (
                                 <option key={option} value={option}>{option.toUpperCase()}</option>
                               ))}
                             </select>
                           </label>
                           <label className="studio-field">
-                            <span>╪¬╪¡┘ê┘è┘ä ╪º┘ä┘å╪╡</span>
+                            <span>تحويل النص</span>
                             <select
                               value={selectedNativeElement.textTransform || ''}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { textTransform: event.target.value })}
                             >
-                              <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
+                              <option value="">افتراضي</option>
                               {TEXT_TRANSFORM_OPTIONS.map((option) => (
                                 <option key={option} value={option}>{option}</option>
                               ))}
                             </select>
                           </label>
                           <label className="studio-field">
-                            <span>╪▓╪«╪▒┘ü╪⌐ ╪º┘ä┘å╪╡</span>
+                            <span>زخرفة النص</span>
                             <select
                               value={selectedNativeElement.textDecoration || ''}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { textDecoration: event.target.value })}
                             >
-                              <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
+                              <option value="">افتراضي</option>
                               {TEXT_DECORATION_OPTIONS.map((option) => (
                                 <option key={option} value={option}>{option}</option>
                               ))}
                             </select>
                           </label>
                           <label className="studio-field studio-field--full">
-                            <span>╪╕┘ä ╪º┘ä┘å╪╡</span>
+                            <span>ظل النص</span>
                             <input
                               type="text"
                               value={selectedNativeElement.textShadow || ''}
@@ -4433,7 +4433,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               value={selectedNativeElement.objectFit || ''}
                               onChange={(event) => patchNativeElement(selectedNativeElementId, { objectFit: event.target.value })}
                             >
-                              <option value="">╪º┘ü╪¬╪▒╪º╪╢┘è</option>
+                              <option value="">افتراضي</option>
                               {OBJECT_FIT_OPTIONS.map((option) => (
                                 <option key={option} value={option}>{option}</option>
                               ))}
@@ -4451,7 +4451,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     {selectedTemplateTextStyleTarget ? (
                       <div className="studio-form-grid">
                         <label className="studio-field">
-                          <span>┘ä┘ê┘å ╪º┘ä┘å╪╡</span>
+                          <span>لون النص</span>
                           <input
                             type="color"
                             value={normalizeHexColor(selectedTemplateTextStyleTarget.color, '#7f2a1f')}
@@ -4463,7 +4463,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           />
                         </label>
                         <label className="studio-field">
-                          <span>┘å┘ê╪╣ ╪º┘ä╪«╪╖</span>
+                          <span>نوع الخط</span>
                           <select
                             value={selectedTemplateTextStyleTarget.fontFamily || ''}
                             onChange={(event) =>
@@ -4472,7 +4472,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                               })
                             }
                           >
-                            <option value="">╪«╪╖ ╪º┘ä┘é╪º┘ä╪¿</option>
+                            <option value="">خط القالب</option>
                             {fontLibraryOptions.map((font) => (
                               <option key={font.id || font.family} value={font.family}>
                                 {font.nameAr || font.family}
@@ -4483,13 +4483,13 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       </div>
                     ) : null}
                     <p className="studio-help-text">
-                      ╪º╪╢╪║╪╖ ╪╣┘ä┘ë ╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä╪▓╪«╪▒┘ü┘è ╪ú┘ê ╪º┘ä╪╡┘ê╪▒╪⌐ ╪º┘ä╪ú╪╡┘ä┘è╪⌐ ╪»╪º╪«┘ä ╪º┘ä┘à╪¡╪º┘â┘è ┘ä╪¬╪¡╪»┘è╪»┘ç╪º╪î ╪½┘à ╪º╪│╪¡╪¿┘ç╪º ┘à╪¿╪º╪┤╪▒╪⌐. ┘ê┘è┘à┘â┘å┘â ╪ú┘è╪╢┘ï╪º ┘ü╪¬╪¡ ┘å╪º┘ü╪░╪⌐ ╪º┘ä┘é╪╡ ╪º┘ä╪¿╪╡╪▒┘è ┘ä╪╢╪¿╪╖ ╪º┘ä╪╡┘ê╪▒╪⌐ ╪»╪º╪«┘ä ╪Ñ╪╖╪º╪▒ ┘à╪«╪╡╪╡ ╪¿╪»┘ä ╪º┘ä╪º╪╣╪¬┘à╪º╪» ╪╣┘ä┘ë ╪º┘ä╪│╪¡╪¿ ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ┘ü┘é╪╖.
+                      اضغط على العنصر الزخرفي أو الصورة الأصلية داخل المحاكي لتحديدها، ثم اسحبها مباشرة. ويمكنك أيضًا فتح نافذة القص البصري لضبط الصورة داخل إطار مخصص بدل الاعتماد على السحب داخل المعاينة فقط.
                     </p>
                   </>
                 ) : (
                   <div className="studio-empty-panel">
-                    <strong>┘ä╪º ┘è┘ê╪¼╪» ╪╣┘å╪╡╪▒ ┘é╪º┘ä╪¿ ┘à╪¡╪»╪» ╪¿╪╣╪»</strong>
-                    <p>╪º╪╢╪║╪╖ ╪╣┘ä┘ë ╪ú┘è ╪╡┘ê╪▒╪⌐ ╪ú╪╡┘ä┘è╪⌐ ╪ú┘ê ╪▓╪«╪▒┘ü╪⌐ ╪ú┘ê ╪╣┘å╪╡╪▒ ╪¿╪╡╪▒┘è ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘à╪¿╪º╪┤╪▒╪⌐╪î ╪½┘à ╪º╪│╪¡╪¿┘ç ╪ú┘ê ╪╣╪»┘æ┘ä ╪«╪╡╪º╪ª╪╡┘ç ┘à┘å ┘ç╪░╪º ╪º┘ä┘é╪│┘à.</p>
+                    <strong>لا يوجد عنصر قالب محدد بعد</strong>
+                    <p>اضغط على أي صورة أصلية أو زخرفة أو عنصر بصري داخل المعاينة المباشرة، ثم اسحبه أو عدّل خصائصه من هذا القسم.</p>
                   </div>
                 )}
               </div>
@@ -4499,8 +4499,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
               <div className="studio-stack">
                 <div className="studio-text-inspector">
                   <div className="studio-text-inspector__meta">
-                    <strong>┘â┘ä ╪º┘ä┘å╪╡┘ê╪╡ ╪º┘ä┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪¬╪¡╪▒┘è╪▒</strong>
-                    <small>╪º╪«╪¬╪▒ ╪º┘ä┘å╪╡ ┘à┘å ┘ç╪░┘ç ╪º┘ä┘é╪º╪ª┘à╪⌐ ┘ä┘è╪¬┘à ╪¬╪¡╪»┘è╪»┘ç ┘ê┘ü╪¬╪¡┘ç ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐.</small>
+                    <strong>كل النصوص القابلة للتحرير</strong>
+                    <small>اختر النص من هذه القائمة ليتم تحديده وفتحه داخل المعاينة مباشرة.</small>
                   </div>
                   <div className="studio-version-list">
                     {availableTemplateTexts.length ? availableTemplateTexts.map((item) => (
@@ -4510,11 +4510,11 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           <small>{item.text ? item.text.slice(0, 72) : item.selector || item.path}</small>
                         </div>
                         <button type="button" className="mini-btn" onClick={() => requestTemplateTextSelection(item)}>
-                          {selectedTemplateTextPath === item.path ? '┘à╪¡╪»╪»' : '╪¬╪¡╪»┘è╪»'}
+                          {selectedTemplateTextPath === item.path ? 'محدد' : 'تحديد'}
                         </button>
                       </div>
                     )) : (
-                      <p className="studio-layer-empty">┘ä╪º ╪¬┘ê╪¼╪» ┘å╪╡┘ê╪╡ ┘à┘ü┘ç╪▒╪│╪⌐ ╪¿╪╣╪». ╪º╪╢╪║╪╖ ╪¬╪¡╪»┘è╪½ ╪º┘ä╪ú╪»┘ê╪º╪¬ ╪ú┘ê ╪º┘å┘é╪▒ ╪╣┘ä┘ë ┘å╪╡ ┘à┘å ╪º┘ä┘à╪╣╪º┘è┘å╪⌐.</p>
+                      <p className="studio-layer-empty">لا توجد نصوص مفهرسة بعد. اضغط تحديث الأدوات أو انقر على نص من المعاينة.</p>
                     )}
                   </div>
                 </div>
@@ -4531,31 +4531,31 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           className={`mini-btn ${selectedTemplateText.locked ? 'active' : ''}`}
                           onClick={() => setTemplateTextLock(selectedTemplateText.path, !selectedTemplateText.locked)}
                         >
-                          {selectedTemplateText.locked ? '┘ü╪¬╪¡ ╪º┘ä┘å╪╡' : '┘é┘ü┘ä ╪º┘ä┘å╪╡'}
+                          {selectedTemplateText.locked ? 'فتح النص' : 'قفل النص'}
                         </button>
                         <button
                           type="button"
                           className="mini-btn"
                           onClick={() => resetTemplateText(selectedTemplateText.path)}
                         >
-                          ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä┘å╪╡ ╪º┘ä╪ú╪╡┘ä┘è
+                          إعادة النص الأصلي
                         </button>
                       </div>
                     </div>
 
                     <div className="studio-element-summary-grid">
                       <div className="studio-element-summary-card">
-                        <span>╪º┘ä╪¡╪º┘ä╪⌐</span>
-                        <strong>{selectedTemplateText.locked ? '┘à┘é┘ü┘ê┘ä' : '┘à┘ü╪¬┘ê╪¡'}</strong>
+                        <span>الحالة</span>
+                        <strong>{selectedTemplateText.locked ? 'مقفول' : 'مفتوح'}</strong>
                       </div>
                       <div className="studio-element-summary-card">
-                        <span>╪º┘ä╪¬╪¡╪▒┘è╪▒ ╪º┘ä┘à╪¿╪º╪┤╪▒</span>
-                        <strong>{selectedTemplateText.locked ? '┘à╪¬┘ê┘é┘ü' : '┘à┘ü╪╣┘ä'}</strong>
+                        <span>التحرير المباشر</span>
+                        <strong>{selectedTemplateText.locked ? 'متوقف' : 'مفعل'}</strong>
                       </div>
                     </div>
 
                     <label className="studio-field studio-field--full">
-                      <span>╪º┘ä┘å╪╡ ╪º┘ä╪╕╪º┘ç╪▒ ╪»╪º╪«┘ä ╪º┘ä┘é╪º┘ä╪¿</span>
+                      <span>النص الظاهر داخل القالب</span>
                       <textarea
                         rows={4}
                         value={selectedTemplateText.text}
@@ -4563,19 +4563,19 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         onChange={(event) => updateTemplateTextOverride(selectedTemplateText.path, event.target.value)}
                         onBlur={() => {
                           if (!selectedTemplateText.locked) {
-                            recordActivity('╪¬╪╣╪»┘è┘ä ┘å╪╡ ┘à┘å ╪º┘ä╪º╪│╪¬┘ê╪»┘è┘ê', selectedTemplateText.label);
+                            recordActivity('تعديل نص من الاستوديو', selectedTemplateText.label);
                           }
                         }}
                       />
                     </label>
                     <p className="studio-help-text">
-                      ╪º╪╢╪║╪╖ ╪╣┘ä┘ë ╪ú┘è ┘å╪╡ ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ┘ä┘è╪╕┘ç╪▒ ┘ç┘å╪º. ╪╣┘å╪» ┘é┘ü┘ä ╪º┘ä┘å╪╡ ╪│┘è╪¬┘ê┘é┘ü ╪º┘ä╪¬╪¡╪▒┘è╪▒ ╪º┘ä┘à╪¿╪º╪┤╪▒ ┘à┘å ╪»╪º╪«┘ä ╪º┘ä┘é╪º┘ä╪¿ ╪¡╪¬┘ë ╪¬┘é┘ê┘à ╪¿┘ü╪¬╪¡┘ç ┘à╪▒╪⌐ ╪ú╪«╪▒┘ë.
+                      اضغط على أي نص داخل المعاينة ليظهر هنا. عند قفل النص سيتوقف التحرير المباشر من داخل القالب حتى تقوم بفتحه مرة أخرى.
                     </p>
                   </>
                 ) : (
                   <div className="studio-empty-panel">
-                    <strong>┘ä╪º ┘è┘ê╪¼╪» ┘å╪╡ ┘à╪¡╪»╪» ╪¿╪╣╪»</strong>
-                    <p>╪º╪╢╪║╪╖ ╪╣┘ä┘ë ╪ú┘è ╪╣┘å┘ê╪º┘å ╪ú┘ê ┘ü┘é╪▒╪⌐ ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐ ╪º┘ä┘à╪¿╪º╪┤╪▒╪⌐ ╪¡╪¬┘ë ╪¬╪¬┘à┘â┘å ┘à┘å ┘é┘ü┘ä┘ç╪º ╪ú┘ê ╪¬╪╣╪»┘è┘ä┘ç╪º ┘à┘å ┘ç╪░╪º ╪º┘ä┘é╪│┘à.</p>
+                    <strong>لا يوجد نص محدد بعد</strong>
+                    <p>اضغط على أي عنوان أو فقرة داخل المعاينة المباشرة حتى تتمكن من قفلها أو تعديلها من هذا القسم.</p>
                   </div>
                 )}
               </div>
@@ -4585,34 +4585,34 @@ export default function StudioClient({ session, manifests, openings, inventory, 
               <div className="studio-stack">
                 <div className="studio-version-grid">
                   <div className="studio-version-card">
-                    <span>╪º┘ä╪Ñ╪╡╪»╪º╪▒ ╪º┘ä╪¡╪º┘ä┘è</span>
+                    <span>الإصدار الحالي</span>
                     <strong>V{historyMeta.pastCount + 1}</strong>
                   </div>
                   <div className="studio-version-card">
-                    <span>╪Ñ┘à┘â╪º┘å┘è╪⌐ ╪º┘ä╪¬╪▒╪º╪¼╪╣</span>
+                    <span>إمكانية التراجع</span>
                     <strong>{historyMeta.pastCount}</strong>
                   </div>
                   <div className="studio-version-card">
-                    <span>╪Ñ┘à┘â╪º┘å┘è╪⌐ ╪º┘ä╪Ñ╪╣╪º╪»╪⌐</span>
+                    <span>إمكانية الإعادة</span>
                     <strong>{historyMeta.futureCount}</strong>
                   </div>
                   <div className="studio-version-card">
-                    <span>╪º┘ä╪¡┘ü╪╕ ╪º┘ä╪¡╪º┘ä┘è</span>
-                    <strong>{saveState === 'saved' ? '┘à╪¡┘ü┘ê╪╕' : saveState === 'saving' ? '┘è╪¡┘ü╪╕ ╪º┘ä╪ó┘å' : saveState === 'error' ? '╪«╪╖╪ú' : '╪¿╪º┘å╪¬╪╕╪º╪▒ ╪º┘ä╪¡┘ü╪╕'}</strong>
+                    <span>الحفظ الحالي</span>
+                    <strong>{saveState === 'saved' ? 'محفوظ' : saveState === 'saving' ? 'يحفظ الآن' : saveState === 'error' ? 'خطأ' : 'بانتظار الحفظ'}</strong>
                   </div>
                 </div>
 
                 <div className="studio-text-inspector">
                   <div className="studio-text-inspector__meta">
-                    <strong>┘å╪│╪« ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪º╪│╪¬╪╣╪º╪»╪⌐</strong>
-                    <small>╪ó╪«╪▒ ╪º┘ä┘ä┘é╪╖╪º╪¬ ╪º┘ä┘à╪¡┘ü┘ê╪╕╪⌐ ╪»╪º╪«┘ä ╪º┘ä╪¼┘ä╪│╪⌐ ╪º┘ä╪¡╪º┘ä┘è╪⌐. ┘è┘à┘â┘å┘â ╪º┘ä╪╣┘ê╪»╪⌐ ┘ä╪ú┘è ┘å╪│╪«╪⌐ ┘à╪╡╪║╪▒╪⌐ ┘à╪¿╪º╪┤╪▒╪⌐.</small>
+                    <strong>نسخ قابلة للاستعادة</strong>
+                    <small>آخر اللقطات المحفوظة داخل الجلسة الحالية. يمكنك العودة لأي نسخة مصغرة مباشرة.</small>
                   </div>
                   <div className="studio-version-list">
                     {versionTrail.length ? versionTrail.map((item) => (
                       <div key={item.id} className={`studio-version-item ${item.isCurrent ? 'current' : ''}`}>
                         <div className="studio-version-item__meta">
                           <strong>{item.label}</strong>
-                          <small>{item.time} ┬╖ V{item.version}</small>
+                          <small>{item.time} · V{item.version}</small>
                         </div>
                         <button
                           type="button"
@@ -4620,11 +4620,11 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           disabled={item.isCurrent}
                           onClick={() => restoreVersionSnapshot(item.snapshot, item.label)}
                         >
-                          {item.isCurrent ? '╪º┘ä╪¡╪º┘ä┘è╪⌐' : '╪º╪│╪¬╪╣╪º╪»╪⌐'}
+                          {item.isCurrent ? 'الحالية' : 'استعادة'}
                         </button>
                       </div>
                     )) : (
-                      <p className="studio-layer-empty">┘ä╪º ╪¬┘ê╪¼╪» ┘å╪│╪« ┘à╪▒╪ª┘è╪⌐ ╪¿╪╣╪».</p>
+                      <p className="studio-layer-empty">لا توجد نسخ مرئية بعد.</p>
                     )}
                   </div>
                 </div>
@@ -4634,7 +4634,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     <div key={item.id} className="studio-history-item">
                       <div className="studio-history-item__meta">
                         <strong>{item.title}</strong>
-                        <small>{item.detail || '╪¬╪╣╪»┘è┘ä ╪»╪º╪«┘ä ╪º┘ä╪º╪│╪¬┘ê╪»┘è┘ê'}</small>
+                        <small>{item.detail || 'تعديل داخل الاستوديو'}</small>
                       </div>
                       <div className="studio-history-item__side">
                         <span>V{item.version}</span>
@@ -4643,8 +4643,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     </div>
                   )) : (
                     <div className="studio-empty-panel">
-                      <strong>╪º┘ä╪│╪¼┘ä ┘ü╪º╪▒╪║ ╪¡╪º┘ä┘è┘ï╪º</strong>
-                      <p>╪│┘è╪╕┘ç╪▒ ┘ç┘å╪º ┘â┘ä ┘à╪º ╪¬┘é┘ê┘à ╪¿┘ç ┘à╪½┘ä ╪º┘ä╪¬╪▒╪º╪¼╪╣╪î ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪¬╪╣╪»┘è┘ä╪î ┘é┘ü┘ä ╪º┘ä┘å╪╡┘ê╪╡╪î ┘ê╪Ñ╪»╪º╪▒╪⌐ ╪º┘ä╪╣┘å╪º╪╡╪▒ ╪º┘ä╪¡╪▒╪⌐.</p>
+                      <strong>السجل فارغ حاليًا</strong>
+                      <p>سيظهر هنا كل ما تقوم به مثل التراجع، إعادة التعديل، قفل النصوص، وإدارة العناصر الحرة.</p>
                     </div>
                   )}
                 </div>
@@ -4655,12 +4655,12 @@ export default function StudioClient({ session, manifests, openings, inventory, 
               <div className="studio-stack">
                 {(currentManifest.sections || []).map((section) => (
                   <div key={section.key} className="studio-section-row">
-                    <span className="studio-section-row__drag">Γï«Γï«</span>
+                    <span className="studio-section-row__drag">⋮⋮</span>
                     <div className="studio-section-row__copy">
                       <strong>{section.labelAr}</strong>
                       <small>{section.labelEn}</small>
                     </div>
-                    <button type="button" className="mini-btn" onClick={() => handleOpenSection('sections')}>╪º┘å╪¬┘é╪º┘ä</button>
+                    <button type="button" className="mini-btn" onClick={() => handleOpenSection('sections')}>انتقال</button>
                     <label className="studio-switch">
                       <input
                         type="checkbox"
@@ -4685,7 +4685,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             {sectionKey === 'advanced' ? (
               <div className="studio-stack">
                 <label className="studio-field">
-                  <span>╪º┘ä┘é╪º┘ä╪¿ ╪º┘ä╪ú╪│╪º╪│┘è</span>
+                  <span>القالب الأساسي</span>
                   <select
                     value={draft.templateSlug}
                     onChange={(event) =>
@@ -4703,10 +4703,10 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   </select>
                 </label>
                 <div className="studio-metrics">
-                  <div><strong>{inventory.summary.templates}</strong><span>┘é╪º┘ä╪¿</span></div>
-                  <div><strong>{inventory.summary.images}</strong><span>╪╡┘ê╪▒╪⌐</span></div>
-                  <div><strong>{inventory.summary.videos}</strong><span>┘ü┘è╪»┘è┘ê</span></div>
-                  <div><strong>{inventory.summary.audio}</strong><span>╪╡┘ê╪¬</span></div>
+                  <div><strong>{inventory.summary.templates}</strong><span>قالب</span></div>
+                  <div><strong>{inventory.summary.images}</strong><span>صورة</span></div>
+                  <div><strong>{inventory.summary.videos}</strong><span>فيديو</span></div>
+                  <div><strong>{inventory.summary.audio}</strong><span>صوت</span></div>
                 </div>
               </div>
             ) : null}
@@ -4714,35 +4714,35 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             {sectionKey === 'media' ? (
               <div className="studio-media-grid">
                 <MediaSummaryCard
-                  label="╪╡┘ê╪▒╪⌐ ╪º┘ä╪╣╪▒┘ê╪│┘è┘å ╪»╪º╪«┘ä ╪º┘ä┘é╪º┘ä╪¿"
+                  label="صورة العروسين داخل القالب"
                   type="image"
                   value={draft.contentConfig['images.hero']}
                   onChange={(value) => setContentValue('images.hero', value)}
                   onClear={() => setContentValue('images.hero', '')}
                 />
                 <MediaSummaryCard
-                  label="╪«┘ä┘ü┘è╪⌐ ╪º┘ä┘à╪┤┘ç╪»"
+                  label="خلفية المشهد"
                   type="image"
                   value={draft.contentConfig['images.background']}
                   onChange={(value) => setContentValue('images.background', value)}
                   onClear={() => setContentValue('images.background', '')}
                 />
                 <MediaSummaryCard
-                  label="╪╡┘ê╪▒╪⌐ ╪º┘ä╪║┘ä╪º┘ü"
+                  label="صورة الغلاف"
                   type="image"
                   value={draft.contentConfig.venueImage}
                   onChange={(value) => setContentValue('venueImage', value)}
                   onClear={() => setContentValue('venueImage', '')}
                 />
                 <MediaSummaryCard
-                  label="╪º┘ä┘à┘ê╪│┘è┘é┘ë"
+                  label="الموسيقى"
                   type="audio"
                   value={draft.contentConfig.musicUrl}
                   onChange={(value) => setContentValue('musicUrl', value)}
                   onClear={() => setContentValue('musicUrl', '')}
                 />
                 <MediaSummaryCard
-                  label="╪╡┘ê╪▒╪⌐ ╪º┘ä┘é╪º╪╣╪⌐"
+                  label="صورة القاعة"
                   type="image"
                   value={draft.contentConfig['images.venue']}
                   onChange={(value) => setContentValue('images.venue', value)}
@@ -4780,7 +4780,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   const studioEyebrow = '\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0627\u0644\u062A\u062E\u0635\u064A\u0635';
   const livePreviewBadge = '\u0645\u0639\u0627\u064A\u0646\u0629 \u0645\u0628\u0627\u0634\u0631\u0629';
   const studioMetaLine = isInvitationEditing
-    ? `${existingInvitation.slug} ┬╖ ${currentOpening.nameAr}`
+    ? `${existingInvitation.slug} · ${currentOpening.nameAr}`
     : `${session.name} \u00B7 ${currentOpening.nameAr}`;
 
   async function persistInvitationDraft(action = 'save') {
@@ -4812,7 +4812,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       });
       const payload = await response.json();
       if (!response.ok || payload.success === false) {
-        throw new Error(payload.error || payload.message || '╪¬╪╣╪░╪▒ ╪¡┘ü╪╕ ╪º┘ä╪»╪╣┘ê╪⌐.');
+        throw new Error(payload.error || payload.message || 'تعذر حفظ الدعوة.');
       }
 
       const nextStatus =
@@ -4821,22 +4821,22 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       setInvitationStatus(nextStatus);
       setNotice(
         action === 'publish'
-          ? '╪¬┘à ┘å╪┤╪▒ ╪º┘ä╪»╪╣┘ê╪⌐ ╪¿┘å╪¼╪º╪¡.'
+          ? 'تم نشر الدعوة بنجاح.'
           : action === 'unpublish'
-            ? '╪¬┘à ╪Ñ┘ä╪║╪º╪í ┘å╪┤╪▒ ╪º┘ä╪»╪╣┘ê╪⌐.'
-            : '╪¬┘à ╪¡┘ü╪╕ ╪¬╪║┘è┘è╪▒╪º╪¬ ╪º┘ä╪»╪╣┘ê╪⌐.'
+            ? 'تم إلغاء نشر الدعوة.'
+            : 'تم حفظ تغييرات الدعوة.'
       );
       recordActivity(
         action === 'publish'
-          ? '┘å╪┤╪▒ ╪º┘ä╪»╪╣┘ê╪⌐'
+          ? 'نشر الدعوة'
           : action === 'unpublish'
-            ? '╪Ñ┘ä╪║╪º╪í ┘å╪┤╪▒ ╪º┘ä╪»╪╣┘ê╪⌐'
-            : '╪¡┘ü╪╕ ╪º┘ä╪»╪╣┘ê╪⌐',
+            ? 'إلغاء نشر الدعوة'
+            : 'حفظ الدعوة',
         existingInvitation.slug,
       );
       router.refresh();
     } catch (error) {
-      setNotice(error.message || '╪¬╪╣╪░╪▒ ╪¡┘ü╪╕ ╪º┘ä╪»╪╣┘ê╪⌐.');
+      setNotice(error.message || 'تعذر حفظ الدعوة.');
     } finally {
       setBusy(false);
     }
@@ -4861,7 +4861,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 checked={Boolean(draft.uiConfig?.bilingualEnabled)}
                 onChange={(event) => setUiValue('bilingualEnabled', event.target.checked)}
               />
-              <span>╪»╪╣┘ê╪⌐ ╪¿┘ä╪║╪¬┘è┘å</span>
+              <span>دعوة بلغتين</span>
             </label>
             <label className="studio-boolean-field studio-toolbar-toggle">
               <input
@@ -4869,7 +4869,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 checked={draft.uiConfig?.editorGuides !== false}
                 onChange={(event) => setUiValue('editorGuides', event.target.checked)}
               />
-              <span>╪Ñ╪╕┘ç╪º╪▒ ╪º┘ä╪ú╪»┘ä╪⌐</span>
+              <span>إظهار الأدلة</span>
             </label>
             <div className="studio-toolbar-group">
               {Object.entries(DEVICE_PRESETS).map(([key, preset]) => (
@@ -4882,7 +4882,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       ...current,
                       devicePreview: { mode: key, ...preset },
                     }));
-                    recordActivity('╪¬╪¿╪»┘è┘ä ╪¼┘ç╪º╪▓ ╪º┘ä┘à╪╣╪º┘è┘å╪⌐', preset.label);
+                    recordActivity('تبديل جهاز المعاينة', preset.label);
                   }}
                 >
                   {preset.label}
@@ -4897,7 +4897,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 disabled={!historyMeta.canUndo}
                 title="Ctrl/Cmd + Z"
               >
-                ╪¬╪▒╪º╪¼╪╣
+                تراجع
               </button>
               <button
                 type="button"
@@ -4906,22 +4906,22 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 disabled={!historyMeta.canRedo}
                 title="Ctrl/Cmd + Y"
               >
-                ╪Ñ╪╣╪º╪»╪⌐
+                إعادة
               </button>
               <button
                 type="button"
                 className="mini-btn"
                 onClick={resetTemplate}
-                title="╪Ñ╪╣╪º╪»╪⌐ ┘â┘ä ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä╪»╪╣┘ê╪⌐ ╪Ñ┘ä┘ë ╪º┘ä╪ú╪╡┘ä"
+                title="إعادة كل إعدادات الدعوة إلى الأصل"
               >
                 Reset Template
               </button>
             </div>
             <div className="studio-toolbar-group studio-toolbar-group--ghost">
-              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>╪¬╪¡╪»┘è╪½</button>
-              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪º┘ü╪¬╪¬╪º╪¡┘è╪⌐</button>
-              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>╪╡┘ê╪¬</button>
-              <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">┘à┘ä╪í ╪º┘ä╪┤╪º╪┤╪⌐</Link>
+              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>تحديث</button>
+              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>إعادة الافتتاحية</button>
+              <button type="button" className="mini-btn" onClick={() => setPreviewReloadToken((value) => value + 1)}>صوت</button>
+              <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">ملء الشاشة</Link>
             </div>
           </div>
         </div>
@@ -4959,15 +4959,15 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     type="button"
                     className="mini-btn studio-canvas-menu__action"
                     onClick={() => {
-                      addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, '┘å╪╡ ╪¼╪»┘è╪»');
+                      addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
                       setCanvasClickMenu(null);
                     }}
-                    title="╪Ñ╪╢╪º┘ü╪⌐ ┘å╪╡"
+                    title="إضافة نص"
                   >
-                    ┘å╪╡
+                    نص
                   </button>
                   <MediaPicker
-                    label="╪╡┘ê╪▒╪⌐"
+                    label="صورة"
                     value=""
                     accept="image"
                     folder="studio-free-elements"
@@ -4987,9 +4987,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       <button
                         type="button"
                         className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
-                        title="╪Ñ╪╢╪º┘ü╪⌐ ╪╡┘ê╪▒╪⌐"
+                        title="إضافة صورة"
                       >
-                        ╪╡┘ê╪▒╪⌐
+                        صورة
                       </button>
                     }
                   />
@@ -5001,18 +5001,18 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         pasteElementClipboardAt({ x: canvasClickMenu.x, y: canvasClickMenu.y });
                         setCanvasClickMenu(null);
                       }}
-                      title="┘ä╪╡┘é ╪º┘ä╪╣┘å╪╡╪▒ ╪º┘ä┘à┘å╪│┘ê╪«"
+                      title="لصق العنصر المنسوخ"
                     >
-                      ┘ä╪╡┘é
+                      لصق
                     </button>
                   ) : null}
                   <button
                     type="button"
                     className="mini-btn studio-canvas-menu__close"
                     onClick={() => setCanvasClickMenu(null)}
-                    title="╪Ñ╪║┘ä╪º┘é"
+                    title="إغلاق"
                   >
-                    Γ£ò
+                    ✕
                   </button>
                 </div>
               ) : null}
@@ -5021,26 +5021,26 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           </div>
         </div>
 
-        <div className="studio-canvas__tips" aria-label="╪¬┘ä┘à┘è╪¡╪º╪¬ ╪º┘ä┘à╪¡╪º┘â┘è">
+        <div className="studio-canvas__tips" aria-label="تلميحات المحاكي">
           <div className="studio-canvas__tip">
-            <strong>╪¡╪»╪» ╪½┘à ╪º╪│╪¡╪¿</strong>
-            <span>╪º╪╢╪║╪╖ ╪╣┘ä┘ë ╪º┘ä┘å╪╡ ╪ú┘ê ╪º┘ä╪╣┘å╪╡╪▒ ┘à╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐╪î ╪½┘à ╪º╪│╪¡╪¿┘ç ┘à╪¿╪º╪┤╪▒╪⌐ ╪»╪º╪«┘ä ╪º┘ä┘é╪º┘ä╪¿.</span>
+            <strong>حدد ثم اسحب</strong>
+            <span>اضغط على النص أو العنصر مرة واحدة، ثم اسحبه مباشرة داخل القالب.</span>
           </div>
           <div className="studio-canvas__tip">
-            <strong>╪º╪╢╪║╪╖ ┘à╪▒╪¬┘è┘å ┘ä┘ä┘â╪¬╪º╪¿╪⌐</strong>
-            <span>╪º┘ä╪╢╪║╪╖ ╪º┘ä┘à╪▓╪»┘ê╪¼ ┘è┘ü╪¬╪¡ ╪¬╪¡╪▒┘è╪▒ ╪º┘ä┘å╪╡ ┘à┘å ┘å┘ü╪│ ┘à┘â╪º┘å┘ç ╪»╪º╪«┘ä ╪º┘ä┘à╪╣╪º┘è┘å╪⌐.</span>
+            <strong>اضغط مرتين للكتابة</strong>
+            <span>الضغط المزدوج يفتح تحرير النص من نفس مكانه داخل المعاينة.</span>
           </div>
           <div className="studio-canvas__tip">
-            <strong>╪º╪╢╪║╪╖ ┘ü┘è ┘à┘â╪º┘å ┘ü╪º╪▒╪║</strong>
-            <span>╪│┘è╪╕┘ç╪▒ ┘ä┘â ┘à╪▒╪¿╪╣ ╪│╪▒┘è╪╣ ┘ä╪Ñ╪╢╪º┘ü╪⌐ ┘å╪╡ ╪ú┘ê ╪╡┘ê╪▒╪⌐ ╪ú┘ê ┘ä╪╡┘é ╪╣┘å╪╡╪▒ ┘à┘å╪│┘ê╪«.</span>
+            <strong>اضغط في مكان فارغ</strong>
+            <span>سيظهر لك مربع سريع لإضافة نص أو صورة أو لصق عنصر منسوخ.</span>
           </div>
           <div className="studio-canvas__tip">
-            <strong>┘â┘ä ╪┤┘è╪í ┘à╪¿╪º╪┤╪▒</strong>
-            <span>╪º┘ä┘å╪╡ ┘ê╪º┘ä┘ä┘ê┘å ┘ê╪º┘ä╪«╪╖ ┘ê╪º┘ä╪¬╪¡╪▒┘è┘â ┘è╪╕┘ç╪▒┘ê┘å ╪»╪º╪«┘ä ╪º┘ä┘à╪¡╪º┘â┘è ┘ü┘è ┘å┘ü╪│ ╪º┘ä┘ä╪¡╪╕╪⌐.</span>
+            <strong>كل شيء مباشر</strong>
+            <span>النص واللون والخط والتحريك يظهرون داخل المحاكي في نفس اللحظة.</span>
           </div>
         </div>
         <button type="button" className="studio-mobile-editor-toggle" onClick={() => setEditorOpen(true)}>
-          ┘ü╪¬╪¡ ╪º┘ä╪¬╪╣╪»┘è┘ä╪º╪¬
+          فتح التعديلات
         </button>
       </section>
 
@@ -5049,31 +5049,31 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         <div className="studio-editor__panel">
           <div className="studio-editor__header">
             <div>
-              <h1>╪¬╪╣╪»┘è┘ä ╪º┘ä╪»╪╣┘ê╪⌐</h1>
+              <h1>تعديل الدعوة</h1>
               <p>{currentManifest.nameAr}</p>
             </div>
             <div className="studio-editor__header-actions">
-              <span className={`studio-save-indicator ${saveState}`}>{saveState === 'saved' ? '╪¬┘à ╪º┘ä╪¡┘ü╪╕' : saveState === 'saving' ? '╪¼╪º╪▒┘ì ╪º┘ä╪¡┘ü╪╕' : saveState === 'error' ? '┘ü╪┤┘ä ╪º┘ä╪¡┘ü╪╕' : '╪¬┘ê╪¼╪» ╪¬╪╣╪»┘è┘ä╪º╪¬ ╪║┘è╪▒ ┘à╪¡┘ü┘ê╪╕╪⌐'}</span>
-              <button type="button" className="studio-editor__close" onClick={() => setEditorOpen(false)}>├ù</button>
+              <span className={`studio-save-indicator ${saveState}`}>{saveState === 'saved' ? 'تم الحفظ' : saveState === 'saving' ? 'جارٍ الحفظ' : saveState === 'error' ? 'فشل الحفظ' : 'توجد تعديلات غير محفوظة'}</span>
+              <button type="button" className="studio-editor__close" onClick={() => setEditorOpen(false)}>×</button>
             </div>
           </div>
 
           <div className="studio-editor__summary">
             <div>
-              <span>{isInvitationEditing ? '╪º┘ä╪»╪╣┘ê╪⌐' : '╪º┘ä╪¼┘ä╪│╪⌐'}</span>
+              <span>{isInvitationEditing ? 'الدعوة' : 'الجلسة'}</span>
               <strong>{isInvitationEditing ? existingInvitation.slug : session.name}</strong>
             </div>
             <div>
-              <span>╪º┘ä┘é╪º┘ä╪¿</span>
+              <span>القالب</span>
               <strong>{currentManifest.nameAr}</strong>
             </div>
             <div>
-              <span>╪º┘ä┘à╪╣╪º┘è┘å╪⌐</span>
+              <span>المعاينة</span>
               <strong>{currentDeviceLabel}</strong>
             </div>
             {isInvitationEditing ? (
               <div>
-                <span>╪º┘ä╪¡╪º┘ä╪⌐</span>
+                <span>الحالة</span>
                 <strong>{invitationStatus}</strong>
               </div>
             ) : null}
@@ -5082,9 +5082,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           {notice ? <div className="admin-alert info">{notice}</div> : null}
           <div className="studio-inline-actions" style={{ padding: '0 16px', flexWrap: 'wrap' }}>
             <button type="button" className={`mini-btn ${showAllSections ? 'active' : ''}`} onClick={() => setShowAllSections((current) => !current)}>
-              {showAllSections ? '╪Ñ╪╕┘ç╪º╪▒ ┘é╪│┘à ┘ê╪º╪¡╪»' : '╪Ñ╪╕┘ç╪º╪▒ ┘â┘ä ╪º┘ä┘à┘è╪▓╪º╪¬'}
+              {showAllSections ? 'إظهار قسم واحد' : 'إظهار كل الميزات'}
             </button>
-            <button type="button" className="mini-btn" onClick={requestStudioCatalogs}>┘à╪▓╪º┘à┘å╪⌐ ╪º┘ä╪ú╪»┘ê╪º╪¬</button>
+            <button type="button" className="mini-btn" onClick={requestStudioCatalogs}>مزامنة الأدوات</button>
             {['custom-elements', 'layers', 'template-elements', 'template-text', 'opening', 'design', 'history'].map((sectionKey) => (
               <button
                 key={sectionKey}
@@ -5104,12 +5104,12 @@ export default function StudioClient({ session, manifests, openings, inventory, 
             <div className="admin-alert info">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                 <span>
-                  ╪º╪│╪¬╪¿╪»╪º┘ä ╪╡┘ê╪▒╪⌐:
+                  استبدال صورة:
                   {' '}
-                  <strong>{replaceMediaRequest.label || (replaceMediaRequest.scope === 'custom' ? '╪╡┘ê╪▒╪⌐ ╪¡╪▒╪⌐' : '╪╣┘å╪╡╪▒ ╪╡┘ê╪▒┘è')}</strong>
+                  <strong>{replaceMediaRequest.label || (replaceMediaRequest.scope === 'custom' ? 'صورة حرة' : 'عنصر صوري')}</strong>
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <button type="button" className="mini-btn" onClick={() => setReplaceMediaRequest(null)}>╪Ñ┘ä╪║╪º╪í</button>
+                  <button type="button" className="mini-btn" onClick={() => setReplaceMediaRequest(null)}>إلغاء</button>
                 </div>
               </div>
             </div>
@@ -5120,26 +5120,26 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           </div>
 
           <div className="studio-editor__footer">
-            <button type="button" className="mini-btn" onClick={() => setEditorOpen(false)}>╪Ñ┘ä╪║╪º╪í</button>
+            <button type="button" className="mini-btn" onClick={() => setEditorOpen(false)}>إلغاء</button>
             {isInvitationEditing ? (
               <>
                 <button type="button" className="mini-btn" onClick={() => void persistInvitationDraft('save')} disabled={busy}>
-                  ╪¡┘ü╪╕ ╪º┘ä╪»╪╣┘ê╪⌐
+                  حفظ الدعوة
                 </button>
                 <button type="button" className="mini-btn" onClick={() => void persistInvitationDraft('unpublish')} disabled={busy}>
-                  ╪Ñ┘ä╪║╪º╪í ╪º┘ä┘å╪┤╪▒
+                  إلغاء النشر
                 </button>
-                <Link className="mini-btn" href={`/invite/${existingInvitation.slug}`} target="_blank">┘ü╪¬╪¡ ╪º┘ä╪»╪╣┘ê╪⌐</Link>
+                <Link className="mini-btn" href={`/invite/${existingInvitation.slug}`} target="_blank">فتح الدعوة</Link>
                 <button type="button" className="btn-primary studio-primary-action" onClick={() => void persistInvitationDraft('publish')} disabled={busy}>
-                  ┘å╪┤╪▒ ╪º┘ä╪¬╪╣╪»┘è┘ä╪º╪¬
+                  نشر التعديلات
                 </button>
               </>
             ) : (
               <>
-                <button type="button" className="mini-btn" onClick={() => void saveVariant()} disabled={busy}>╪¡┘ü╪╕ ┘â┘à╪│┘ê╪»╪⌐</button>
-                <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">┘à╪╣╪º┘è┘å╪⌐ ┘â╪º┘à┘ä╪⌐</Link>
+                <button type="button" className="mini-btn" onClick={() => void saveVariant()} disabled={busy}>حفظ كمسودة</button>
+                <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة كاملة</Link>
                 <button type="button" className="btn-primary studio-primary-action" onClick={() => void createInvitation()} disabled={busy}>
-                  ╪Ñ┘å╪┤╪º╪í ╪º┘ä╪»╪╣┘ê╪⌐
+                  إنشاء الدعوة
                 </button>
               </>
             )}
@@ -5149,7 +5149,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       {replaceMediaRequest ? (
         <MediaPicker
           key={`${replaceMediaRequest.scope}-${replaceMediaRequest.id}-${replaceMediaRequest.token}`}
-          label="╪º╪«╪¬┘è╪º╪▒ ╪╡┘ê╪▒╪⌐ ╪¼╪»┘è╪»╪⌐"
+          label="اختيار صورة جديدة"
           value=""
           accept="image"
           folder={replaceMediaRequest.scope === 'custom' ? 'studio-free-elements' : 'studio-native-elements'}
