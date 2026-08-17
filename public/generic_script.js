@@ -597,6 +597,23 @@
         if (override.fontFamily) {
           textNode.style.fontFamily = `"${String(override.fontFamily).replace(/"/g, '')}"`;
         }
+
+        if (override.fontWeight) {
+          textNode.style.fontWeight = override.fontWeight;
+        } else if (override.fontWeight === 'normal') {
+          textNode.style.fontWeight = 'normal';
+        }
+
+        if (override.fontStyle) {
+          textNode.style.fontStyle = override.fontStyle;
+        } else if (override.fontStyle === 'normal') {
+          textNode.style.fontStyle = 'normal';
+        }
+
+        if (override.textAlign) {
+          textNode.style.textAlign = override.textAlign;
+          textNode.style.display = 'block'; // Ensure block display for text-align to take effect
+        }
       });
     });
   }
@@ -1296,6 +1313,18 @@
     if (node.dataset.farhaNativeBaseTouchAction === undefined) {
       node.dataset.farhaNativeBaseTouchAction = node.style.touchAction || '';
     }
+    if (node.dataset.farhaNativeBaseColor === undefined) {
+      node.dataset.farhaNativeBaseColor = node.style.color || window.getComputedStyle(node).color || '';
+    }
+    if (node.dataset.farhaNativeBaseFontWeight === undefined) {
+      node.dataset.farhaNativeBaseFontWeight = node.style.fontWeight || window.getComputedStyle(node).fontWeight || '';
+    }
+    if (node.dataset.farhaNativeBaseFontStyle === undefined) {
+      node.dataset.farhaNativeBaseFontStyle = node.style.fontStyle || window.getComputedStyle(node).fontStyle || '';
+    }
+    if (node.dataset.farhaNativeBaseTextAlign === undefined) {
+      node.dataset.farhaNativeBaseTextAlign = node.style.textAlign || window.getComputedStyle(node).textAlign || '';
+    }
     if (node.dataset.farhaNativeBaseBackgroundImage === undefined) {
       const computedBackgroundImage = window.getComputedStyle(node).backgroundImage;
       node.dataset.farhaNativeBaseBackgroundImage = node.style.backgroundImage || (computedBackgroundImage !== 'none' ? computedBackgroundImage : '');
@@ -1906,6 +1935,11 @@
       : (node.dataset.farhaNativeBaseTouchAction || '');
     node.dataset.farhaLocked = locked ? 'true' : 'false';
     node.dataset.farhaHidden = hidden ? 'true' : 'false';
+
+    applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColor || '', { important: true });
+    applyInlineStyle(node, 'fontWeight', override.fontWeight, node.dataset.farhaNativeBaseFontWeight || '', { important: true });
+    applyInlineStyle(node, 'fontStyle', override.fontStyle, node.dataset.farhaNativeBaseFontStyle || '', { important: true });
+    applyInlineStyle(node, 'textAlign', override.textAlign, node.dataset.farhaNativeBaseTextAlign || '', { important: true });
     node.dataset.farhaSelected = String(runtimeState.selectedNativeElementId || '') === String(node.dataset.farhaNativeId || '') ? 'true' : 'false';
     applyNativeBoxStylesToNode(node, override);
     applyNativeMediaToNode(node, mediaUrl);
