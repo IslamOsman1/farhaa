@@ -25,25 +25,25 @@ test.describe('studio editor', () => {
     await login(page);
     await createStudioSession(page);
 
-    await expect(page.getByRole('button', { name: 'إضافة نص حر' })).toBeVisible();
+    await expect(page.getByTestId('studio-add-free-text')).toBeVisible();
     await expect(page.frameLocator('iframe').locator('[data-farha-react-text-path]').first()).toBeVisible();
 
     const frame = page.frameLocator('iframe');
     const firstTemplateText = frame.locator('[data-farha-react-text-path]').first();
     await firstTemplateText.click();
 
-    const templateTextarea = page.locator('textarea').first();
+    const templateTextarea = page.getByTestId('studio-template-text-input');
     const updatedTemplateText = `اختبار نص القالب ${Date.now()}`;
     await templateTextarea.fill(updatedTemplateText);
     await expect(firstTemplateText).toContainText(updatedTemplateText);
 
-    await page.getByRole('button', { name: 'إضافة نص حر' }).click();
+    await page.getByTestId('studio-add-free-text').click();
     const freeTextValue = `اختبار نص حر ${Date.now()}`;
-    const freeTextTextarea = page.locator('textarea').first();
+    const freeTextTextarea = page.getByTestId('studio-free-text-input');
     await freeTextTextarea.fill(freeTextValue);
     await expect(frame.locator('.farha-react-free__text').last()).toContainText(freeTextValue);
 
-    await page.getByRole('button', { name: 'حذف العنصر' }).click();
+    await page.getByTestId('studio-delete-selected-element').click();
     await expect(frame.locator('.farha-react-free__text').filter({ hasText: freeTextValue })).toHaveCount(0);
 
     const sessionId = page.url().match(/\/admin\/studio\/([^/]+)$/)?.[1];

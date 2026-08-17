@@ -963,15 +963,15 @@ export default function StudioClient({
         </div>
         <div className="studio-actions">
           <span className={`studio-save ${saveState}`}>{saveState === 'saved' ? 'تم الحفظ' : saveState === 'saving' ? 'جارٍ الحفظ' : saveState === 'error' ? 'فشل الحفظ' : 'توجد تعديلات'}</span>
-          <button type="button" className="mini-btn" onClick={() => setPreviewNonce((value) => value + 1)}>تحديث المعاينة</button>
-          <Link className="mini-btn" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة كاملة</Link>
+          <button type="button" className="mini-btn" data-testid="studio-refresh-preview" onClick={() => setPreviewNonce((value) => value + 1)}>تحديث المعاينة</button>
+          <Link className="mini-btn" data-testid="studio-open-fullscreen-preview" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة كاملة</Link>
           {mode === 'invitation' ? (
             <>
-              <button type="button" className="mini-btn" onClick={() => void persistInvitationDraft('save')} disabled={busy}>حفظ الدعوة</button>
-              <button type="button" className="btn-primary" onClick={() => void persistInvitationDraft('publish')} disabled={busy}>نشر</button>
+              <button type="button" className="mini-btn" data-testid="studio-save-invitation" onClick={() => void persistInvitationDraft('save')} disabled={busy}>حفظ الدعوة</button>
+              <button type="button" className="btn-primary" data-testid="studio-publish-invitation" onClick={() => void persistInvitationDraft('publish')} disabled={busy}>نشر</button>
             </>
           ) : (
-            <button type="button" className="btn-primary" onClick={() => void createInvitation()} disabled={busy}>إنشاء دعوة</button>
+            <button type="button" className="btn-primary" data-testid="studio-create-invitation" onClick={() => void createInvitation()} disabled={busy}>إنشاء دعوة</button>
           )}
         </div>
       </div>
@@ -982,7 +982,7 @@ export default function StudioClient({
         <section className="studio-preview">
           <div className="studio-preview-toolbar">
             <div className="studio-preview-toolbar__group">
-              <button type="button" className="mini-btn" onClick={addFreeText}>إضافة نص حر</button>
+              <button type="button" className="mini-btn" data-testid="studio-add-free-text" onClick={addFreeText}>إضافة نص حر</button>
               <MediaPicker
                 label="إضافة صورة حرة"
                 value=""
@@ -993,7 +993,7 @@ export default function StudioClient({
                     addFreeImage(url);
                   }
                 }}
-                trigger={<button type="button" className="mini-btn">إضافة صورة حرة</button>}
+                trigger={<button type="button" className="mini-btn" data-testid="studio-add-free-image">إضافة صورة حرة</button>}
               />
             </div>
             <div className="studio-preview-toolbar__group">
@@ -1014,7 +1014,7 @@ export default function StudioClient({
           </div>
 
           <div className={`studio-device studio-device--${draft.devicePreview.mode}`}>
-            <div className="studio-frame-host" ref={frameHostRef}>
+            <div className="studio-frame-host" data-testid="studio-frame-host" ref={frameHostRef}>
               <RenderFrame
                 key={`${draft.templateSlug}-${draft.openingSlug}-${previewNonce}-${draft.devicePreview.mode}`}
                 templateSlug={currentManifest.slug}
@@ -1046,6 +1046,7 @@ export default function StudioClient({
                 <label className="studio-field">
                   <span>النص</span>
                   <textarea
+                    data-testid="studio-template-text-input"
                     rows={4}
                     value={String(getTemplateTextValue(draft, selectedTemplateText.path) || '')}
                     onChange={(event) => updateSelectedTemplateText(event.target.value)}
@@ -1054,11 +1055,11 @@ export default function StudioClient({
                 <div className="studio-grid">
                   <label className="studio-field">
                     <span>لون النص</span>
-                    <input type="color" value={selectedTemplateTextStyles.color || '#1f2937'} onChange={(event) => updateSelectedTemplateStyle('color', event.target.value)} />
+                    <input data-testid="studio-template-text-color" type="color" value={selectedTemplateTextStyles.color || '#1f2937'} onChange={(event) => updateSelectedTemplateStyle('color', event.target.value)} />
                   </label>
                   <label className="studio-field">
                     <span>نوع الخط</span>
-                    <select value={selectedTemplateTextStyles.fontFamily || ''} onChange={(event) => updateSelectedTemplateStyle('fontFamily', event.target.value)}>
+                    <select data-testid="studio-template-text-font" value={selectedTemplateTextStyles.fontFamily || ''} onChange={(event) => updateSelectedTemplateStyle('fontFamily', event.target.value)}>
                       <option value="">الخط الأصلي</option>
                       {fontOptions.map((font) => (
                         <option key={font.id || font.family} value={font.family}>{font.nameAr || font.family}</option>
@@ -1066,7 +1067,7 @@ export default function StudioClient({
                     </select>
                   </label>
                 </div>
-                <button type="button" className="mini-btn" onClick={resetSelectedTemplateText}>إعادة النص الأصلي</button>
+                <button type="button" className="mini-btn" data-testid="studio-template-text-reset" onClick={resetSelectedTemplateText}>إعادة النص الأصلي</button>
               </div>
             ) : null}
 
@@ -1080,16 +1081,16 @@ export default function StudioClient({
                   <>
                     <label className="studio-field">
                       <span>النص</span>
-                      <textarea rows={4} value={selectedFreeElement.content} onChange={(event) => updateFreeElement(selectedFreeElement.id, { content: event.target.value })} />
+                      <textarea data-testid="studio-free-text-input" rows={4} value={selectedFreeElement.content} onChange={(event) => updateFreeElement(selectedFreeElement.id, { content: event.target.value })} />
                     </label>
                     <div className="studio-grid">
                       <label className="studio-field">
                         <span>لون النص</span>
-                        <input type="color" value={selectedFreeElement.color || '#1f2937'} onChange={(event) => updateFreeElement(selectedFreeElement.id, { color: event.target.value })} />
+                        <input data-testid="studio-free-text-color" type="color" value={selectedFreeElement.color || '#1f2937'} onChange={(event) => updateFreeElement(selectedFreeElement.id, { color: event.target.value })} />
                       </label>
                       <label className="studio-field">
                         <span>نوع الخط</span>
-                        <select value={selectedFreeElement.fontFamily || 'Tajawal'} onChange={(event) => updateFreeElement(selectedFreeElement.id, { fontFamily: event.target.value })}>
+                        <select data-testid="studio-free-text-font" value={selectedFreeElement.fontFamily || 'Tajawal'} onChange={(event) => updateFreeElement(selectedFreeElement.id, { fontFamily: event.target.value })}>
                           {fontOptions.map((font) => (
                             <option key={font.id || font.family} value={font.family}>{font.nameAr || font.family}</option>
                           ))}
@@ -1098,7 +1099,7 @@ export default function StudioClient({
                     </div>
                     <label className="studio-field">
                       <span>حجم الخط</span>
-                      <input type="text" value={selectedFreeElement.fontSize || '28px'} onChange={(event) => updateFreeElement(selectedFreeElement.id, { fontSize: event.target.value })} />
+                      <input data-testid="studio-free-text-size" type="text" value={selectedFreeElement.fontSize || '28px'} onChange={(event) => updateFreeElement(selectedFreeElement.id, { fontSize: event.target.value })} />
                     </label>
                   </>
                 ) : (
@@ -1139,6 +1140,7 @@ export default function StudioClient({
 
                 <button
                   type="button"
+                  data-testid="studio-delete-selected-element"
                   className="mini-btn danger"
                   onClick={() => {
                     setDraft((current) => ({
@@ -1161,6 +1163,7 @@ export default function StudioClient({
                 <button
                   key={item.path}
                   type="button"
+                  data-testid={`studio-template-text-item-${item.path}`}
                   className={`studio-list-item ${selection?.kind === 'template-text' && selection.key === item.path ? 'active' : ''}`}
                   onClick={() => setSelection({ kind: 'template-text', key: item.path })}
                 >
