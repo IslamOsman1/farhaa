@@ -808,16 +808,36 @@
     const style = document.createElement('style');
     style.id = 'farha-native-editable-style';
     style.textContent = `
+      .intro-layer, .envelope, #intro-layer, .gate, .cover, .loading-screen {
+        pointer-events: none !important;
+      }
+      .intro-layer, .envelope, #intro-layer, .gate, .cover, .loading-screen { pointer-events: none !important; }
       .farha-native-editable-target {
         pointer-events: auto !important;
           transition: box-shadow 0.18s ease, outline-color 0.18s ease, opacity 0.18s ease;
       }
       .farha-native-editable-target[data-farha-selected="true"] {
-        outline: 2px solid rgba(127, 42, 31, 0.82) !important;
-        outline-offset: 4px !important;
-        box-shadow: 0 0 0 3px rgba(255,255,255,0.88), 0 0 0 6px rgba(127, 42, 31, 0.18) !important;
+        outline: 2px solid #6366f1 !important;
+        outline-offset: 2px !important;
+        box-shadow: 0 0 0 4px rgba(255,255,255,0.9), 0 0 0 8px rgba(99, 102, 241, 0.2) !important;
         cursor: move !important;
+        border-radius: 4px;
+        position: relative;
       }
+      .farha-native-editable-target[data-farha-selected="true"]::before,
+      .farha-native-editable-target[data-farha-selected="true"]::after {
+        content: '';
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        border: 2px solid #6366f1;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        pointer-events: none;
+      }
+      .farha-native-editable-target[data-farha-selected="true"]::before { top: -6px; left: -6px; }
+      .farha-native-editable-target[data-farha-selected="true"]::after { bottom: -6px; right: -6px; }
       .farha-native-editable-target[data-farha-selected="true"][data-farha-locked="true"] {
         outline-style: dashed !important;
         cursor: not-allowed !important;
@@ -847,9 +867,8 @@
         gap: 8px;
         padding: 10px;
         border-radius: 24px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 248, 244, 0.96) 100%);
-        box-shadow: 0 20px 46px rgba(15, 23, 42, 0.18);
-        border: 1px solid rgba(127, 42, 31, 0.14);
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.1);
         pointer-events: auto;
         transform: translateY(calc(-100% - 10px));
         max-width: min(92vw, 720px);
@@ -2378,22 +2397,22 @@
   function closeFloatingTextEditor(commit = true) {
     const active = runtimeState.activeTextEditor;
     if (!active) return;
-
-    const { target, cleanup, onCommit, initialValue } = active;
-    const nextValue = target.innerText;
-
-    if (commit) {
-      if (typeof onCommit === 'function') {
-        onCommit(nextValue);
-      }
-    } else {
-      target.innerText = initialValue;
+    
+    active.cleanup();
+    if (active.target && !active.editor) {
+        active.target.classList.remove('farha-studio-editing');
+        active.target.removeAttribute('contenteditable');
+        active.target.removeAttribute('data-farha-editing');
+        active.target.spellcheck = true;
     }
-
-    cleanup?.();
-    target.classList.remove('farha-studio-editing');
-    target.contentEditable = 'false';
-    target.removeAttribute('data-farha-editing');
+    
+    if (commit && active.onCommit) {
+      const finalValue = active.editor ? active.editor.innerText : active.target.innerText;
+      if (finalValue !== active.initialValue) {
+        active.onCommit(finalValue);
+      }
+    }
+    
     runtimeState.activeTextEditor = null;
   }
 
@@ -2401,19 +2420,45 @@
     if (!runtimeState.preview || !target) return;
 
     if (runtimeState.activeTextEditor?.target === target) {
-      placeCaretWithinTarget(target, triggerEvent);
       return;
     }
 
     closeFloatingTextEditor(true);
-    target.classList.add('farha-studio-editing');
-    target.contentEditable = 'true';
-    target.spellcheck = false;
-    target.setAttribute('data-farha-editing', 'true');
-    target.setAttribute('dir', target.getAttribute('dir') || 'auto');
-    if ((target.innerText || '') !== initialValue) {
-      target.innerText = initialValue;
+
+    let editor = document.getElementById('farha-glass-editor');
+    if (!editor) {
+      editor = document.createElement('div');
+      editor.id = 'farha-glass-editor';
+      editor.contentEditable = 'true';
+      editor.style.cssText = `
+        position: absolute;
+        z-index: 2147483005;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15), 0 0 0 4px rgba(99, 102, 241, 0.1);
+        outline: none;
+        padding: 12px 16px;
+        font: 600 16px/1.5 system-ui, -apple-system, sans-serif;
+        color: #0f172a;
+        min-width: 240px;
+        max-width: 85vw;
+        direction: auto;
+      `;
+      document.body.appendChild(editor);
     }
+
+    const rect = target.getBoundingClientRect();
+    editor.style.top = (rect.top + window.scrollY - 10) + 'px';
+    editor.style.left = Math.max(10, rect.left + window.scrollX - 10) + 'px';
+    
+    editor.innerText = initialValue;
+    editor.style.display = 'block';
+
+    target.style.opacity = '0.3';
+    target.style.transition = 'opacity 0.2s ease';
 
     const handleKeydown = (event) => {
       event.stopPropagation();
@@ -2428,25 +2473,29 @@
     };
 
     const cleanup = () => {
-      target.removeEventListener('keydown', handleKeydown);
-      target.removeEventListener('blur', handleBlur);
+      editor.removeEventListener('keydown', handleKeydown);
+      target.style.opacity = '';
+      editor.style.display = 'none';
     };
 
-    const handleBlur = () => {
-      closeFloatingTextEditor(true);
-    };
-
-    target.addEventListener('keydown', handleKeydown);
-    target.addEventListener('blur', handleBlur);
+    editor.addEventListener('keydown', handleKeydown);
 
     runtimeState.activeTextEditor = {
       target,
+      editor,
       onCommit,
       cleanup,
       initialValue,
     };
 
-    placeCaretWithinTarget(target, triggerEvent);
+    setTimeout(() => {
+      editor.focus();
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }, 10);
   }
 
   function installMessageBridge() {
@@ -4892,7 +4941,7 @@
         }
         .farha-studio-editable:hover {
           outline: 2px dashed #ff4d7d !important;
-          outline-offset: 4px !important;
+          outline-offset: 2px !important;
           opacity: 0.8 !important;
           z-index: 99999;
         }
