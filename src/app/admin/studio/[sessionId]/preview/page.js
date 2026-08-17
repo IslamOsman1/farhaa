@@ -54,6 +54,8 @@ export default async function StudioPreviewPage({ params }) {
           manifest={manifest}
           className="studio-fullscreen-frame-wrap"
           frameClassName="studio-fullscreen-frame"
+          disablePromoBar
+          disableOpening
         />
       </div>
     </div>
