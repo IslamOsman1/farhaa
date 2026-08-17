@@ -74,7 +74,11 @@ export default function StudioTemplateChooser({ templates, inventory }) {
 
       <div className="admin-grid-cards">
         {filtered.map((template) => (
-          <article key={template.slug} className="admin-card card-pad studio-template-card">
+          <article
+            key={template.slug}
+            className="admin-card card-pad studio-template-card"
+            data-testid={`studio-template-card-${template.slug}`}
+          >
             <div className="template-thumb">
               {template.previewImage ? <img src={template.previewImage} alt={template.nameAr} /> : null}
             </div>
@@ -89,6 +93,7 @@ export default function StudioTemplateChooser({ templates, inventory }) {
             <button
               type="button"
               className="btn-primary"
+              data-testid={`studio-template-create-${template.slug}`}
               onClick={() => void createSession(template)}
               disabled={busySlug === template.slug}
             >

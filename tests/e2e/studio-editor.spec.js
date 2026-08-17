@@ -14,7 +14,7 @@ async function login(page) {
 
 async function createStudioSession(page) {
   await page.goto('/admin/studio/new');
-  await page.getByRole('button').filter({ hasText: /استخدام هذا القالب|جارٍ الإنشاء/i }).first().click();
+  await page.getByTestId('studio-template-create-classic').click();
   await page.waitForURL(/\/admin\/studio\/[^/]+$/);
 }
 
@@ -26,10 +26,10 @@ test.describe('studio editor', () => {
     await createStudioSession(page);
 
     await expect(page.getByTestId('studio-add-free-text')).toBeVisible();
-    await expect(page.frameLocator('iframe').locator('[data-farha-react-text-path]').first()).toBeVisible();
+    await expect(page.frameLocator('iframe').locator('[data-testid^="iframe-template-text-"]').first()).toBeVisible();
 
     const frame = page.frameLocator('iframe');
-    const firstTemplateText = frame.locator('[data-farha-react-text-path]').first();
+    const firstTemplateText = frame.locator('[data-testid^="iframe-template-text-"]').first();
     await firstTemplateText.click();
 
     const templateTextarea = page.getByTestId('studio-template-text-input');
@@ -41,10 +41,10 @@ test.describe('studio editor', () => {
     const freeTextValue = `اختبار نص حر ${Date.now()}`;
     const freeTextTextarea = page.getByTestId('studio-free-text-input');
     await freeTextTextarea.fill(freeTextValue);
-    await expect(frame.locator('.farha-react-free__text').last()).toContainText(freeTextValue);
+    await expect(frame.locator('[data-testid^="iframe-free-text-"]').last()).toContainText(freeTextValue);
 
     await page.getByTestId('studio-delete-selected-element').click();
-    await expect(frame.locator('.farha-react-free__text').filter({ hasText: freeTextValue })).toHaveCount(0);
+    await expect(frame.locator('[data-testid^="iframe-free-text-"]').filter({ hasText: freeTextValue })).toHaveCount(0);
 
     const sessionId = page.url().match(/\/admin\/studio\/([^/]+)$/)?.[1];
     expect(sessionId).toBeTruthy();

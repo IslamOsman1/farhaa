@@ -273,6 +273,13 @@ function getTemplateTextValue(draft, path) {
   return draft.contentConfig?.[path] ?? '';
 }
 
+function toTestIdSuffix(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function applyTemplateTextBindings(doc, manifest, draft) {
   const catalog = [];
 
@@ -284,6 +291,7 @@ function applyTemplateTextBindings(doc, manifest, draft) {
     nodes.forEach((node) => {
       node.dataset.farhaReactTextPath = path;
       node.dataset.farhaReactTextBound = 'true';
+      node.dataset.testid = `iframe-template-text-${toTestIdSuffix(path) || 'item'}`;
       node.textContent = nextText;
       applyStyleValue(node, 'color', styleOverride.color);
       applyStyleValue(node, 'font-family', styleOverride.fontFamily ? `"${String(styleOverride.fontFamily).replace(/"/g, '')}", sans-serif` : '');
@@ -333,6 +341,7 @@ function renderFreeElements({
     const isSelected = selectedId === element.id;
     wrapper.className = `farha-react-free ${isSelected ? 'is-selected' : ''}`;
     wrapper.dataset.elementId = element.id;
+    wrapper.dataset.testid = `iframe-free-element-${toTestIdSuffix(element.id) || 'item'}`;
     wrapper.style.left = `${toFiniteNumber(element.x, 40)}px`;
     wrapper.style.top = `${toFiniteNumber(element.y, 40)}px`;
     wrapper.style.width = element.width || (element.type === 'image' ? '180px' : '220px');
@@ -355,12 +364,14 @@ function renderFreeElements({
     if (element.type === 'image') {
       const img = doc.createElement('img');
       img.className = 'farha-react-free__image';
+      img.dataset.testid = `iframe-free-image-${toTestIdSuffix(element.id) || 'item'}`;
       img.src = element.content || '';
       img.alt = element.name || 'free image';
       wrapper.appendChild(img);
     } else {
       const content = doc.createElement('div');
       content.className = 'farha-react-free__text';
+      content.dataset.testid = `iframe-free-text-${toTestIdSuffix(element.id) || 'item'}`;
       content.textContent = element.content || 'نص حر';
       content.style.color = element.color || '#1f2937';
       content.style.fontFamily = `"${String(element.fontFamily || 'Tajawal').replace(/"/g, '')}", sans-serif`;
