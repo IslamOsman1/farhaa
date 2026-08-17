@@ -5142,9 +5142,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       addCustomElement('text', { x: canvasClickMenu.x, y: canvasClickMenu.y }, 'نص جديد');
                       setCanvasClickMenu(null);
                     }}
-                    title="إضافة نص"
+                    title="إضافة نص حر"
                   >
-                    نص
+                    ✍️ إضافة نص
                   </button>
                   <MediaPicker
                     label="صورة"
@@ -5167,9 +5167,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       <button
                         type="button"
                         className="mini-btn studio-canvas-menu__action studio-canvas-menu__image-trigger"
-                        title="إضافة صورة"
+                        title="إضافة صورة حرة"
                       >
-                        صورة
+                        🖼️ إضافة صورة
                       </button>
                     }
                   />
