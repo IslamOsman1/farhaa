@@ -4946,6 +4946,38 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   <span className="studio-guides__center-y" />
                 </div>
               ) : null}
+              {Boolean(selectedElementId || selectedNativeElementId || selectedTemplateTextPath) && (
+                <div className="emulator-bottom-toolbar">
+                  {selectedTemplateTextPath && (
+                    <button type="button" className="mini-btn" onClick={() => { setOpenSection('template-text'); setEditorOpen(true); }}>تعديل النص</button>
+                  )}
+                  {selectedElementId && (
+                    <button type="button" className="mini-btn" onClick={() => { setOpenSection('layers'); setEditorOpen(true); }}>تعديل العنصر الحر</button>
+                  )}
+                  {selectedNativeElementId && (
+                    <button type="button" className="mini-btn" onClick={() => { setOpenSection('template-elements'); setEditorOpen(true); }}>تعديل العنصر</button>
+                  )}
+                  
+                  {selectedNativeElementId && (
+                    <button type="button" className="mini-btn danger" onClick={() => { patchNativeElement(selectedNativeElementId, { hidden: true }); }}>إخفاء</button>
+                  )}
+                  {selectedElementId && (
+                    <button type="button" className="mini-btn danger" onClick={() => { removeCustomElement(selectedElementId); }}>حذف</button>
+                  )}
+                  
+                  <div style={{ flexGrow: 1 }} />
+
+                  <button type="button" className="mini-btn" onClick={() => { addCustomElement('text', { x: 50, y: 50 }, 'نص جديد'); }}>إضافة نص</button>
+                  <MediaPicker
+                    label="صورة"
+                    value=""
+                    accept="image"
+                    folder="studio-free-elements"
+                    onChange={(url) => { if (url) addCustomElement('image', { x: 50, y: 50 }, url); }}
+                    trigger={<button type="button" className="mini-btn">إضافة صورة</button>}
+                  />
+                </div>
+              )}
               {canvasClickMenu ? (
                 <div
                   ref={canvasMenuRef}
