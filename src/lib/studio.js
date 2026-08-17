@@ -310,6 +310,7 @@ export function buildStudioRenderPayload({ session, manifest, opening }) {
     uiConfig: {
       ...(draft.uiConfig || {}),
       deviceMode: draft.devicePreview?.mode || 'mobile',
+      showPromoBar: false,
     },
   };
 
@@ -319,7 +320,7 @@ export function buildStudioRenderPayload({ session, manifest, opening }) {
       invitation: previewInvitation,
       manifest,
       opening: selectedOpening,
-      preview: true,
+      preview: false,
     }),
   };
 }

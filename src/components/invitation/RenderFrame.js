@@ -25,6 +25,8 @@ export default function RenderFrame({
   frameClassName = '',
   bridgeMessage = null,
   onLoad = null,
+  disablePromoBar = false,
+  disableOpening = false,
 }) {
   const iframeRef = useRef(null);
   const openingIframeRef = useRef(null);
@@ -42,7 +44,7 @@ export default function RenderFrame({
     && sourceTemplateSlug
     && sourceManifest,
   );
-  const showPromoBar = renderConfig?.ui?.showPromoBar !== false && !renderConfig?.preview;
+  const showPromoBar = !disablePromoBar && renderConfig?.ui?.showPromoBar !== false && !renderConfig?.preview;
 
   const frameSrc = useMemo(() => {
     const params = new URLSearchParams();
@@ -50,9 +52,12 @@ export default function RenderFrame({
       params.set('farhaPromoBar', '0');
     }
     if (
+      disableOpening
+      || (
       renderConfig?.preview
       || renderConfig?.opening?.slug === 'no-opening'
       || renderConfig?.opening?.type === 'template-opening'
+      )
     ) {
       params.set('farhaOpening', '0');
       params.set('autoopen', '1');
