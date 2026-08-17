@@ -1683,12 +1683,13 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
   function updateTemplateTextStyleOverride(path, updates) {
     if (!path) return;
+    let nextPathOverrides = null;
     setDraft((current) => {
       const currentOverrides = current.uiConfig?.textStyleOverrides?.[path] || {};
-      const nextPathOverrides = { ...currentOverrides, ...updates };
+      nextPathOverrides = { ...currentOverrides, ...updates };
       // Remove keys that are empty or null
       Object.keys(nextPathOverrides).forEach(k => {
-        if (!nextPathOverrides[k]) delete nextPathOverrides[k];
+        if (nextPathOverrides[k] === '' || nextPathOverrides[k] == null) delete nextPathOverrides[k];
       });
       return {
         ...current,
@@ -1700,6 +1701,14 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           }
         }
       };
+    });
+
+    sendPreviewBridgeMessage({
+      type: 'FARHA_TEXT_STYLE_OVERRIDE',
+      payload: {
+        path,
+        styles: updates,
+      },
     });
   }
 
@@ -1886,12 +1895,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
     }
 
     setSelectedElementId(null);
-    setSelectedNativeElementId(null);
-    setSelectedNativeElementLabel('');
-    setSelectedNativeElementMeta(null);
-    setSelectedNativeElementPreviewUrl('');
-    setSelectedNativeElementBasePreviewUrl('');
-    setSelectedNativeElementAspectRatio(390 / 844);
     setSelectedTemplateTextPath(item.path);
     setSelectedTemplateTextLabel(item.label || item.path);
     setSelectedTemplateTextValue(item.text || '');
@@ -1901,6 +1904,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
       type: 'FARHA_SELECT_TEMPLATE_TEXT',
       payload: {
         path: item.path,
+        preserveNativeSelection: true,
       },
     });
   }
@@ -2898,6 +2902,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         setOpenSection('template-elements');
       } else if (event.data?.type === 'FARHA_TEXT_OVERRIDE') {
         const { path, text, label } = event.data.payload;
+        const preserveNativeSelection = Boolean(event.data.payload?.preserveNativeSelection);
         setDraft(current => ({
           ...current,
           textOverrides: {
@@ -2909,9 +2914,14 @@ export default function StudioClient({ session, manifests, openings, inventory, 
           setSelectedTemplateTextPath(path);
           setSelectedTemplateTextLabel(label || '');
           setSelectedTemplateTextValue(text || '');
-          setSelectedNativeElementId(null);
-          setSelectedNativeElementLabel('');
-          setSelectedNativeElementMeta(null);
+          if (!preserveNativeSelection) {
+            setSelectedNativeElementId(null);
+            setSelectedNativeElementLabel('');
+            setSelectedNativeElementMeta(null);
+            setSelectedNativeElementPreviewUrl('');
+            setSelectedNativeElementBasePreviewUrl('');
+            setSelectedNativeElementAspectRatio(390 / 844);
+          }
           setOpenSection('template-text');
           recordActivity('تعديل نص من المعاينة', label || path);
         }
@@ -4980,30 +4990,47 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 const isTemplateText = Boolean(selectedTemplateTextPath);
                 const isNative = Boolean(selectedNativeElementId);
                 const isCustom = Boolean(selectedElementId);
+                const textPath = selectedTemplateTextPath || selectedNativeElementMeta?.textPath || selectedNativeElement?.textPath;
                 
                 const getStyle = (key) => {
-                  if (isTemplateText) return draft.uiConfig?.textStyleOverrides?.[selectedTemplateTextPath]?.[key];
-                  if (isNative) return draft.nativeElementOverrides?.[selectedNativeElementId]?.[key] ?? selectedNativeElement?.[key] ?? selectedNativeElementMeta?.[key];
                   if (isCustom) return selectedCustomElement?.[key];
+                  if (textPath && draft.uiConfig?.textStyleOverrides?.[textPath]?.[key]) {
+                    return draft.uiConfig.textStyleOverrides[textPath][key];
+                  }
+                  if (isNative) {
+                    return draft.nativeElementOverrides?.[selectedNativeElementId]?.[key] ?? selectedNativeElementMeta?.[key] ?? selectedNativeElement?.[key];
+                  }
+                  if (isTemplateText) return draft.uiConfig?.textStyleOverrides?.[selectedTemplateTextPath]?.[key];
                   return null;
                 };
                 
                 const setStyle = (key, value) => {
-                  if (isTemplateText) updateTemplateTextStyleOverride(selectedTemplateTextPath, { [key]: value });
-                  if (isNative) patchNativeElement(selectedNativeElementId, { [key]: value });
-                  if (isCustom) patchCustomElement(selectedElementId, { [key]: value });
+                  if (textPath) {
+                    updateTemplateTextStyleOverride(textPath, { [key]: value });
+                  }
+                  if (isNative) {
+                    patchNativeElement(selectedNativeElementId, { [key]: value });
+                  }
+                  if (isCustom) {
+                    patchCustomElement(selectedElementId, { [key]: value });
+                  }
                 };
 
                 const getText = () => {
-                  if (isTemplateText) return draft.textOverrides?.[selectedTemplateTextPath] ?? selectedTemplateTextValue ?? '';
-                  if (isNative) return draft.nativeElementOverrides?.[selectedNativeElementId]?.textContent ?? selectedNativeElement?.textContent ?? selectedNativeElementMeta?.textContent ?? '';
                   if (isCustom) return selectedCustomElement?.content ?? selectedCustomElement?.text ?? '';
+                  if (textPath && draft.textOverrides?.[textPath] !== undefined) {
+                    return draft.textOverrides[textPath];
+                  }
+                  if (isNative) {
+                    return draft.nativeElementOverrides?.[selectedNativeElementId]?.textContent ?? selectedNativeElementMeta?.textContent ?? selectedNativeElement?.textContent ?? selectedTemplateTextValue ?? '';
+                  }
+                  if (isTemplateText) return draft.textOverrides?.[selectedTemplateTextPath] ?? selectedTemplateTextValue ?? '';
                   return '';
                 };
 
                 const setText = (val) => {
-                  if (isTemplateText) {
-                    updateTemplateTextOverride(selectedTemplateTextPath, val);
+                  if (textPath) {
+                    updateTemplateTextOverride(textPath, val);
                   }
                   if (isNative) {
                     patchNativeElement(selectedNativeElementId, { textContent: val });
@@ -5013,13 +5040,11 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   }
                 };
 
-                const isTextElement = isTemplateText || 
-                  (isNative && (selectedNativeElement?.kind === 'text' || selectedNativeElement?.textContent || selectedNativeElementMeta?.textContent || Boolean(selectedNativeElementMeta?.textPath))) || 
-                  (isCustom && (selectedCustomElement?.type === 'text' || selectedCustomElement?.content !== undefined));
-
                 const isImageElement = 
                   (isCustom && selectedCustomElement?.type === 'image') ||
-                  (isNative && selectedNativeElement?.kind === 'media');
+                  (isNative && (selectedNativeElement?.kind === 'media' || selectedNativeElementMeta?.kind === 'media'));
+
+                const isTextElement = !isImageElement && (isTemplateText || isNative || isCustom);
                   
                 return (
                   <div className="emulator-bottom-toolbar">

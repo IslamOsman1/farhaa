@@ -553,16 +553,18 @@
           return null;
         }
 
-        const fontFamily = style.fontFamily == null ? '' : String(style.fontFamily).trim();
-        const color = style.color == null ? '' : String(style.color).trim();
-        if (!fontFamily && !color) {
-          return null;
-        }
-
         return {
           path,
-          fontFamily,
-          color,
+          fontFamily: style.fontFamily == null ? '' : String(style.fontFamily).trim(),
+          color: style.color == null ? '' : String(style.color).trim(),
+          fontSize: style.fontSize == null ? '' : String(style.fontSize).trim(),
+          fontWeight: style.fontWeight == null ? '' : String(style.fontWeight).trim(),
+          fontStyle: style.fontStyle == null ? '' : String(style.fontStyle).trim(),
+          lineHeight: style.lineHeight == null ? '' : String(style.lineHeight).trim(),
+          letterSpacing: style.letterSpacing == null ? '' : String(style.letterSpacing).trim(),
+          textAlign: style.textAlign == null ? '' : String(style.textAlign).trim(),
+          direction: style.direction == null ? '' : String(style.direction).trim(),
+          textShadow: style.textShadow == null ? '' : String(style.textShadow).trim(),
         };
       })
       .filter(Boolean);
@@ -598,28 +600,36 @@
         }
 
         if (override.color) {
-          textNode.style.color = override.color;
+          textNode.style.setProperty('color', override.color, 'important');
         }
 
         if (override.fontFamily) {
-          textNode.style.fontFamily = `"${String(override.fontFamily).replace(/"/g, '')}"`;
+          textNode.style.setProperty('font-family', `"${String(override.fontFamily).replace(/"/g, '')}", sans-serif`, 'important');
         }
 
         if (override.fontWeight) {
-          textNode.style.fontWeight = override.fontWeight;
-        } else if (override.fontWeight === 'normal') {
-          textNode.style.fontWeight = 'normal';
+          textNode.style.setProperty('font-weight', override.fontWeight, 'important');
         }
 
         if (override.fontStyle) {
-          textNode.style.fontStyle = override.fontStyle;
-        } else if (override.fontStyle === 'normal') {
-          textNode.style.fontStyle = 'normal';
+          textNode.style.setProperty('font-style', override.fontStyle, 'important');
+        }
+
+        if (override.fontSize) {
+          textNode.style.setProperty('font-size', override.fontSize, 'important');
         }
 
         if (override.textAlign) {
-          textNode.style.textAlign = override.textAlign;
-          textNode.style.display = 'block'; // Ensure block display for text-align to take effect
+          textNode.style.setProperty('text-align', override.textAlign, 'important');
+          textNode.style.display = 'block';
+        }
+
+        if (override.lineHeight) {
+          textNode.style.setProperty('line-height', override.lineHeight, 'important');
+        }
+
+        if (override.letterSpacing) {
+          textNode.style.setProperty('letter-spacing', override.letterSpacing, 'important');
         }
       });
     });
@@ -2346,6 +2356,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
 
       if (event.data.type === 'FARHA_SELECT_TEMPLATE_TEXT') {
         const path = event.data.payload?.path;
+        const preserveNativeSelection = Boolean(event.data.payload?.preserveNativeSelection);
         if (!path) {
           return;
         }
@@ -2369,7 +2380,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         selectTemplateText(path, {
           text: node?.innerText || node?.textContent || '',
           label: getStudioFieldLabel(path),
-          preserveNativeSelection: true,
+          preserveNativeSelection,
         });
         return;
       }
@@ -2447,6 +2458,28 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
           textOverrides: nextOverrides,
         };
         applyTextOverrides(nextOverrides);
+        return;
+      }
+
+      if (event.data.type === 'FARHA_TEXT_STYLE_OVERRIDE') {
+        const path = event.data.payload?.path;
+        const styles = event.data.payload?.styles;
+        if (!path || !styles) {
+          return;
+        }
+
+        runtimeState.renderConfig = runtimeState.renderConfig || {};
+        runtimeState.renderConfig.ui = runtimeState.renderConfig.ui || {};
+        const currentStyleOverrides = runtimeState.renderConfig.ui.textStyleOverrides || {};
+        const nextStyleOverrides = {
+          ...currentStyleOverrides,
+          [path]: {
+            ...(currentStyleOverrides[path] || {}),
+            ...styles,
+          },
+        };
+        runtimeState.renderConfig.ui.textStyleOverrides = nextStyleOverrides;
+        applyTextStyleOverrides(nextStyleOverrides);
         return;
       }
 
@@ -5514,7 +5547,6 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         label: activeTransform.label,
         selector: activeTransform.selector,
         kind: activeTransform.nativeKind,
-        silent: true,
       });
     };
     const startPendingNativeTextMove = (node, point) => {
@@ -5563,7 +5595,6 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         label: activeTransform.label,
         selector: activeTransform.selector,
         kind: activeTransform.nativeKind,
-        silent: true,
       });
     };
 
@@ -5594,7 +5625,6 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         label: activeTransform.label,
         selector: activeTransform.selector,
         kind: activeTransform.nativeKind,
-        silent: true,
       });
     };
 
@@ -5625,7 +5655,6 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         label: activeTransform.label,
         selector: activeTransform.selector,
         kind: activeTransform.nativeKind,
-        silent: true,
       });
     };
 
@@ -5661,7 +5690,6 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         label: activeTransform.label,
         selector: activeTransform.selector,
         kind: activeTransform.nativeKind,
-        silent: true,
       });
     };
 
