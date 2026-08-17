@@ -66,12 +66,32 @@ function isTranslatableField(field) {
   return ['text', 'textarea', 'list', 'schedule'].includes(field.type);
 }
 
+function getLocalizedTextValue(doc, draft, key, fallback = '') {
+  const bilingualEnabled = Boolean(draft.uiConfig?.bilingualEnabled);
+  const preferredLocale = doc?.documentElement?.lang === 'en'
+    ? 'en'
+    : draft.uiConfig?.defaultLocale === 'en'
+      ? 'en'
+      : 'ar';
+
+  if (bilingualEnabled && preferredLocale === 'en') {
+    const englishValue = draft.contentConfig?.[getEnglishKey(key)];
+    if (englishValue != null && englishValue !== '') {
+      return englishValue;
+    }
+  }
+
+  const value = draft.contentConfig?.[key];
+  return value != null && value !== '' ? value : fallback;
+}
+
 function normalizeCustomElement(element, index) {
   const type = element?.type === 'image' ? 'image' : 'text';
   return {
     id: element?.id || generateId(type === 'image' ? 'image' : 'text'),
     type,
     content: String(element?.content || ''),
+    contentEn: String(element?.contentEn || ''),
     name: String(element?.name || (type === 'image' ? `صورة حرة ${index + 1}` : `نص حر ${index + 1}`)),
     x: toFiniteNumber(element?.x, 40),
     y: toFiniteNumber(element?.y, 40),
@@ -273,6 +293,23 @@ function getTemplateTextValue(draft, path) {
   return draft.contentConfig?.[path] ?? '';
 }
 
+function getTemplateTextValueForLocale(doc, draft, path) {
+  const bilingualEnabled = Boolean(draft.uiConfig?.bilingualEnabled);
+  if (bilingualEnabled && doc?.documentElement?.lang === 'en') {
+    const englishPath = getEnglishKey(path);
+    if (Object.prototype.hasOwnProperty.call(draft.textOverrides || {}, englishPath)) {
+      return draft.textOverrides[englishPath];
+    }
+
+    const englishValue = draft.contentConfig?.[englishPath];
+    if (englishValue != null && englishValue !== '') {
+      return englishValue;
+    }
+  }
+
+  return getTemplateTextValue(draft, path);
+}
+
 function toTestIdSuffix(value) {
   return String(value || '')
     .toLowerCase()
@@ -286,7 +323,7 @@ function applyTemplateTextBindings(doc, manifest, draft) {
   for (const [path, binding] of getTextBindings(manifest)) {
     const nodes = Array.from(doc.querySelectorAll(binding.selector));
     const styleOverride = draft.uiConfig?.textStyleOverrides?.[path] || {};
-    const nextText = String(getTemplateTextValue(draft, path) ?? '');
+    const nextText = String(getTemplateTextValueForLocale(doc, draft, path) ?? '');
 
     nodes.forEach((node) => {
       node.dataset.farhaReactTextPath = path;
@@ -315,10 +352,20 @@ function applyTemplateTextBindings(doc, manifest, draft) {
   return catalog;
 }
 
+function buildTemplateTextCatalog(manifest, draft) {
+  return getTextBindings(manifest).map(([path, binding]) => ({
+    path,
+    label: manifest?.editableFields?.find((field) => field.key === path)?.labelAr || path,
+    selector: binding?.selector || path,
+    text: String(getTemplateTextValue(draft, path) || ''),
+  }));
+}
+
 function renderFreeElements({
   root,
   doc,
   elements,
+  draft,
   selectedId,
   onSelect,
   onMove,
@@ -372,7 +419,10 @@ function renderFreeElements({
       const content = doc.createElement('div');
       content.className = 'farha-react-free__text';
       content.dataset.testid = `iframe-free-text-${toTestIdSuffix(element.id) || 'item'}`;
-      content.textContent = element.content || 'نص حر';
+      content.textContent = getLocalizedTextValue(doc, draft, element.id, element.contentEn || '')
+        || element.content
+        || element.contentEn
+        || 'نص حر';
       content.style.color = element.color || '#1f2937';
       content.style.fontFamily = `"${String(element.fontFamily || 'Tajawal').replace(/"/g, '')}", sans-serif`;
       content.style.fontSize = element.fontSize || '28px';
@@ -450,8 +500,8 @@ function FieldRenderer({ field, draft, onContentChange, onScheduleChange, onList
     if (bilingualEnabled && isTranslatableField(field)) {
       return (
         <div className="studio-dual">
-          <textarea rows={4} value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
-          <textarea rows={4} dir="ltr" value={englishValue || ''} onChange={(event) => onContentChange(englishKey, event.target.value)} />
+          <textarea rows={4} placeholder="العربية" value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
+          <textarea rows={4} dir="ltr" placeholder="English" value={englishValue || ''} onChange={(event) => onContentChange(englishKey, event.target.value)} />
         </div>
       );
     }
@@ -496,12 +546,12 @@ function FieldRenderer({ field, draft, onContentChange, onScheduleChange, onList
         {items.map((item, index) => (
           <div key={`${field.key}-${index}`} className="studio-schedule-grid">
             <input type="text" placeholder="الوقت" value={item.time || ''} onChange={(event) => onScheduleChange(field.key, index, 'time', event.target.value)} />
-            <input type="text" placeholder="الفقرة" value={item.title || ''} onChange={(event) => onScheduleChange(field.key, index, 'title', event.target.value)} />
+            <input type="text" placeholder="العربية" value={item.title || ''} onChange={(event) => onScheduleChange(field.key, index, 'title', event.target.value)} />
             {bilingualEnabled ? (
               <input
                 type="text"
                 dir="ltr"
-                placeholder="Title (EN)"
+                placeholder="English"
                 value={englishItems[index]?.title || ''}
                 onChange={(event) => onScheduleChange(englishKey, index, 'title', event.target.value)}
               />
@@ -525,9 +575,9 @@ function FieldRenderer({ field, draft, onContentChange, onScheduleChange, onList
       <div className="studio-stack-list">
         {items.map((item, index) => (
           <div key={`${field.key}-${index}`} className="studio-inline-row">
-            <input type="text" value={item || ''} onChange={(event) => onListChange(field.key, index, event.target.value)} />
+            <input type="text" placeholder="العربية" value={item || ''} onChange={(event) => onListChange(field.key, index, event.target.value)} />
             {bilingualEnabled ? (
-              <input type="text" dir="ltr" value={englishItems[index] || ''} onChange={(event) => onListChange(englishKey, index, event.target.value)} />
+              <input type="text" dir="ltr" placeholder="English" value={englishItems[index] || ''} onChange={(event) => onListChange(englishKey, index, event.target.value)} />
             ) : null}
             <button type="button" className="mini-btn danger" onClick={() => onContentChange(field.key, items.filter((_, itemIndex) => itemIndex !== index))}>
               حذف
@@ -567,8 +617,8 @@ function FieldRenderer({ field, draft, onContentChange, onScheduleChange, onList
   if (bilingualEnabled && isTranslatableField(field) && inputType === 'text') {
     return (
       <div className="studio-dual">
-        <input type="text" value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
-        <input type="text" dir="ltr" value={englishValue || ''} onChange={(event) => onContentChange(englishKey, event.target.value)} />
+        <input type="text" placeholder="العربية" value={value || ''} onChange={(event) => onContentChange(field.key, event.target.value)} />
+        <input type="text" dir="ltr" placeholder="English" value={englishValue || ''} onChange={(event) => onContentChange(englishKey, event.target.value)} />
       </div>
     );
   }
@@ -598,7 +648,7 @@ export default function StudioClient({
   const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState('saved');
   const [selection, setSelection] = useState(null);
-  const [templateTextCatalog, setTemplateTextCatalog] = useState([]);
+  const [nativeSelectionMeta, setNativeSelectionMeta] = useState(null);
   const [previewNonce, setPreviewNonce] = useState(0);
   const [iframeLoadTick, setIframeLoadTick] = useState(0);
   const frameHostRef = useRef(null);
@@ -622,13 +672,17 @@ export default function StudioClient({
       return accumulator;
     }, {});
   }, [currentManifest]);
+  const templateTextCatalog = useMemo(
+    () => buildTemplateTextCatalog(currentManifest, draft),
+    [currentManifest, draft],
+  );
   const previewInvitation = useMemo(() => buildPreviewInvitation(session, draft), [draft, session]);
   const renderConfig = useMemo(
     () => buildInvitationRenderConfig({
       invitation: previewInvitation,
       manifest: currentManifest,
       opening: currentOpening,
-      preview: false,
+      preview: true,
     }),
     [currentManifest, currentOpening, previewInvitation],
   );
@@ -646,6 +700,37 @@ export default function StudioClient({
       text: String(getTemplateTextValue(draft, selection.key) || ''),
     };
   }, [currentManifest, draft, selection, templateTextCatalog]);
+  const selectedNativeElement = useMemo(() => {
+    if (selection?.kind !== 'native-element' || !selection.key) return null;
+    const override = draft.nativeElementOverrides?.[selection.key] || {};
+    return {
+      ...(nativeSelectionMeta || {}),
+      ...override,
+      id: selection.key,
+    };
+  }, [draft.nativeElementOverrides, nativeSelectionMeta, selection]);
+  const bridgeMessage = useMemo(() => {
+    if (selection?.kind === 'template-text' && selection.key) {
+      return {
+        type: 'FARHA_SELECT_TEMPLATE_TEXT',
+        payload: {
+          path: selection.key,
+          preserveNativeSelection: true,
+        },
+      };
+    }
+
+    if (selection?.kind === 'native-element' && selection.key) {
+      return {
+        type: 'FARHA_SELECT_NATIVE_ELEMENT',
+        payload: {
+          id: selection.key,
+        },
+      };
+    }
+
+    return null;
+  }, [selection]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -682,75 +767,138 @@ export default function StudioClient({
   }, [draft, session.id, session.name]);
 
   useEffect(() => {
-    const iframe = frameHostRef.current?.querySelector('iframe');
-    if (!iframe) return undefined;
+    function handleFrameMessage(event) {
+      if (event.origin !== window.location.origin || !event.data?.type) {
+        return;
+      }
 
-    const timeoutId = window.setTimeout(() => {
-      const doc = iframe.contentDocument;
-      if (!doc) return;
+      const { type, payload } = event.data;
 
-      ensureIframeEditorAssets(doc);
-      const root = resolveEditorRoot(doc);
-      const nextCatalog = applyTemplateTextBindings(doc, currentManifest, draft);
-      setTemplateTextCatalog(nextCatalog);
+      if (type === 'FARHA_TEMPLATE_TEXT_SELECT') {
+        const nextPath = payload?.path;
+        if (!nextPath) return;
+        setNativeSelectionMeta(null);
+        setSelection((current) => (current?.kind === 'template-text' && current?.key === nextPath ? current : { kind: 'template-text', key: nextPath }));
+        return;
+      }
 
-      nextCatalog.forEach((item) => {
-        doc.querySelectorAll(`[data-farha-react-text-path="${item.path}"]`).forEach((node) => {
-          node.dataset.farhaSelected = selection?.kind === 'template-text' && selection.key === item.path ? 'true' : 'false';
+      if (type === 'FARHA_TEXT_OVERRIDE') {
+        const nextPath = payload?.path;
+        if (!nextPath) return;
+
+        setNativeSelectionMeta(null);
+        setSelection((current) => (current?.kind === 'template-text' && current?.key === nextPath ? current : { kind: 'template-text', key: nextPath }));
+        setDraft((current) => {
+          const nextOverrides = { ...(current.textOverrides || {}) };
+          const baseValue = current.contentConfig?.[nextPath] ?? '';
+          const nextText = String(payload?.text ?? '');
+          if (nextText === baseValue) {
+            delete nextOverrides[nextPath];
+          } else {
+            nextOverrides[nextPath] = nextText;
+          }
+
+          return {
+            ...current,
+            textOverrides: nextOverrides,
+          };
         });
-      });
+        return;
+      }
 
-      const cleanupFreeElements = renderFreeElements({
-        root,
-        doc,
-        elements: draft.customElements,
-        selectedId: selection?.kind?.startsWith('free-') ? selection.key : null,
-        onSelect: setSelection,
-        onMove: (id, updates) => {
-          setDraft((current) => ({
-            ...current,
-            customElements: current.customElements.map((item) => (item.id === id ? { ...item, ...updates } : item)),
-          }));
-        },
-        onDelete: (id) => {
-          setDraft((current) => ({
-            ...current,
-            customElements: current.customElements.filter((item) => item.id !== id),
-          }));
-          setSelection((current) => (current?.key === id ? null : current));
-        },
-      });
+      if (type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
+        const nextId = payload?.id;
+        const element = nextId ? draft.customElements.find((item) => item.id === nextId) : null;
+        setNativeSelectionMeta(null);
+        setSelection((current) => {
+          if (!element) {
+            return null;
+          }
+          const nextSelection = { kind: element.type === 'image' ? 'free-image' : 'free-text', key: nextId };
+          return current?.kind === nextSelection.kind && current?.key === nextSelection.key ? current : nextSelection;
+        });
+        return;
+      }
 
-      const handleDocumentClick = (event) => {
-        const textTarget = event.target.closest?.('[data-farha-react-text-path]');
-        if (textTarget) {
-          event.preventDefault();
-          event.stopPropagation();
-          setSelection({
-            kind: 'template-text',
-            key: textTarget.dataset.farhaReactTextPath,
-          });
+      if (type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
+        const nextId = payload?.id;
+        const updates = payload?.updates;
+        if (!nextId || !updates) return;
+        setNativeSelectionMeta(null);
+        setSelection((current) => (current?.key === nextId ? current : current));
+        setDraft((current) => ({
+          ...current,
+          customElements: current.customElements.map((item) => (item.id === nextId ? { ...item, ...updates } : item)),
+        }));
+        return;
+      }
+
+      if (type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
+        const nextId = payload?.id;
+        if (!nextId) return;
+        setNativeSelectionMeta(null);
+        setDraft((current) => ({
+          ...current,
+          customElements: current.customElements.filter((item) => item.id !== nextId),
+        }));
+        setSelection((current) => (current?.key === nextId ? null : current));
+        return;
+      }
+
+      if (type === 'FARHA_NATIVE_ELEMENT_SELECT') {
+        if (!payload?.id) {
+          setNativeSelectionMeta(null);
+          setSelection((current) => (current ? null : current));
           return;
         }
 
-        if (!event.target.closest?.('.farha-react-free')) {
-          setSelection(null);
-        }
-      };
+        setNativeSelectionMeta(payload);
+        setSelection((current) => (current?.kind === 'native-element' && current?.key === payload.id ? current : { kind: 'native-element', key: payload.id }));
+        return;
+      }
 
-      doc.addEventListener('click', handleDocumentClick, true);
-      iframe.__farhaCleanup = () => {
-        cleanupFreeElements();
-        doc.removeEventListener('click', handleDocumentClick, true);
-      };
-    }, 150);
+      if (type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
+        const nextId = payload?.id;
+        const updates = payload?.updates;
+        if (!nextId || !updates) return;
 
-    return () => {
-      window.clearTimeout(timeoutId);
-      iframe.__farhaCleanup?.();
-      iframe.__farhaCleanup = null;
-    };
-  }, [currentManifest, draft, iframeLoadTick, selection]);
+        setNativeSelectionMeta((current) => (current?.id === nextId ? { ...current, ...payload, ...updates } : current));
+        setSelection((current) => (current?.kind === 'native-element' && current?.key === nextId ? current : { kind: 'native-element', key: nextId }));
+        setDraft((current) => ({
+          ...current,
+          nativeElementOverrides: {
+            ...(current.nativeElementOverrides || {}),
+            [nextId]: {
+              ...((current.nativeElementOverrides || {})[nextId] || {}),
+              label: payload?.label || (current.nativeElementOverrides || {})[nextId]?.label,
+              selector: payload?.selector || (current.nativeElementOverrides || {})[nextId]?.selector,
+              kind: payload?.kind || (current.nativeElementOverrides || {})[nextId]?.kind,
+              ...updates,
+            },
+          },
+        }));
+        return;
+      }
+
+      if (type === 'FARHA_NATIVE_ELEMENT_RESET') {
+        const nextId = payload?.id;
+        if (!nextId) return;
+        setNativeSelectionMeta(payload || null);
+        setSelection(nextId ? { kind: 'native-element', key: nextId } : null);
+        setDraft((current) => {
+          const nextOverrides = { ...(current.nativeElementOverrides || {}) };
+          delete nextOverrides[nextId];
+          return {
+            ...current,
+            nativeElementOverrides: nextOverrides,
+          };
+        });
+      }
+    }
+
+    window.addEventListener('message', handleFrameMessage);
+    return () => window.removeEventListener('message', handleFrameMessage);
+  }, [draft.customElements]);
 
   function setContentValue(key, value) {
     setDraft((current) => ({
@@ -828,6 +976,7 @@ export default function StudioClient({
       const nextOverrides = { ...(current.textOverrides || {}) };
       const nextStyles = { ...(current.uiConfig?.textStyleOverrides || {}) };
       delete nextOverrides[selectedTemplateText.path];
+      delete nextOverrides[getEnglishKey(selectedTemplateText.path)];
       delete nextStyles[selectedTemplateText.path];
 
       return {
@@ -848,6 +997,28 @@ export default function StudioClient({
     }));
   }
 
+  function updateNativeElement(id, updates) {
+    if (!id) return;
+
+    setDraft((current) => ({
+      ...current,
+      nativeElementOverrides: {
+        ...(current.nativeElementOverrides || {}),
+        [id]: {
+          ...((current.nativeElementOverrides || {})[id] || {}),
+          ...updates,
+        },
+      },
+    }));
+    setNativeSelectionMeta((current) => (current?.id === id ? { ...current, ...updates } : current));
+  }
+
+  function hideNativeElement(id) {
+    updateNativeElement(id, { hidden: true });
+    setSelection(null);
+    setNativeSelectionMeta(null);
+  }
+
   function addFreeText() {
     const id = generateId('free-text');
     const nextElement = normalizeCustomElement({
@@ -855,6 +1026,7 @@ export default function StudioClient({
       type: 'text',
       name: 'نص حر جديد',
       content: 'اكتب هنا',
+      contentEn: '',
       x: 48,
       y: 48,
       width: '220px',
@@ -971,6 +1143,21 @@ export default function StudioClient({
           <p>
             تم تبسيط المحرر حول اختيار واحد واضح، وتحريك موحد للعناصر الحرة، وتحرير مباشر للنصوص مع لون وخط موحدين.
           </p>
+          <label className="studio-toggle studio-toggle--top">
+            <input
+              data-testid="studio-bilingual-toggle"
+              type="checkbox"
+              checked={Boolean(draft.uiConfig?.bilingualEnabled)}
+              onChange={(event) => setDraft((current) => ({
+                ...current,
+                uiConfig: {
+                  ...(current.uiConfig || {}),
+                  bilingualEnabled: event.target.checked,
+                },
+              }))}
+            />
+            <span>تفعيل القالب بلغتين</span>
+          </label>
         </div>
         <div className="studio-actions">
           <span className={`studio-save ${saveState}`}>{saveState === 'saved' ? 'تم الحفظ' : saveState === 'saving' ? 'جارٍ الحفظ' : saveState === 'error' ? 'فشل الحفظ' : 'توجد تعديلات'}</span>
@@ -1031,6 +1218,7 @@ export default function StudioClient({
                 templateSlug={currentManifest.slug}
                 renderConfig={renderConfig}
                 manifest={currentManifest}
+                bridgeMessage={bridgeMessage}
                 className="studio-frame-wrap"
                 frameClassName="studio-frame"
                 disablePromoBar
@@ -1056,12 +1244,32 @@ export default function StudioClient({
                 </div>
                 <label className="studio-field">
                   <span>النص</span>
-                  <textarea
-                    data-testid="studio-template-text-input"
-                    rows={4}
-                    value={String(getTemplateTextValue(draft, selectedTemplateText.path) || '')}
-                    onChange={(event) => updateSelectedTemplateText(event.target.value)}
-                  />
+                  {Boolean(draft.uiConfig?.bilingualEnabled) ? (
+                    <div className="studio-dual">
+                      <textarea
+                        data-testid="studio-template-text-input"
+                        rows={4}
+                        placeholder="العربية"
+                        value={String(getTemplateTextValue(draft, selectedTemplateText.path) || '')}
+                        onChange={(event) => updateSelectedTemplateText(event.target.value)}
+                      />
+                      <textarea
+                        data-testid="studio-template-text-input-en"
+                        rows={4}
+                        dir="ltr"
+                        placeholder="English"
+                        value={String(getTemplateTextValue(draft, getEnglishKey(selectedTemplateText.path)) || '')}
+                        onChange={(event) => setContentValue(getEnglishKey(selectedTemplateText.path), event.target.value)}
+                      />
+                    </div>
+                  ) : (
+                    <textarea
+                      data-testid="studio-template-text-input"
+                      rows={4}
+                      value={String(getTemplateTextValue(draft, selectedTemplateText.path) || '')}
+                      onChange={(event) => updateSelectedTemplateText(event.target.value)}
+                    />
+                  )}
                 </label>
                 <div className="studio-grid">
                   <label className="studio-field">
@@ -1092,7 +1300,27 @@ export default function StudioClient({
                   <>
                     <label className="studio-field">
                       <span>النص</span>
-                      <textarea data-testid="studio-free-text-input" rows={4} value={selectedFreeElement.content} onChange={(event) => updateFreeElement(selectedFreeElement.id, { content: event.target.value })} />
+                      {Boolean(draft.uiConfig?.bilingualEnabled) ? (
+                        <div className="studio-dual">
+                          <textarea
+                            data-testid="studio-free-text-input"
+                            rows={4}
+                            placeholder="العربية"
+                            value={selectedFreeElement.content}
+                            onChange={(event) => updateFreeElement(selectedFreeElement.id, { content: event.target.value })}
+                          />
+                          <textarea
+                            data-testid="studio-free-text-input-en"
+                            rows={4}
+                            dir="ltr"
+                            placeholder="English"
+                            value={selectedFreeElement.contentEn || ''}
+                            onChange={(event) => updateFreeElement(selectedFreeElement.id, { contentEn: event.target.value })}
+                          />
+                        </div>
+                      ) : (
+                        <textarea data-testid="studio-free-text-input" rows={4} value={selectedFreeElement.content} onChange={(event) => updateFreeElement(selectedFreeElement.id, { content: event.target.value })} />
+                      )}
                     </label>
                     <div className="studio-grid">
                       <label className="studio-field">
@@ -1162,6 +1390,85 @@ export default function StudioClient({
                   }}
                 >
                   حذف العنصر
+                </button>
+              </div>
+            ) : null}
+
+            {selectedNativeElement ? (
+              <div className="studio-stack">
+                <div className="studio-meta">
+                  <strong>{selectedNativeElement.label || selectedNativeElement.selector || selectedNativeElement.id}</strong>
+                  <span>{selectedNativeElement.kind === 'text' ? 'عنصر ثابت نصي' : selectedNativeElement.kind === 'image' ? 'عنصر ثابت صوري' : 'عنصر ثابت'}</span>
+                </div>
+
+                {selectedNativeElement.kind === 'text' ? (
+                  <>
+                    <label className="studio-field">
+                      <span>النص</span>
+                      <textarea
+                        rows={4}
+                        value={selectedNativeElement.textContent || ''}
+                        onChange={(event) => updateNativeElement(selectedNativeElement.id, { textContent: event.target.value })}
+                      />
+                    </label>
+                    <div className="studio-grid">
+                      <label className="studio-field">
+                        <span>لون النص</span>
+                        <input
+                          type="color"
+                          value={selectedNativeElement.color || '#1f2937'}
+                          onChange={(event) => updateNativeElement(selectedNativeElement.id, { color: event.target.value })}
+                        />
+                      </label>
+                      <label className="studio-field">
+                        <span>نوع الخط</span>
+                        <select
+                          value={selectedNativeElement.fontFamily || ''}
+                          onChange={(event) => updateNativeElement(selectedNativeElement.id, { fontFamily: event.target.value })}
+                        >
+                          <option value="">الخط الأصلي</option>
+                          {fontOptions.map((font) => (
+                            <option key={font.id || font.family} value={font.family}>{font.nameAr || font.family}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <label className="studio-field">
+                      <span>حجم الخط</span>
+                      <input
+                        type="text"
+                        value={selectedNativeElement.fontSize || ''}
+                        onChange={(event) => updateNativeElement(selectedNativeElement.id, { fontSize: event.target.value })}
+                      />
+                    </label>
+                  </>
+                ) : null}
+
+                <div className="studio-grid">
+                  <label className="studio-field">
+                    <span>X</span>
+                    <input
+                      type="number"
+                      value={Math.round(toFiniteNumber(selectedNativeElement.x, 0))}
+                      onChange={(event) => updateNativeElement(selectedNativeElement.id, { x: toFiniteNumber(event.target.value, 0) })}
+                    />
+                  </label>
+                  <label className="studio-field">
+                    <span>Y</span>
+                    <input
+                      type="number"
+                      value={Math.round(toFiniteNumber(selectedNativeElement.y, 0))}
+                      onChange={(event) => updateNativeElement(selectedNativeElement.id, { y: toFiniteNumber(event.target.value, 0) })}
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  className="mini-btn danger"
+                  onClick={() => hideNativeElement(selectedNativeElement.id)}
+                >
+                  حذف / إخفاء العنصر
                 </button>
               </div>
             ) : null}
@@ -1468,6 +1775,10 @@ export default function StudioClient({
           gap: 10px;
           align-items: center;
           color: #3c2d2b;
+        }
+        .studio-toggle--top {
+          margin-top: 14px;
+          width: fit-content;
         }
         .studio-meta {
           display: grid;

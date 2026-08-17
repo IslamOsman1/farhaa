@@ -66,6 +66,7 @@ export const studioDraftSchema = z.object({
     id: z.string(),
     type: z.enum(['text', 'image', 'icon']),
     content: z.string(),
+    contentEn: z.string().optional(),
     x: z.number(),
     y: z.number(),
     name: z.string().optional(),

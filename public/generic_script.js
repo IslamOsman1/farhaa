@@ -2870,6 +2870,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       button.addEventListener('click', () => {
         runtimeState.activeLocale = runtimeState.activeLocale === 'ar' ? 'en' : 'ar';
         applyLocalizedContent(bindings, runtimeState.baseFields || {}, runtimeState.activeLocale);
+        applyCustomElements(runtimeState.renderConfig?.customElements || []);
         updateLanguageToggleLabel();
       });
       document.body.appendChild(button);
@@ -6593,7 +6594,10 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
           contentRoot.appendChild(inner);
         }
         if (document.activeElement !== inner) {
-          inner.innerHTML = String(el.content || '').replace(/\n/g, '<br>');
+          const localizedContent = runtimeState.activeLocale === 'en' && el.contentEn
+            ? el.contentEn
+            : el.content;
+          inner.innerHTML = String(localizedContent || '').replace(/\n/g, '<br>');
         }
         inner.style.fontSize = el.fontSize || wrapper.dataset.fontSize || '24px';
         inner.style.color = el.color || '#111827';
