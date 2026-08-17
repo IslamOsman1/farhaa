@@ -5188,6 +5188,11 @@
               openTemplateTextEditor(event);
             }
           }, { passive: false });
+          el.dataset.farhaInlineBound = 'true';
+        }
+      });
+    });
+
     // Also bind any native text candidate elements across the entire template
     const nativeCandidates = getAllNativeElementCandidates().filter(isNativeTextEditableNode);
     nativeCandidates.forEach((el) => {
