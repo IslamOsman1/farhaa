@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+window.renderFarhaTemplate = function() {
     // 1. Data Injection from window.__INVITE__.config
     if (window.__INVITE__ && window.__INVITE__.config) {
         const config = window.__INVITE__.config;
@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 2. Form Hijacking
+    if (window.farhaFormsHijacked) return;
+    window.farhaFormsHijacked = true;
     const forms = document.querySelectorAll('form.t-form, form.js-form-proccess');
     forms.forEach(form => {
         // Remove native action
@@ -130,4 +132,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+};
+document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
+window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
+        setTimeout(window.renderFarhaTemplate, 60);
+    }
 });

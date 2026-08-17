@@ -1,3 +1,4 @@
+window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب letter «رسالة» — الإعدادات والتفاعل
    عدّل بيانات العرس من WEDDING_CONFIG في الأسفل فقط.
@@ -297,4 +298,14 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEnvelope();
   setupReveal();
   setupCountdown();
+});
+
+};
+
+document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
+window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
+        setTimeout(window.renderFarhaTemplate, 60);
+    }
 });

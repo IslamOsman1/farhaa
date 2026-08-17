@@ -1,3 +1,4 @@
+window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب «باب الفرح» (bab)
    دخولية: دُقّوا على الباب ثلاث دقّات → الباب يُفتح على النور → الواجهة
@@ -252,3 +253,13 @@ fillContent(); loadImages(); setupCountdown();
   if (cover) cover.addEventListener("pointerdown", onKnock);
   if (/[?&]autoopen=1/.test(location.search)) { preloadHero(); setTimeout(openInvite, 800); }
 })();
+
+};
+
+document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
+window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
+        setTimeout(window.renderFarhaTemplate, 60);
+    }
+});

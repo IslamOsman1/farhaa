@@ -2889,13 +2889,25 @@
         setBackgroundImage(binding.selector, value);
         break;
       case 'gallery':
-        renderGallery(binding.selector, value);
+        if (typeof window.renderGallery === 'function') {
+          window.renderGallery(value);
+        } else {
+          renderGallery(binding.selector, value);
+        }
         break;
       case 'schedule':
-        renderSchedule(binding.selector, value);
+        if (typeof window.buildTimeline === 'function') {
+          window.buildTimeline(value);
+        } else {
+          renderSchedule(binding.selector, value);
+        }
         break;
       case 'list':
-        renderNotes(binding.selector, value);
+        if (typeof window.buildNotes === 'function') {
+          window.buildNotes(value);
+        } else {
+          renderNotes(binding.selector, value);
+        }
         break;
       case 'computedDate':
         applyComputedDate(value);

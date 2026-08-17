@@ -1,3 +1,4 @@
+window.renderFarhaTemplate = function() {
 /* ============================================================
    المسرح المخملي — Velvet Theater Engagement (ring-A)
    script.js — config, fill, box-open choreography, particles
@@ -508,3 +509,13 @@ const WEDDING_CONFIG = (typeof window!=="undefined" && window.__INVITE__ && wind
     setupAmbientPetals();
   });
 })();
+
+};
+
+document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
+window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
+        setTimeout(window.renderFarhaTemplate, 60);
+    }
+});

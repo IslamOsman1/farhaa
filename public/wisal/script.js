@@ -1,3 +1,4 @@
+window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب wisal «وِصال» — أعراس/خطوبة
    الدخولية: يدان تمتدّان في ممرّ الضوء حتى تلتقيا (فيديو) ← عند انتهائه
@@ -454,3 +455,13 @@ setupReveal();
 setupCountdown();
 setupThread();
 startSparkles(14);
+
+};
+
+document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
+window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
+        setTimeout(window.renderFarhaTemplate, 60);
+    }
+});
