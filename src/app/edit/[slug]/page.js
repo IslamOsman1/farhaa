@@ -83,6 +83,33 @@ export default async function EditInvitationPage({ params }) {
         templateVariant: true,
       },
     });
+  } else {
+    const draft = createStudioDraftFromInvitation({ invitation, manifest });
+    const updateData = buildStudioSessionUpdateData({
+      manifest,
+      draft,
+      openingId: invitation.openingId || invitation.opening?.id || null,
+      invitationId: invitation.id,
+    });
+
+    session = await prisma.studioSession.update({
+      where: { id: session.id },
+      data: {
+        baseTemplateId: invitation.template.id,
+        templateVariantId: invitation.templateVariantId || null,
+        name: `تحرير ${invitation.slug}`,
+        selectedOpeningId: invitation.openingId || invitation.opening?.id || null,
+        selectedOpeningConfig: updateData.selectedOpeningConfig,
+        devicePreview: updateData.devicePreview,
+        config: updateData.config,
+        content: updateData.content,
+        assets: updateData.assets,
+      },
+      include: {
+        baseTemplate: true,
+        templateVariant: true,
+      },
+    });
   }
 
   const openings = await getMergedOpenings();
