@@ -4983,7 +4983,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                 
                 const getStyle = (key) => {
                   if (isTemplateText) return draft.uiConfig?.textStyleOverrides?.[selectedTemplateTextPath]?.[key];
-                  if (isNative) return selectedNativeElement?.[key];
+                  if (isNative) return draft.nativeElementOverrides?.[selectedNativeElementId]?.[key] ?? selectedNativeElement?.[key] ?? selectedNativeElementMeta?.[key];
                   if (isCustom) return selectedCustomElement?.[key];
                   return null;
                 };
@@ -4996,7 +4996,8 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
                 const getText = () => {
                   if (isTemplateText) return draft.textOverrides?.[selectedTemplateTextPath] ?? selectedTemplateTextValue ?? '';
-                  if (isCustom && selectedCustomElement?.type === 'text') return selectedCustomElement.text || '';
+                  if (isNative) return draft.nativeElementOverrides?.[selectedNativeElementId]?.textContent ?? selectedNativeElement?.textContent ?? selectedNativeElementMeta?.textContent ?? '';
+                  if (isCustom) return selectedCustomElement?.content ?? selectedCustomElement?.text ?? '';
                   return '';
                 };
 
@@ -5004,30 +5005,35 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   if (isTemplateText) {
                     updateTemplateTextOverride(selectedTemplateTextPath, val);
                   }
-                  if (isCustom && selectedCustomElement?.type === 'text') {
-                    patchCustomElement(selectedElementId, { text: val });
+                  if (isNative) {
+                    patchNativeElement(selectedNativeElementId, { textContent: val });
+                  }
+                  if (isCustom) {
+                    patchCustomElement(selectedElementId, { content: val, text: val });
                   }
                 };
 
                 const isTextElement = isTemplateText || 
-                  (isNative && selectedNativeElement?.kind === 'text') || 
-                  (isCustom && selectedCustomElement?.type === 'text');
+                  (isNative && (selectedNativeElement?.kind === 'text' || selectedNativeElement?.textContent || selectedNativeElementMeta?.textContent || Boolean(selectedNativeElementMeta?.textPath))) || 
+                  (isCustom && (selectedCustomElement?.type === 'text' || selectedCustomElement?.content !== undefined));
+
+                const isImageElement = 
+                  (isCustom && selectedCustomElement?.type === 'image') ||
+                  (isNative && selectedNativeElement?.kind === 'media');
                   
                 return (
                   <div className="emulator-bottom-toolbar">
                     {isTextElement && (
                       <>
                         <div className="toolbar-group">
-                          {(!isNative) && (
-                            <input 
-                              type="text" 
-                              className="tool-text-input" 
-                              value={getText()} 
-                              onChange={(e) => setText(e.target.value)} 
-                              placeholder="النص..."
-                              title="تعديل النص"
-                            />
-                          )}
+                          <input 
+                            type="text" 
+                            className="tool-text-input" 
+                            value={getText()} 
+                            onChange={(e) => setText(e.target.value)} 
+                            placeholder="النص..."
+                            title="تعديل النص"
+                          />
                           <select
                             className="tool-font-picker"
                             value={getStyle('fontFamily') || ''}
@@ -5060,12 +5066,25 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                       </>
                     )}
 
-                    {isCustom && selectedCustomElement?.type === 'image' && (
+                    {isImageElement && (
                       <>
                         <div className="toolbar-group">
-                          <button type="button" className="tool-btn" onClick={() => setStyle('opacity', getStyle('opacity') != null ? Math.max(0, getStyle('opacity') - 0.1) : 0.9)} title="شفافية أقل">-</button>
+                          <MediaPicker
+                            label="استبدال"
+                            value=""
+                            accept="image"
+                            folder="studio-media"
+                            onChange={(url) => {
+                              if (url) {
+                                if (isNative) patchNativeElement(selectedNativeElementId, { mediaUrl: url });
+                                if (isCustom) patchCustomElement(selectedElementId, { content: url });
+                              }
+                            }}
+                            trigger={<button type="button" className="tool-btn" style={{ fontSize: '0.85rem', width: 'auto', padding: '0 8px' }}>استبدال</button>}
+                          />
+                          <button type="button" className="tool-btn" onClick={() => setStyle('opacity', getStyle('opacity') != null ? Math.max(0, Math.round((getStyle('opacity') - 0.1) * 10) / 10) : 0.9)} title="شفافية أقل">-</button>
                           <span style={{ fontSize: '0.75rem', width: '32px', textAlign: 'center', fontWeight: 'bold' }}>{Math.round((getStyle('opacity') ?? 1) * 100)}%</span>
-                          <button type="button" className="tool-btn" onClick={() => setStyle('opacity', getStyle('opacity') != null ? Math.min(1, getStyle('opacity') + 0.1) : 1)} title="شفافية أعلى">+</button>
+                          <button type="button" className="tool-btn" onClick={() => setStyle('opacity', getStyle('opacity') != null ? Math.min(1, Math.round((getStyle('opacity') + 0.1) * 10) / 10) : 1)} title="شفافية أعلى">+</button>
                         </div>
                         <div className="toolbar-separator" style={{ backgroundColor: 'transparent' }} />
                       </>
@@ -5084,7 +5103,6 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                         trigger={<button type="button" className="tool-btn" style={{ fontSize: '0.9rem', width: 'auto', padding: '0 8px' }}>إضافة صورة</button>}
                       />
                     </div>
-                    
 
                     {(isTemplateText || isNative || isCustom) && (
                       <>

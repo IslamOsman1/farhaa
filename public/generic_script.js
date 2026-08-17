@@ -324,6 +324,13 @@
     },
   };
 
+  // Install message bridge immediately so no initial messages from parent frame are missed
+  try {
+    installMessageBridge();
+  } catch (e) {
+    // ignore
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     runtimeState.templateSlug = window.location.pathname.split('/').filter(Boolean)[0] || '';
     runtimeState.invitationSlug = window.location.pathname.includes('/invite/')
@@ -1127,6 +1134,9 @@
     if (window.getComputedStyle(node).backgroundImage !== 'none') {
       return 'media';
     }
+    if (isNativeTextEditableNode(node) || getNativeTextEditTarget(node)) {
+      return 'text';
+    }
     return 'native';
   }
 
@@ -1638,7 +1648,21 @@
     }
 
     const normalizedText = (node.textContent || '').replace(/\s+/g, ' ').trim();
-    if (normalizedText && node.children.length === 0) {
+    if (!normalizedText) {
+      return null;
+    }
+
+    // Leaf node or has only inline/formatting children (or .tn-atom in Tilda)
+    const nonTextChildren = Array.from(node.children || []).filter(
+      (c) => !['span', 'b', 'i', 'strong', 'em', 'small', 'br', 'font', 'a', 'u', 'sub', 'sup'].includes(c.tagName.toLowerCase())
+    );
+
+    if (node.children.length === 0 || nonTextChildren.length === 0 || node.classList?.contains('tn-atom')) {
+      return node;
+    }
+
+    const tagName = (node.tagName || '').toLowerCase();
+    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'label', 'a', 'li'].includes(tagName)) {
       return node;
     }
 
@@ -2472,6 +2496,38 @@
 
     closeFloatingTextEditor(true);
 
+    const safeInitial = initialValue || target.innerText || target.textContent || '';
+    const safeCommit = onCommit || ((nextVal) => {
+      const normalized = (nextVal || '').trim();
+      const fieldKey = target.dataset?.farhaStudioField || target.dataset?.farhaTextPath;
+      if (fieldKey) {
+        window.parent.postMessage({
+          type: 'FARHA_TEXT_OVERRIDE',
+          payload: {
+            path: fieldKey,
+            text: normalized,
+            label: getStudioFieldLabel(fieldKey),
+            preserveNativeSelection: true,
+          },
+        }, '*');
+      } else if (target.closest('.farha-custom-element')) {
+        const wrapper = target.closest('.farha-custom-element');
+        if (wrapper?.dataset?.id) {
+          persistUpdate(wrapper.dataset.id, { content: normalized });
+        }
+      } else {
+        const nativeTarget = resolveNativeElementTarget(target) || target;
+        const id = buildNativeElementId(nativeTarget);
+        const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+        const nextOverride = {
+          ...currentOverride,
+          textContent: normalized,
+        };
+        applyLocalNativeOverride(id, nativeTarget, nextOverride);
+        persistNativeUpdate(id, nativeTarget, nextOverride);
+      }
+    });
+
     let editor = document.getElementById('farha-glass-editor');
     if (!editor) {
       editor = document.createElement('div');
@@ -2501,7 +2557,7 @@
     editor.style.top = (rect.top + window.scrollY - 10) + 'px';
     editor.style.left = Math.max(10, rect.left + window.scrollX - 10) + 'px';
     
-    editor.innerText = initialValue;
+    editor.innerText = safeInitial;
     editor.style.display = 'block';
 
     target.style.opacity = '0.3';
@@ -2530,9 +2586,9 @@
     runtimeState.activeTextEditor = {
       target,
       editor,
-      onCommit,
+      onCommit: safeCommit,
       cleanup,
-      initialValue,
+      initialValue: safeInitial,
     };
 
     setTimeout(() => {
@@ -5132,10 +5188,39 @@
               openTemplateTextEditor(event);
             }
           }, { passive: false });
-          el.dataset.farhaInlineBound = 'true';
-        }
+    // Also bind any native text candidate elements across the entire template
+    const nativeCandidates = getAllNativeElementCandidates().filter(isNativeTextEditableNode);
+    nativeCandidates.forEach((el) => {
+      if (el.classList.contains('farha-studio-editable') || el.dataset.farhaInlineBound) return;
+      el.classList.add('farha-studio-editable');
+      el.dataset.farhaNativeManaged = 'true';
+      el.dataset.farhaInlineEditable = 'true';
+      buildNativeElementId(el);
+      el.style.userSelect = 'text';
+      el.style.webkitUserSelect = 'text';
+      el.style.touchAction = 'manipulation';
+      el.style.webkitTouchCallout = 'default';
+
+      el.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const nativeId = buildNativeElementId(el);
+        const override = runtimeState.nativeElementOverrides?.[nativeId] || {};
+        selectNativeElement(el, {
+          label: override.label || getNativeElementLabel(el),
+          selector: override.selector || getNativeElementSelectorHint(el) || nativeId,
+          kind: 'text',
+        });
       });
+
+      el.addEventListener('dblclick', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openFloatingTextEditor({ target: el, triggerEvent: event });
+      });
+
+      el.dataset.farhaInlineBound = 'true';
     });
+
     syncTemplateTextSelection();
   }
 
