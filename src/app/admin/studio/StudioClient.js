@@ -4969,7 +4969,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   <span className="studio-guides__center-y" />
                 </div>
               ) : null}
-              {Boolean(selectedElementId || selectedNativeElementId || selectedTemplateTextPath) && (() => {
+              {(() => {
                 const isTemplateText = Boolean(selectedTemplateTextPath);
                 const isNative = Boolean(selectedNativeElementId);
                 const isCustom = Boolean(selectedElementId);
@@ -4987,6 +4987,24 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   if (isCustom) patchCustomElement(selectedElementId, { [key]: value });
                 };
 
+                const getText = () => {
+                  if (isTemplateText) return draft.textOverrides?.[selectedTemplateTextPath] ?? selectedTemplateTextValue ?? '';
+                  if (isCustom && selectedCustomElement?.type === 'text') return selectedCustomElement.text || '';
+                  return '';
+                };
+
+                const setText = (val) => {
+                  if (isTemplateText) {
+                    setDraft(current => ({
+                      ...current,
+                      textOverrides: { ...(current.textOverrides || {}), [selectedTemplateTextPath]: val }
+                    }));
+                  }
+                  if (isCustom && selectedCustomElement?.type === 'text') {
+                    patchCustomElement(selectedElementId, { text: val });
+                  }
+                };
+
                 const isTextElement = isTemplateText || 
                   (isNative && selectedNativeElement?.kind === 'text') || 
                   (isCustom && selectedCustomElement?.type === 'text');
@@ -4995,6 +5013,32 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   <div className="emulator-bottom-toolbar">
                     {isTextElement && (
                       <>
+                        <div className="toolbar-group">
+                          {(!isNative) && (
+                            <input 
+                              type="text" 
+                              className="tool-text-input" 
+                              value={getText()} 
+                              onChange={(e) => setText(e.target.value)} 
+                              placeholder="النص..."
+                              title="تعديل النص"
+                            />
+                          )}
+                          <select
+                            className="tool-font-picker"
+                            value={getStyle('fontFamily') || ''}
+                            onChange={(e) => setStyle('fontFamily', e.target.value)}
+                            title="تغيير الخط"
+                          >
+                            <option value="">الخط الأساسي</option>
+                            {fontLibraryOptions.map((font) => (
+                              <option key={font.id || font.family} value={font.family}>
+                                {font.nameAr || font.family}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="toolbar-separator" />
                         <div className="toolbar-group">
                           <button type="button" className={`tool-btn ${getStyle('fontWeight') >= 600 || getStyle('fontWeight') === 'bold' ? 'active' : ''}`} onClick={() => setStyle('fontWeight', (getStyle('fontWeight') >= 600 || getStyle('fontWeight') === 'bold') ? 'normal' : 'bold')} title="غامق"><b>B</b></button>
                           <button type="button" className={`tool-btn ${getStyle('fontStyle') === 'italic' ? 'active' : ''}`} onClick={() => setStyle('fontStyle', getStyle('fontStyle') === 'italic' ? 'normal' : 'italic')} title="مائل"><i>I</i></button>
@@ -5026,19 +5070,37 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                     <div style={{ flexGrow: 1 }} />
 
                     <div className="toolbar-group">
-                      <button type="button" className="tool-btn" onClick={() => { 
-                        if (isTemplateText) { setOpenSection('template-text'); setEditorOpen(true); }
-                        else if (isNative) { setOpenSection('template-elements'); setEditorOpen(true); }
-                        else if (isCustom) { setOpenSection('layers'); setEditorOpen(true); }
-                      }} title="مزيد من الإعدادات">⚙️</button>
-                      
-                      {isNative && (
-                        <button type="button" className="tool-btn danger" onClick={() => { patchNativeElement(selectedNativeElementId, { hidden: true }); }} title="إخفاء">👁️</button>
-                      )}
-                      {isCustom && (
-                        <button type="button" className="tool-btn danger" onClick={() => { removeCustomElement(selectedElementId); }} title="حذف">🗑️</button>
-                      )}
+                      <button type="button" className="tool-btn" style={{ fontSize: '0.9rem', width: 'auto', padding: '0 8px' }} onClick={() => { addCustomElement('text', { x: 50, y: 50 }, 'نص جديد'); }}>إضافة نص</button>
+                      <MediaPicker
+                        label="صورة"
+                        value=""
+                        accept="image"
+                        folder="studio-free-elements"
+                        onChange={(url) => { if (url) addCustomElement('image', { x: 50, y: 50 }, url); }}
+                        trigger={<button type="button" className="tool-btn" style={{ fontSize: '0.9rem', width: 'auto', padding: '0 8px' }}>إضافة صورة</button>}
+                      />
                     </div>
+                    
+
+                    {(isTemplateText || isNative || isCustom) && (
+                      <>
+                        <div className="toolbar-separator" />
+                        <div className="toolbar-group">
+                          <button type="button" className="tool-btn" onClick={() => { 
+                            if (isTemplateText) { setOpenSection('template-text'); setEditorOpen(true); }
+                            else if (isNative) { setOpenSection('template-elements'); setEditorOpen(true); }
+                            else if (isCustom) { setOpenSection('layers'); setEditorOpen(true); }
+                          }} title="مزيد من الإعدادات">⚙️</button>
+                          
+                          {isNative && (
+                            <button type="button" className="tool-btn danger" onClick={() => { patchNativeElement(selectedNativeElementId, { hidden: true }); }} title="إخفاء">👁️</button>
+                          )}
+                          {isCustom && (
+                            <button type="button" className="tool-btn danger" onClick={() => { removeCustomElement(selectedElementId); }} title="حذف">🗑️</button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })()}
