@@ -3012,25 +3012,13 @@
         setBackgroundImage(binding.selector, value);
         break;
       case 'gallery':
-        if (typeof window.renderGallery === 'function') {
-          window.renderGallery(value);
-        } else {
-          renderGallery(binding.selector, value);
-        }
+        renderGallery(binding.selector, value);
         break;
       case 'schedule':
-        if (typeof window.buildTimeline === 'function') {
-          window.buildTimeline(value);
-        } else {
-          renderSchedule(binding.selector, value);
-        }
+        renderSchedule(binding.selector, value);
         break;
       case 'list':
-        if (typeof window.buildNotes === 'function') {
-          window.buildNotes(value);
-        } else {
-          renderNotes(binding.selector, value);
-        }
+        renderNotes(binding.selector, value);
         break;
       case 'computedDate':
         applyComputedDate(value);
