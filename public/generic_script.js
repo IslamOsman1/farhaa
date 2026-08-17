@@ -207,6 +207,84 @@
   };
   let promoGuardObserver = null;
   let nativeOpeningObserver = null;
+  const STUDIO_BRIDGE_MESSAGE_TYPE = 'FARHA_STUDIO_BRIDGE';
+  const STUDIO_BRIDGE_VERSION = '2.0.0';
+  const STUDIO_BRIDGE_SOURCE = {
+    parent: 'studio-parent',
+    frame: 'studio-frame',
+  };
+  const STUDIO_BRIDGE_EVENT = {
+    renderConfig: 'render-config',
+    requestCatalogs: 'request-catalogs',
+    setAddMode: 'set-add-mode',
+    selectNativeElement: 'select-native-element',
+    selectTemplateText: 'select-template-text',
+    syncNativeElement: 'sync-native-element',
+    syncTheme: 'sync-theme',
+    syncTextOverride: 'sync-text-override',
+    syncTextStyle: 'sync-text-style',
+    syncCustomElements: 'sync-custom-elements',
+    templateTextSelect: 'template-text-select',
+    textOverride: 'text-override',
+    textStyleOverride: 'text-style-override',
+    customElementSelect: 'custom-element-select',
+    customElementUpdate: 'custom-element-update',
+    customElementDelete: 'custom-element-delete',
+    nativeElementSelect: 'native-element-select',
+    nativeElementUpdate: 'native-element-update',
+    editField: 'edit-field',
+  };
+  const LEGACY_BRIDGE_EVENT_BY_TYPE = {
+    FARHA_RENDER_CONFIG: STUDIO_BRIDGE_EVENT.renderConfig,
+    FARHA_REQUEST_STUDIO_CATALOGS: STUDIO_BRIDGE_EVENT.requestCatalogs,
+    FARHA_EDITOR_ADD_MODE: STUDIO_BRIDGE_EVENT.setAddMode,
+    FARHA_SELECT_NATIVE_ELEMENT: STUDIO_BRIDGE_EVENT.selectNativeElement,
+    FARHA_SELECT_TEMPLATE_TEXT: STUDIO_BRIDGE_EVENT.selectTemplateText,
+    FARHA_NATIVE_ELEMENT_UPDATE: STUDIO_BRIDGE_EVENT.syncNativeElement,
+    FARHA_THEME_UPDATE: STUDIO_BRIDGE_EVENT.syncTheme,
+    FARHA_TEXT_OVERRIDE: STUDIO_BRIDGE_EVENT.textOverride,
+    FARHA_TEXT_STYLE_OVERRIDE: STUDIO_BRIDGE_EVENT.textStyleOverride,
+    FARHA_CUSTOM_ELEMENTS_SYNC: STUDIO_BRIDGE_EVENT.syncCustomElements,
+  };
+
+  function buildStudioBridgeMessage(eventName, payload) {
+    return {
+      type: STUDIO_BRIDGE_MESSAGE_TYPE,
+      version: STUDIO_BRIDGE_VERSION,
+      source: STUDIO_BRIDGE_SOURCE.frame,
+      event: eventName,
+      payload: payload || {},
+    };
+  }
+
+  function parseStudioBridgeMessage(data) {
+    if (!data || typeof data !== 'object') {
+      return null;
+    }
+
+    if (data.type === STUDIO_BRIDGE_MESSAGE_TYPE) {
+      return {
+        event: data.event || '',
+        payload: data.payload || {},
+        source: data.source || '',
+      };
+    }
+
+    const eventName = LEGACY_BRIDGE_EVENT_BY_TYPE[data.type];
+    if (!eventName) {
+      return null;
+    }
+
+    return {
+      event: eventName,
+      payload: data.payload || {},
+      source: 'legacy',
+    };
+  }
+
+  function postStudioBridgeEvent(eventName, payload) {
+    window.parent.postMessage(buildStudioBridgeMessage(eventName, payload), window.location.origin);
+  }
 
   const fallbackBindings = {
     groomName: { method: 'text', selector: '#groomName, #heroGroom' },
@@ -696,12 +774,9 @@
   }
 
   function postTemplateTextCatalog(bindingsOverride = null) {
-    window.parent.postMessage({
-      type: 'FARHA_TEMPLATE_TEXT_CATALOG',
-      payload: {
-        items: buildTemplateTextCatalog(bindingsOverride),
-      },
-    }, '*');
+    postStudioBridgeEvent('template-text-catalog', {
+      items: buildTemplateTextCatalog(bindingsOverride),
+    });
   }
 
   function buildNativeElementCatalog() {
@@ -731,12 +806,9 @@
   }
 
   function postNativeElementCatalog() {
-    window.parent.postMessage({
-      type: 'FARHA_NATIVE_ELEMENT_CATALOG',
-      payload: {
-        items: buildNativeElementCatalog(),
-      },
-    }, '*');
+    postStudioBridgeEvent('native-element-catalog', {
+      items: buildNativeElementCatalog(),
+    });
   }
 
   function postStudioCatalogs(bindingsOverride = null) {
@@ -778,19 +850,16 @@
       }
     }
 
-    window.parent.postMessage({
-      type: 'FARHA_TEMPLATE_TEXT_SELECT',
-      payload: path
-        ? {
-            path,
-            text: options.text ?? '',
-            label: options.label || getStudioFieldLabel(path),
-            locked: isTextPathLocked(path),
-            preserveNativeSelection: Boolean(options.preserveNativeSelection),
-            baseColor
-          }
-        : { path: null },
-    }, '*');
+    postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.templateTextSelect, path
+      ? {
+          path,
+          text: options.text ?? '',
+          label: options.label || getStudioFieldLabel(path),
+          locked: isTextPathLocked(path),
+          preserveNativeSelection: Boolean(options.preserveNativeSelection),
+          baseColor,
+        }
+      : { path: null });
   }
 
   function detectViewportDeviceMode() {
@@ -2075,21 +2144,18 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       return;
     }
 
-    window.parent.postMessage({
-      type: 'FARHA_NATIVE_ELEMENT_SELECT',
-      payload: nativeId
-        ? {
-            id: nativeId,
-            label: options.label || getNativeElementLabel(node),
-            selector: options.selector || getNativeElementSelectorHint(node) || nativeId,
-            kind: options.kind || getNativeElementKind(node),
-            previewUrl: getNativeElementPreviewUrl(node),
-            basePreviewUrl: getNativeElementBasePreviewUrl(node),
-            aspectRatio: getNodeAspectRatio(node),
-            ...getNativeElementSelectionMeta(node),
-          }
-        : { id: null },
-    }, '*');
+    postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.nativeElementSelect, nativeId
+      ? {
+          id: nativeId,
+          label: options.label || getNativeElementLabel(node),
+          selector: options.selector || getNativeElementSelectorHint(node) || nativeId,
+          kind: options.kind || getNativeElementKind(node),
+          previewUrl: getNativeElementPreviewUrl(node),
+          basePreviewUrl: getNativeElementBasePreviewUrl(node),
+          aspectRatio: getNodeAspectRatio(node),
+          ...getNativeElementSelectionMeta(node),
+        }
+      : { id: null });
   }
 
   function applyNativeElementOverrides(rawOverrides) {
@@ -2219,15 +2285,12 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       const normalized = (nextVal || '').trim();
       const fieldKey = target.dataset?.farhaStudioField || target.dataset?.farhaTextPath;
       if (fieldKey) {
-        window.parent.postMessage({
-          type: 'FARHA_TEXT_OVERRIDE',
-          payload: {
-            path: fieldKey,
-            text: normalized,
-            label: getStudioFieldLabel(fieldKey),
-            preserveNativeSelection: true,
-          },
-        }, '*');
+        postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.textOverride, {
+          path: fieldKey,
+          text: normalized,
+          label: getStudioFieldLabel(fieldKey),
+          preserveNativeSelection: true,
+        });
       } else if (target.closest('.farha-custom-element')) {
         const wrapper = target.closest('.farha-custom-element');
         if (wrapper?.dataset?.id) {
@@ -2322,207 +2385,195 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
   function installMessageBridge() {
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin) return;
-      if (!event.data) {
+      const message = parseStudioBridgeMessage(event.data);
+      if (!message) {
         return;
       }
 
-      if (event.data.type === 'FARHA_REQUEST_STUDIO_CATALOGS') {
-        const bindings =
-          (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
-          || fallbackBindings
-          || {};
-        postStudioCatalogs(bindings);
-        return;
-      }
+      const handlers = {
+        [STUDIO_BRIDGE_EVENT.requestCatalogs]: () => {
+          const bindings =
+            (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+            || fallbackBindings
+            || {};
+          postStudioCatalogs(bindings);
+        },
+        [STUDIO_BRIDGE_EVENT.setAddMode]: () => {
+          setEditorAddMode(message.payload?.mode || '');
+        },
+        [STUDIO_BRIDGE_EVENT.selectNativeElement]: () => {
+          const nextId = message.payload?.id;
+          if (!nextId) {
+            return;
+          }
 
-      if (event.data.type === 'FARHA_EDITOR_ADD_MODE') {
-        setEditorAddMode(event.data.payload?.mode || '');
-        return;
-      }
+          const node = findNativeElementById(nextId);
+          if (node) {
+            node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
+            selectNativeElement(node);
+          }
+        },
+        [STUDIO_BRIDGE_EVENT.selectTemplateText]: () => {
+          const path = message.payload?.path;
+          const preserveNativeSelection = Boolean(message.payload?.preserveNativeSelection);
+          if (!path) {
+            return;
+          }
 
-      if (event.data.type === 'FARHA_SELECT_NATIVE_ELEMENT') {
-        const nextId = event.data.payload?.id;
-        if (!nextId) {
-          return;
-        }
+          const bindings =
+            (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
+            || fallbackBindings
+            || {};
+          const binding = bindings[path];
+          const node = findTemplateTextNode(path, bindings);
 
-        const node = findNativeElementById(nextId);
-        if (node) {
-          node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
-          selectNativeElement(node);
-        }
-        return;
-      }
+          if (node) {
+            node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
+            selectNativeElement(node, {
+              label: getStudioFieldLabel(path),
+              selector: binding?.selector || path,
+              kind: 'text',
+            });
+          }
 
-      if (event.data.type === 'FARHA_SELECT_TEMPLATE_TEXT') {
-        const path = event.data.payload?.path;
-        const preserveNativeSelection = Boolean(event.data.payload?.preserveNativeSelection);
-        if (!path) {
-          return;
-        }
-
-        const bindings =
-          (runtimeState.manifest && runtimeState.manifest.runtimeBindings && runtimeState.manifest.runtimeBindings.fieldBindings)
-          || fallbackBindings
-          || {};
-        const binding = bindings[path];
-        const node = findTemplateTextNode(path, bindings);
-
-        if (node) {
-          node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
-          selectNativeElement(node, {
+          selectTemplateText(path, {
+            text: node?.innerText || node?.textContent || '',
             label: getStudioFieldLabel(path),
-            selector: binding?.selector || path,
-            kind: 'text',
+            preserveNativeSelection,
           });
-        }
+        },
+        [STUDIO_BRIDGE_EVENT.syncNativeElement]: () => {
+          const nextId = message.payload?.id;
+          if (!nextId) {
+            return;
+          }
 
-        selectTemplateText(path, {
-          text: node?.innerText || node?.textContent || '',
-          label: getStudioFieldLabel(path),
-          preserveNativeSelection,
-        });
-        return;
+          const node = findNativeElementById(nextId);
+          if (!node) {
+            return;
+          }
+
+          const currentOverride = runtimeState.nativeElementOverrides?.[nextId] || {};
+          const nextOverride = {
+            ...currentOverride,
+            label: message.payload?.label || currentOverride.label || getNativeElementLabel(node),
+            selector: message.payload?.selector || currentOverride.selector || getNativeElementSelectorHint(node) || nextId,
+            kind: message.payload?.kind || currentOverride.kind || getNativeElementKind(node),
+            ...(message.payload?.updates || {}),
+          };
+
+          runtimeState.nativeElementOverrides = {
+            ...(runtimeState.nativeElementOverrides || {}),
+            [nextId]: nextOverride,
+          };
+
+          applyNativeOverrideToNode(node, nextOverride);
+          queueNativeOverlaySync();
+        },
+        [STUDIO_BRIDGE_EVENT.syncTheme]: () => {
+          const nextTheme = message.payload?.theme;
+          if (!nextTheme || typeof nextTheme !== 'object' || Array.isArray(nextTheme)) {
+            return;
+          }
+
+          runtimeState.renderConfig = {
+            ...(runtimeState.renderConfig || {}),
+            theme: {
+              ...((runtimeState.renderConfig && runtimeState.renderConfig.theme) || {}),
+              ...nextTheme,
+            },
+          };
+          ensureSharedFontLibraryStyles();
+          applyTheme(runtimeState.renderConfig.theme || {});
+        },
+        [STUDIO_BRIDGE_EVENT.textOverride]: () => {
+          const path = message.payload?.path;
+          if (!path) {
+            return;
+          }
+
+          const nextText = String(message.payload?.text ?? '');
+          const currentOverrides = Array.isArray(runtimeState.renderConfig?.textOverrides)
+            ? runtimeState.renderConfig.textOverrides
+            : [];
+          const otherOverrides = currentOverrides.filter((item) => item?.path !== path);
+          const nextOverrides = [
+            ...otherOverrides,
+            {
+              id: path,
+              path,
+              text: nextText,
+            },
+          ];
+
+          runtimeState.renderConfig = {
+            ...(runtimeState.renderConfig || {}),
+            textOverrides: nextOverrides,
+          };
+          applyTextOverrides(nextOverrides);
+        },
+        [STUDIO_BRIDGE_EVENT.textStyleOverride]: () => {
+          const path = message.payload?.path;
+          const styles = message.payload?.styles;
+          if (!path || !styles) {
+            return;
+          }
+
+          runtimeState.renderConfig = runtimeState.renderConfig || {};
+          runtimeState.renderConfig.ui = runtimeState.renderConfig.ui || {};
+          const currentStyleOverrides = runtimeState.renderConfig.ui.textStyleOverrides || {};
+          const nextStyleOverrides = {
+            ...currentStyleOverrides,
+            [path]: {
+              ...(currentStyleOverrides[path] || {}),
+              ...styles,
+            },
+          };
+          runtimeState.renderConfig.ui.textStyleOverrides = nextStyleOverrides;
+          applyTextStyleOverrides(nextStyleOverrides);
+        },
+        [STUDIO_BRIDGE_EVENT.syncCustomElements]: () => {
+          const nextElements = Array.isArray(message.payload?.elements)
+            ? message.payload.elements
+            : [];
+
+          runtimeState.renderConfig = {
+            ...(runtimeState.renderConfig || {}),
+            customElements: nextElements,
+          };
+          applyCustomElements(nextElements);
+        },
+        [STUDIO_BRIDGE_EVENT.renderConfig]: () => {
+          const payload = message.payload;
+          if (!payload.renderConfig || !payload.manifest) {
+            return;
+          }
+
+          runtimeState.manifest = payload.manifest;
+          runtimeState.renderConfig = payload.renderConfig;
+          runtimeState.preview = Boolean(payload.renderConfig.preview);
+          runtimeState.showPromoBar = payload.renderConfig.ui?.showPromoBar !== false;
+          runtimeState.invitationId = payload.renderConfig.invitationId || null;
+          runtimeState.invitationSlug = payload.renderConfig.invitationSlug || null;
+
+          applyRenderConfig(payload.manifest, payload.renderConfig);
+          document.querySelectorAll('form.t-form, form.js-form-proccess, #rsvp-form, #da3wa-rsvp-form, form.rsvp-form')
+            .forEach((form) => syncRsvpFormReferences(form));
+          if (runtimeState.preview || !runtimeState.showPromoBar) {
+            removePromoBar();
+            startPromoGuard();
+          } else {
+            stopPromoGuard();
+            mountPromoBarIfNeeded();
+          }
+          hijackRsvpForms(true);
+        },
+      };
+
+      const handler = handlers[message.event];
+      if (handler) {
+        handler();
       }
-
-      if (event.data.type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
-        const nextId = event.data.payload?.id;
-        if (!nextId) {
-          return;
-        }
-
-        const node = findNativeElementById(nextId);
-        if (!node) {
-          return;
-        }
-
-        const currentOverride = runtimeState.nativeElementOverrides?.[nextId] || {};
-        const nextOverride = {
-          ...currentOverride,
-          label: event.data.payload?.label || currentOverride.label || getNativeElementLabel(node),
-          selector: event.data.payload?.selector || currentOverride.selector || getNativeElementSelectorHint(node) || nextId,
-          kind: event.data.payload?.kind || currentOverride.kind || getNativeElementKind(node),
-          ...(event.data.payload?.updates || {}),
-        };
-
-        runtimeState.nativeElementOverrides = {
-          ...(runtimeState.nativeElementOverrides || {}),
-          [nextId]: nextOverride,
-        };
-
-        applyNativeOverrideToNode(node, nextOverride);
-        queueNativeOverlaySync();
-        return;
-      }
-
-      if (event.data.type === 'FARHA_THEME_UPDATE') {
-        const nextTheme = event.data.payload?.theme;
-        if (!nextTheme || typeof nextTheme !== 'object' || Array.isArray(nextTheme)) {
-          return;
-        }
-
-        runtimeState.renderConfig = {
-          ...(runtimeState.renderConfig || {}),
-          theme: {
-            ...((runtimeState.renderConfig && runtimeState.renderConfig.theme) || {}),
-            ...nextTheme,
-          },
-        };
-        ensureSharedFontLibraryStyles();
-        applyTheme(runtimeState.renderConfig.theme || {});
-        return;
-      }
-
-      if (event.data.type === 'FARHA_TEXT_OVERRIDE') {
-        const path = event.data.payload?.path;
-        if (!path) {
-          return;
-        }
-
-        const nextText = String(event.data.payload?.text ?? '');
-        const currentOverrides = Array.isArray(runtimeState.renderConfig?.textOverrides)
-          ? runtimeState.renderConfig.textOverrides
-          : [];
-        const otherOverrides = currentOverrides.filter((item) => item?.path !== path);
-        const nextOverrides = [
-          ...otherOverrides,
-          {
-            id: path,
-            path,
-            text: nextText,
-          },
-        ];
-
-        runtimeState.renderConfig = {
-          ...(runtimeState.renderConfig || {}),
-          textOverrides: nextOverrides,
-        };
-        applyTextOverrides(nextOverrides);
-        return;
-      }
-
-      if (event.data.type === 'FARHA_TEXT_STYLE_OVERRIDE') {
-        const path = event.data.payload?.path;
-        const styles = event.data.payload?.styles;
-        if (!path || !styles) {
-          return;
-        }
-
-        runtimeState.renderConfig = runtimeState.renderConfig || {};
-        runtimeState.renderConfig.ui = runtimeState.renderConfig.ui || {};
-        const currentStyleOverrides = runtimeState.renderConfig.ui.textStyleOverrides || {};
-        const nextStyleOverrides = {
-          ...currentStyleOverrides,
-          [path]: {
-            ...(currentStyleOverrides[path] || {}),
-            ...styles,
-          },
-        };
-        runtimeState.renderConfig.ui.textStyleOverrides = nextStyleOverrides;
-        applyTextStyleOverrides(nextStyleOverrides);
-        return;
-      }
-
-      if (event.data.type === 'FARHA_CUSTOM_ELEMENTS_SYNC') {
-        const nextElements = Array.isArray(event.data.payload?.elements)
-          ? event.data.payload.elements
-          : [];
-
-        runtimeState.renderConfig = {
-          ...(runtimeState.renderConfig || {}),
-          customElements: nextElements,
-        };
-        applyCustomElements(nextElements);
-        return;
-      }
-
-      if (event.data.type !== 'FARHA_RENDER_CONFIG' || event.data.version !== '1.0.0') {
-        return;
-      }
-
-      const payload = event.data;
-      if (!payload.renderConfig || !payload.manifest) {
-        return;
-      }
-
-      runtimeState.manifest = payload.manifest;
-      runtimeState.renderConfig = payload.renderConfig;
-      runtimeState.preview = Boolean(payload.renderConfig.preview);
-      runtimeState.showPromoBar = payload.renderConfig.ui?.showPromoBar !== false;
-      runtimeState.invitationId = payload.renderConfig.invitationId || null;
-      runtimeState.invitationSlug = payload.renderConfig.invitationSlug || null;
-
-      applyRenderConfig(payload.manifest, payload.renderConfig);
-      document.querySelectorAll('form.t-form, form.js-form-proccess, #rsvp-form, #da3wa-rsvp-form, form.rsvp-form')
-        .forEach((form) => syncRsvpFormReferences(form));
-      if (runtimeState.preview || !runtimeState.showPromoBar) {
-        removePromoBar();
-        startPromoGuard();
-      } else {
-        stopPromoGuard();
-        mountPromoBarIfNeeded();
-      }
-      hijackRsvpForms(true);
     });
   }
 
@@ -4890,15 +4941,12 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
               initialValue: el.innerText || '',
               triggerEvent,
               onCommit: (nextValue) => {
-                window.parent.postMessage({
-                  type: 'FARHA_TEXT_OVERRIDE',
-                  payload: {
-                    path: fieldKey,
-                    text: nextValue.trim(),
-                    label: getStudioFieldLabel(fieldKey),
-                    preserveNativeSelection: true,
-                  },
-                }, '*');
+                postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.textOverride, {
+                  path: fieldKey,
+                  text: nextValue.trim(),
+                  label: getStudioFieldLabel(fieldKey),
+                  preserveNativeSelection: true,
+                });
               },
             });
           };
@@ -5372,26 +5420,24 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       return Number.isFinite(parsed) ? parsed : fallback;
     };
     const persistUpdate = (id, updates) => {
-      window.parent.postMessage({
-        type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-        payload: { id, updates, deviceMode: runtimeState.activeDeviceMode || resolveRenderDeviceMode(runtimeState.renderConfig) },
-      }, '*');
+      postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.customElementUpdate, {
+        id,
+        updates,
+        deviceMode: runtimeState.activeDeviceMode || resolveRenderDeviceMode(runtimeState.renderConfig),
+      });
     };
     const persistNativeUpdate = (id, node, updates) => {
-      window.parent.postMessage({
-        type: 'FARHA_NATIVE_ELEMENT_UPDATE',
-        payload: {
-          id,
-          updates,
-          label: getNativeElementLabel(node),
-          selector: getNativeElementSelectorHint(node) || id,
-          kind: getNativeElementKind(node),
-          previewUrl: getNativeElementPreviewUrl(node),
-          basePreviewUrl: getNativeElementBasePreviewUrl(node),
-          aspectRatio: getNodeAspectRatio(node),
-          ...getNativeElementSelectionMeta(node),
-        },
-      }, '*');
+      postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.nativeElementUpdate, {
+        id,
+        updates,
+        label: getNativeElementLabel(node),
+        selector: getNativeElementSelectorHint(node) || id,
+        kind: getNativeElementKind(node),
+        previewUrl: getNativeElementPreviewUrl(node),
+        basePreviewUrl: getNativeElementBasePreviewUrl(node),
+        aspectRatio: getNodeAspectRatio(node),
+        ...getNativeElementSelectionMeta(node),
+      });
     };
     const applyLocalNativeOverride = (id, node, nextOverride) => {
       runtimeState.nativeElementOverrides = {
@@ -5419,15 +5465,12 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
               label: getStudioFieldLabel(textPath),
               preserveNativeSelection: true,
             });
-            window.parent.postMessage({
-              type: 'FARHA_TEXT_OVERRIDE',
-              payload: {
-                path: textPath,
-                text: normalizedValue,
-                label: getStudioFieldLabel(textPath),
-                preserveNativeSelection: true,
-              },
-            }, '*');
+            postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.textOverride, {
+              path: textPath,
+              text: normalizedValue,
+              label: getStudioFieldLabel(textPath),
+              preserveNativeSelection: true,
+            });
             return;
           }
 
@@ -5467,10 +5510,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         });
       }
 
-      window.parent.postMessage({
-        type: 'FARHA_CUSTOM_ELEMENT_SELECT',
-        payload: { id: id || null },
-      }, '*');
+      postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.customElementSelect, { id: id || null });
     };
 
     const startTransform = (kind, wrapper, point) => {
@@ -5991,25 +6031,19 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       if (action === 'delete') {
         event.preventDefault();
         event.stopPropagation();
-        window.parent.postMessage({
-          type: 'FARHA_CUSTOM_ELEMENT_DELETE',
-          payload: { id: wrapper.dataset.id },
-        }, '*');
+        postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.customElementDelete, { id: wrapper.dataset.id });
         return;
       }
 
       if (action === 'hide') {
         event.preventDefault();
         event.stopPropagation();
-        window.parent.postMessage({
-          type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-          payload: {
-            id: wrapper.dataset.id,
-            updates: {
-              hidden: true,
-            },
+        postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.customElementUpdate, {
+          id: wrapper.dataset.id,
+          updates: {
+            hidden: true,
           },
-        }, '*');
+        });
         selectElement(null);
         return;
       }
@@ -6017,15 +6051,12 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       if (action === 'lock') {
         event.preventDefault();
         event.stopPropagation();
-        window.parent.postMessage({
-          type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-          payload: {
-            id: wrapper.dataset.id,
-            updates: {
-              locked: wrapper.dataset.locked !== 'true',
-            },
+        postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.customElementUpdate, {
+          id: wrapper.dataset.id,
+          updates: {
+            locked: wrapper.dataset.locked !== 'true',
           },
-        }, '*');
+        });
         return;
       }
 

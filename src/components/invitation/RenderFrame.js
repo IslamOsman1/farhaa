@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getTemplateManifest } from '@/lib/template-system';
+import {
+  createStudioBridgeMessage,
+  STUDIO_BRIDGE_EVENT,
+  STUDIO_BRIDGE_SOURCE,
+} from '@/lib/studio-bridge';
 
 const OPENING_LAYER_SELECTORS = '#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #envelope, #env';
 function isElementVisible(node) {
@@ -118,12 +123,14 @@ export default function RenderFrame({
     if (!frameLoaded || !iframeRef.current?.contentWindow || !baseRenderConfig) return;
 
     iframeRef.current.contentWindow.postMessage(
-      {
-        type: 'FARHA_RENDER_CONFIG',
-        version: '1.0.0',
-        manifest,
-        renderConfig: baseRenderConfig,
-      },
+      createStudioBridgeMessage({
+        source: STUDIO_BRIDGE_SOURCE.parent,
+        event: STUDIO_BRIDGE_EVENT.renderConfig,
+        payload: {
+          manifest,
+          renderConfig: baseRenderConfig,
+        },
+      }),
       window.location.origin,
     );
   }, [baseRenderConfig, frameLoaded, manifest]);
@@ -134,12 +141,14 @@ export default function RenderFrame({
     }
 
     openingIframeRef.current.contentWindow.postMessage(
-      {
-        type: 'FARHA_RENDER_CONFIG',
-        version: '1.0.0',
-        manifest: sourceManifest,
-        renderConfig: openingRenderConfig,
-      },
+      createStudioBridgeMessage({
+        source: STUDIO_BRIDGE_SOURCE.parent,
+        event: STUDIO_BRIDGE_EVENT.renderConfig,
+        payload: {
+          manifest: sourceManifest,
+          renderConfig: openingRenderConfig,
+        },
+      }),
       window.location.origin,
     );
   }, [openingLoaded, openingRenderConfig, openingVisible, sourceManifest]);
@@ -159,12 +168,12 @@ export default function RenderFrame({
       const openingLayers = Array.from(openingDocument.querySelectorAll(OPENING_LAYER_SELECTORS));
       const visibleOpeningLayers = openingLayers.filter(isElementVisible);
       if (openingLayers.length > 0 && visibleOpeningLayers.length === 0) {
-        setOpeningVisible(false);
+        setDismissedOpeningSignature(openingSignature);
       }
     }, 500);
 
     return () => window.clearInterval(intervalId);
-  }, [openingLoaded, openingVisible]);
+  }, [openingLoaded, openingSignature, openingVisible]);
 
   return (
     <div

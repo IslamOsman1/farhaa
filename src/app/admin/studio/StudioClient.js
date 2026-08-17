@@ -8,6 +8,7 @@ import StudioPreviewShell from '@/components/admin/studio/StudioPreviewShell';
 import {
   BUILTIN_FONT_LIBRARY,
 } from '@/lib/font-library';
+import { parseStudioBridgeMessage, STUDIO_BRIDGE_EVENT } from '@/lib/studio-bridge';
 import { buildInvitationRenderConfig, getOpeningBySlug } from '@/lib/template-system';
 
 const DEVICE_PRESETS = {
@@ -695,13 +696,18 @@ export default function StudioClient({
 
   useEffect(() => {
     const handleFrameMessage = (event) => {
-      if (event.origin !== window.location.origin || !event.data?.type || !String(event.data.type).startsWith('FARHA_')) {
+      if (event.origin !== window.location.origin) {
         return;
       }
 
-      const { type, payload } = event.data;
+      const message = parseStudioBridgeMessage(event.data);
+      if (!message) {
+        return;
+      }
 
-      if (type === 'FARHA_TEMPLATE_TEXT_SELECT') {
+      const { event: bridgeEvent, payload } = message;
+
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.templateTextSelect) {
         if (!payload?.path) {
           setSelection((current) => (current?.kind === 'template-text' ? null : current));
           return;
@@ -713,7 +719,7 @@ export default function StudioClient({
         return;
       }
 
-      if (type === 'FARHA_TEXT_OVERRIDE') {
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.textOverride) {
         if (!payload?.path) return;
         updateTemplateTextValue(payload.path, String(payload.text ?? ''));
         setSelection({ kind: 'template-text', key: payload.path });
@@ -722,7 +728,7 @@ export default function StudioClient({
         return;
       }
 
-      if (type === 'FARHA_TEXT_STYLE_OVERRIDE') {
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.textStyleOverride) {
         if (!payload?.path || !payload?.styles) return;
         updateTemplateTextStyles(payload.path, payload.styles);
         setSelection({ kind: 'template-text', key: payload.path });
@@ -731,13 +737,13 @@ export default function StudioClient({
         return;
       }
 
-      if (type === 'FARHA_EDIT_FIELD') {
-        if (!event.data.fieldKey) return;
-        selectTemplateText(event.data.fieldKey);
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.editField) {
+        if (!payload?.fieldKey) return;
+        selectTemplateText(payload.fieldKey);
         return;
       }
 
-      if (type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.customElementSelect) {
         if (!payload?.id) {
           setSelection((current) => (current?.kind?.startsWith('free-') ? null : current));
           return;
@@ -752,7 +758,7 @@ export default function StudioClient({
         return;
       }
 
-      if (type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.customElementUpdate) {
         if (!payload?.id || !payload?.updates) return;
         updateFreeElement(payload.id, payload.updates);
         const item = draft.customElements.find((entry) => entry.id === payload.id);
@@ -764,7 +770,7 @@ export default function StudioClient({
         return;
       }
 
-      if (type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.customElementDelete) {
         if (!payload?.id) return;
         setDraft((current) => ({
           ...current,
@@ -774,7 +780,7 @@ export default function StudioClient({
         return;
       }
 
-      if (type === 'FARHA_NATIVE_ELEMENT_SELECT') {
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.nativeElementSelect) {
         if (!payload?.id) {
           setSelection((current) => (current?.kind === 'native-element' ? null : current));
           setNativeSelectionMeta(null);
@@ -786,7 +792,7 @@ export default function StudioClient({
         return;
       }
 
-      if (type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
+      if (bridgeEvent === STUDIO_BRIDGE_EVENT.nativeElementUpdate) {
         if (!payload?.id || !payload?.updates) return;
         updateNativeElement(payload.id, {
           ...(payload.label ? { label: payload.label } : {}),
