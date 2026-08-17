@@ -2045,16 +2045,16 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       toolbar.dataset.inside = rect.top < 46 ? 'true' : 'false';
     }
     if (editButton) {
-      editButton.style.display = isNativeTextEditableNode(selectedNode) ? 'inline-flex' : 'none';
+      editButton.style.display = 'none';
     }
     if (replaceButton) {
-      replaceButton.style.display = isNativeReplaceableImageNode(selectedNode) ? 'inline-flex' : 'none';
+      replaceButton.style.display = 'none';
     }
     if (deleteButton) {
-      deleteButton.style.display = 'inline-flex';
+      deleteButton.style.display = 'none';
     }
     if (scaleHandle) {
-      scaleHandle.style.display = 'flex';
+      scaleHandle.style.display = 'none';
     }
   }
 
@@ -6609,7 +6609,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         inner.style.padding = '6px 8px';
         inner.style.background = 'rgba(255,255,255,0.14)';
         inner.style.borderRadius = '12px';
-        inner.style.cursor = 'text';
+        inner.style.cursor = runtimeState.preview ? 'grab' : 'text';
         inner.style.outline = 'none';
         inner.style.userSelect = 'text';
         inner.style.webkitUserSelect = 'text';
@@ -6630,44 +6630,10 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
                 e.stopPropagation();
               }
             }, { passive: true });
-            const openCustomTextEditor = (triggerEvent = null) => {
-              if (el.locked) {
-                return;
-              }
-              openFloatingTextEditor({
-                target: inner,
-                initialValue: inner.innerText || '',
-                triggerEvent,
-                onCommit: (nextValue) => {
-                  inner.style.boxShadow = 'none';
-                  window.parent.postMessage({
-                    type: 'FARHA_CUSTOM_ELEMENT_UPDATE',
-                    payload: { id: el.id, updates: { content: nextValue } }
-                  }, '*');
-                },
-              });
-            };
             inner.addEventListener('click', (e) => {
               e.stopPropagation();
               selectElement(el.id);
             });
-            inner.addEventListener('dblclick', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              selectElement(el.id);
-              openCustomTextEditor(e);
-            });
-            inner.addEventListener('touchend', (e) => {
-              e.stopPropagation();
-              const now = Date.now();
-              const lastTap = Number(inner.dataset.farhaLastTapAt || 0);
-              inner.dataset.farhaLastTapAt = String(now);
-              if (now - lastTap < 320) {
-                e.preventDefault();
-                selectElement(el.id);
-                openCustomTextEditor(e);
-              }
-            }, { passive: false });
             inner.dataset.farhaInlineBound = 'true';
           }
         } else {
@@ -6711,7 +6677,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         controlsRoot.style.top = '0';
         controlsRoot.style.right = '0';
         controlsRoot.style.left = 'auto';
-        controlsRoot.style.display = isSelected ? 'flex' : 'none';
+        controlsRoot.style.display = 'none';
         controlsRoot.style.gap = '';
         controlsRoot.style.flexWrap = '';
         controlsRoot.style.maxWidth = 'min(92vw, 640px)';
@@ -6787,7 +6753,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
 
         resizeHandle.className = 'farha-native-overlay__handle';
         resizeHandle.textContent = '⤡';
-        resizeHandle.style.display = isSelected && !el.locked ? 'flex' : 'none';
+        resizeHandle.style.display = 'none';
       } else {
         controlsRoot.style.display = 'none';
         resizeHandle.style.display = 'none';

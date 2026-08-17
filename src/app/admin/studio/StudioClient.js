@@ -811,9 +811,7 @@ export default function StudioClient({
         const element = nextId ? draft.customElements.find((item) => item.id === nextId) : null;
         setNativeSelectionMeta(null);
         setSelection((current) => {
-          if (!element) {
-            return null;
-          }
+          if (!element) return null;
           const nextSelection = { kind: element.type === 'image' ? 'free-image' : 'free-text', key: nextId };
           return current?.kind === nextSelection.kind && current?.key === nextSelection.key ? current : nextSelection;
         });
@@ -824,8 +822,7 @@ export default function StudioClient({
         const nextId = payload?.id;
         const updates = payload?.updates;
         if (!nextId || !updates) return;
-        setNativeSelectionMeta(null);
-        setSelection((current) => (current?.key === nextId ? current : current));
+
         setDraft((current) => ({
           ...current,
           customElements: current.customElements.map((item) => (item.id === nextId ? { ...item, ...updates } : item)),
@@ -836,7 +833,7 @@ export default function StudioClient({
       if (type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
         const nextId = payload?.id;
         if (!nextId) return;
-        setNativeSelectionMeta(null);
+
         setDraft((current) => ({
           ...current,
           customElements: current.customElements.filter((item) => item.id !== nextId),
@@ -848,7 +845,7 @@ export default function StudioClient({
       if (type === 'FARHA_NATIVE_ELEMENT_SELECT') {
         if (!payload?.id) {
           setNativeSelectionMeta(null);
-          setSelection((current) => (current ? null : current));
+          setSelection(null);
           return;
         }
 
@@ -878,21 +875,6 @@ export default function StudioClient({
           },
         }));
         return;
-      }
-
-      if (type === 'FARHA_NATIVE_ELEMENT_RESET') {
-        const nextId = payload?.id;
-        if (!nextId) return;
-        setNativeSelectionMeta(payload || null);
-        setSelection(nextId ? { kind: 'native-element', key: nextId } : null);
-        setDraft((current) => {
-          const nextOverrides = { ...(current.nativeElementOverrides || {}) };
-          delete nextOverrides[nextId];
-          return {
-            ...current,
-            nativeElementOverrides: nextOverrides,
-          };
-        });
       }
     }
 
@@ -1014,6 +996,7 @@ export default function StudioClient({
   }
 
   function hideNativeElement(id) {
+    if (!id) return;
     updateNativeElement(id, { hidden: true });
     setSelection(null);
     setNativeSelectionMeta(null);
@@ -1400,7 +1383,6 @@ export default function StudioClient({
                   <strong>{selectedNativeElement.label || selectedNativeElement.selector || selectedNativeElement.id}</strong>
                   <span>{selectedNativeElement.kind === 'text' ? 'عنصر ثابت نصي' : selectedNativeElement.kind === 'image' ? 'عنصر ثابت صوري' : 'عنصر ثابت'}</span>
                 </div>
-
                 {selectedNativeElement.kind === 'text' ? (
                   <>
                     <label className="studio-field">
@@ -1443,7 +1425,6 @@ export default function StudioClient({
                     </label>
                   </>
                 ) : null}
-
                 <div className="studio-grid">
                   <label className="studio-field">
                     <span>X</span>
@@ -1462,7 +1443,6 @@ export default function StudioClient({
                     />
                   </label>
                 </div>
-
                 <button
                   type="button"
                   className="mini-btn danger"
