@@ -3315,3 +3315,91 @@ body {
   border-color: rgba(180, 35, 24, 0.18);
 }
 
+.emulator-bottom-toolbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  z-index: 1000;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+}
+
+.emulator-bottom-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(240, 240, 240, 0.7);
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: rgba(0,0,0,0.1);
+  margin: 0 4px;
+}
+
+.emulator-bottom-toolbar .tool-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #333;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.emulator-bottom-toolbar .tool-btn:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.emulator-bottom-toolbar .tool-btn.active {
+  background: var(--admin-gold, #c9a96e);
+  color: white;
+}
+
+.emulator-bottom-toolbar .tool-btn.danger {
+  color: #dc2626;
+}
+
+.emulator-bottom-toolbar .tool-btn.danger:hover {
+  background: #fef2f2;
+}
+
+.tool-color-picker {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #ddd;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.tool-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.tool-color-picker::-webkit-color-swatch {
+  border: none;
+}

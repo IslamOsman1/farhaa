@@ -530,6 +530,7 @@ function normalizeDraftState(input) {
       ...(safe.uiConfig || {}),
       editorGuides: safe.uiConfig?.editorGuides !== false,
       textLocks: safeTextLocks,
+      textStyleOverrides: safe.uiConfig?.textStyleOverrides || {},
     },
     devicePreview: {
       mode: 'mobile',
@@ -1676,6 +1677,28 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         label: getTextFieldLabel(path),
         preserveNativeSelection: true,
       },
+    });
+  }
+
+  function updateTemplateTextStyleOverride(path, updates) {
+    if (!path) return;
+    setDraft((current) => {
+      const currentOverrides = current.uiConfig?.textStyleOverrides?.[path] || {};
+      const nextPathOverrides = { ...currentOverrides, ...updates };
+      // Remove keys that are empty or null
+      Object.keys(nextPathOverrides).forEach(k => {
+        if (!nextPathOverrides[k]) delete nextPathOverrides[k];
+      });
+      return {
+        ...current,
+        uiConfig: {
+          ...(current.uiConfig || {}),
+          textStyleOverrides: {
+            ...(current.uiConfig?.textStyleOverrides || {}),
+            [path]: nextPathOverrides
+          }
+        }
+      };
     });
   }
 
@@ -4946,38 +4969,79 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                   <span className="studio-guides__center-y" />
                 </div>
               ) : null}
-              {Boolean(selectedElementId || selectedNativeElementId || selectedTemplateTextPath) && (
-                <div className="emulator-bottom-toolbar">
-                  {selectedTemplateTextPath && (
-                    <button type="button" className="mini-btn" onClick={() => { setOpenSection('template-text'); setEditorOpen(true); }}>تعديل النص</button>
-                  )}
-                  {selectedElementId && (
-                    <button type="button" className="mini-btn" onClick={() => { setOpenSection('layers'); setEditorOpen(true); }}>تعديل العنصر الحر</button>
-                  )}
-                  {selectedNativeElementId && (
-                    <button type="button" className="mini-btn" onClick={() => { setOpenSection('template-elements'); setEditorOpen(true); }}>تعديل العنصر</button>
-                  )}
-                  
-                  {selectedNativeElementId && (
-                    <button type="button" className="mini-btn danger" onClick={() => { patchNativeElement(selectedNativeElementId, { hidden: true }); }}>إخفاء</button>
-                  )}
-                  {selectedElementId && (
-                    <button type="button" className="mini-btn danger" onClick={() => { removeCustomElement(selectedElementId); }}>حذف</button>
-                  )}
-                  
-                  <div style={{ flexGrow: 1 }} />
+              {Boolean(selectedElementId || selectedNativeElementId || selectedTemplateTextPath) && (() => {
+                const isTemplateText = Boolean(selectedTemplateTextPath);
+                const isNative = Boolean(selectedNativeElementId);
+                const isCustom = Boolean(selectedElementId);
+                
+                const getStyle = (key) => {
+                  if (isTemplateText) return draft.uiConfig?.textStyleOverrides?.[selectedTemplateTextPath]?.[key];
+                  if (isNative) return selectedNativeElement?.[key];
+                  if (isCustom) return selectedCustomElement?.[key];
+                  return null;
+                };
+                
+                const setStyle = (key, value) => {
+                  if (isTemplateText) updateTemplateTextStyleOverride(selectedTemplateTextPath, { [key]: value });
+                  if (isNative) patchNativeElement(selectedNativeElementId, { [key]: value });
+                  if (isCustom) patchCustomElement(selectedElementId, { [key]: value });
+                };
 
-                  <button type="button" className="mini-btn" onClick={() => { addCustomElement('text', { x: 50, y: 50 }, 'نص جديد'); }}>إضافة نص</button>
-                  <MediaPicker
-                    label="صورة"
-                    value=""
-                    accept="image"
-                    folder="studio-free-elements"
-                    onChange={(url) => { if (url) addCustomElement('image', { x: 50, y: 50 }, url); }}
-                    trigger={<button type="button" className="mini-btn">إضافة صورة</button>}
-                  />
-                </div>
-              )}
+                const isTextElement = isTemplateText || 
+                  (isNative && selectedNativeElement?.kind === 'text') || 
+                  (isCustom && selectedCustomElement?.type === 'text');
+                  
+                return (
+                  <div className="emulator-bottom-toolbar">
+                    {isTextElement && (
+                      <>
+                        <div className="toolbar-group">
+                          <button type="button" className={`tool-btn ${getStyle('fontWeight') >= 600 || getStyle('fontWeight') === 'bold' ? 'active' : ''}`} onClick={() => setStyle('fontWeight', (getStyle('fontWeight') >= 600 || getStyle('fontWeight') === 'bold') ? 'normal' : 'bold')} title="غامق"><b>B</b></button>
+                          <button type="button" className={`tool-btn ${getStyle('fontStyle') === 'italic' ? 'active' : ''}`} onClick={() => setStyle('fontStyle', getStyle('fontStyle') === 'italic' ? 'normal' : 'italic')} title="مائل"><i>I</i></button>
+                          
+                          <div className="toolbar-separator" />
+                          
+                          <button type="button" className={`tool-btn ${getStyle('textAlign') === 'right' ? 'active' : ''}`} onClick={() => setStyle('textAlign', 'right')} title="محاذاة لليمين">≡</button>
+                          <button type="button" className={`tool-btn ${getStyle('textAlign') === 'center' ? 'active' : ''}`} onClick={() => setStyle('textAlign', 'center')} title="محاذاة للوسط">≣</button>
+                          <button type="button" className={`tool-btn ${getStyle('textAlign') === 'left' ? 'active' : ''}`} onClick={() => setStyle('textAlign', 'left')} title="محاذاة لليسار">≡</button>
+                          
+                          <div className="toolbar-separator" />
+                          <input type="color" className="tool-color-picker" value={getStyle('color') || '#000000'} onChange={(e) => setStyle('color', e.target.value)} title="لون النص" />
+                        </div>
+                        <div className="toolbar-separator" style={{ backgroundColor: 'transparent' }} />
+                      </>
+                    )}
+
+                    {isCustom && selectedCustomElement?.type === 'image' && (
+                      <>
+                        <div className="toolbar-group">
+                          <button type="button" className="tool-btn" onClick={() => setStyle('opacity', getStyle('opacity') != null ? Math.max(0, getStyle('opacity') - 0.1) : 0.9)} title="شفافية أقل">-</button>
+                          <span style={{ fontSize: '0.75rem', width: '32px', textAlign: 'center', fontWeight: 'bold' }}>{Math.round((getStyle('opacity') ?? 1) * 100)}%</span>
+                          <button type="button" className="tool-btn" onClick={() => setStyle('opacity', getStyle('opacity') != null ? Math.min(1, getStyle('opacity') + 0.1) : 1)} title="شفافية أعلى">+</button>
+                        </div>
+                        <div className="toolbar-separator" style={{ backgroundColor: 'transparent' }} />
+                      </>
+                    )}
+
+                    <div style={{ flexGrow: 1 }} />
+
+                    <div className="toolbar-group">
+                      <button type="button" className="tool-btn" onClick={() => { 
+                        if (isTemplateText) { setOpenSection('template-text'); setEditorOpen(true); }
+                        else if (isNative) { setOpenSection('template-elements'); setEditorOpen(true); }
+                        else if (isCustom) { setOpenSection('layers'); setEditorOpen(true); }
+                      }} title="مزيد من الإعدادات">⚙️</button>
+                      
+                      {isNative && (
+                        <button type="button" className="tool-btn danger" onClick={() => { patchNativeElement(selectedNativeElementId, { hidden: true }); }} title="إخفاء">👁️</button>
+                      )}
+                      {isCustom && (
+                        <button type="button" className="tool-btn danger" onClick={() => { removeCustomElement(selectedElementId); }} title="حذف">🗑️</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
               {canvasClickMenu ? (
                 <div
                   ref={canvasMenuRef}
