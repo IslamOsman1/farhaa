@@ -749,6 +749,18 @@
     }
     syncTemplateTextSelection();
 
+    let baseColor = '#000000';
+    if (path) {
+      const el = document.querySelector(`[data-farha-studio-field="${path}"]`);
+      if (el) {
+        const rgb = window.getComputedStyle(el).color;
+        const match = rgb.match(/^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+        if (match) {
+          baseColor = '#' + match.slice(1, 4).map(n => parseInt(n, 10).toString(16).padStart(2, '0')).join('');
+        }
+      }
+    }
+
     window.parent.postMessage({
       type: 'FARHA_TEMPLATE_TEXT_SELECT',
       payload: path
@@ -758,6 +770,7 @@
             label: options.label || getStudioFieldLabel(path),
             locked: isTextPathLocked(path),
             preserveNativeSelection: Boolean(options.preserveNativeSelection),
+            baseColor
           }
         : { path: null },
     }, '*');

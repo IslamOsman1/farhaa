@@ -1245,6 +1245,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
   const [selectedNativeElementId, setSelectedNativeElementId] = useState(null);
   const [selectedNativeElementLabel, setSelectedNativeElementLabel] = useState('');
   const [selectedNativeElementMeta, setSelectedNativeElementMeta] = useState(null);
+  const [selectedBaseStyles, setSelectedBaseStyles] = useState({ color: '#000000' });
   const [selectedNativeElementPreviewUrl, setSelectedNativeElementPreviewUrl] = useState('');
   const [selectedNativeElementBasePreviewUrl, setSelectedNativeElementBasePreviewUrl] = useState('');
   const [selectedNativeElementAspectRatio, setSelectedNativeElementAspectRatio] = useState(390 / 844);
@@ -2730,6 +2731,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         setSelectedNativeElementId(nextId);
         setSelectedNativeElementLabel(event.data.payload?.label || '');
         setSelectedNativeElementMeta(nextId ? { ...event.data.payload } : null);
+        if (event.data.payload?.baseColor) {
+          setSelectedBaseStyles({ color: event.data.payload.baseColor });
+        }
         setSelectedNativeElementPreviewUrl(event.data.payload?.previewUrl || '');
         setSelectedNativeElementBasePreviewUrl(event.data.payload?.basePreviewUrl || event.data.payload?.previewUrl || '');
         setSelectedNativeElementAspectRatio(toFiniteNumber(event.data.payload?.aspectRatio, 390 / 844));
@@ -2774,6 +2778,9 @@ export default function StudioClient({ session, manifests, openings, inventory, 
         setSelectedTemplateTextPath(nextPath);
         setSelectedTemplateTextLabel(event.data.payload?.label || '');
         setSelectedTemplateTextValue(event.data.payload?.text || '');
+        if (event.data.payload?.baseColor) {
+          setSelectedBaseStyles({ color: event.data.payload.baseColor });
+        }
         if (nextPath) {
           setSelectedElementId(null);
           if (!preserveNativeSelection) {
@@ -4995,10 +5002,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
                 const setText = (val) => {
                   if (isTemplateText) {
-                    setDraft(current => ({
-                      ...current,
-                      textOverrides: { ...(current.textOverrides || {}), [selectedTemplateTextPath]: val }
-                    }));
+                    updateTemplateText(selectedTemplateTextPath, val);
                   }
                   if (isCustom && selectedCustomElement?.type === 'text') {
                     patchCustomElement(selectedElementId, { text: val });
@@ -5050,7 +5054,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
                           <button type="button" className={`tool-btn ${getStyle('textAlign') === 'left' ? 'active' : ''}`} onClick={() => setStyle('textAlign', 'left')} title="محاذاة لليسار">≡</button>
                           
                           <div className="toolbar-separator" />
-                          <input type="color" className="tool-color-picker" value={getStyle('color') || '#000000'} onChange={(e) => setStyle('color', e.target.value)} title="لون النص" />
+                          <input type="color" className="tool-color-picker" value={getStyle('color') || selectedBaseStyles?.color || '#000000'} onChange={(e) => setStyle('color', e.target.value)} title="لون النص" />
                         </div>
                         <div className="toolbar-separator" style={{ backgroundColor: 'transparent' }} />
                       </>
