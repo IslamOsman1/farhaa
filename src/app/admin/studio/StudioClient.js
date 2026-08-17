@@ -4,10 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MediaPicker from '@/components/admin/MediaPicker';
-import RenderFrame from '@/components/invitation/RenderFrame';
+import StudioPreviewShell from '@/components/admin/studio/StudioPreviewShell';
 import {
   BUILTIN_FONT_LIBRARY,
-  PUBLIC_FONT_LIBRARY_STYLESHEET_PATH,
 } from '@/lib/font-library';
 import { buildInvitationRenderConfig, getOpeningBySlug } from '@/lib/template-system';
 
@@ -30,16 +29,18 @@ const TEXT_SECTION_ORDER = [
   'sections',
 ];
 
-const ROOT_SELECTORS = [
-  '#allrecords',
-  '#invitation-container',
-  '#main-content',
-  '#invite',
-  '#site',
-  '.site',
-  'main',
-  'body',
-];
+const SECTION_LABELS = {
+  basic: 'البيانات الأساسية',
+  opening: 'الافتتاحية',
+  wording: 'نصوص الدعوة',
+  families: 'العائلات',
+  details: 'التفاصيل',
+  schedule: 'البرنامج',
+  media: 'الوسائط',
+  contact: 'التواصل',
+  closing: 'الختام',
+  sections: 'الأقسام الإضافية',
+};
 
 function arrayValue(value) {
   return Array.isArray(value) ? value : [];
@@ -64,25 +65,6 @@ function getEnglishKey(key) {
 
 function isTranslatableField(field) {
   return ['text', 'textarea', 'list', 'schedule'].includes(field.type);
-}
-
-function getLocalizedTextValue(doc, draft, key, fallback = '') {
-  const bilingualEnabled = Boolean(draft.uiConfig?.bilingualEnabled);
-  const preferredLocale = doc?.documentElement?.lang === 'en'
-    ? 'en'
-    : draft.uiConfig?.defaultLocale === 'en'
-      ? 'en'
-      : 'ar';
-
-  if (bilingualEnabled && preferredLocale === 'en') {
-    const englishValue = draft.contentConfig?.[getEnglishKey(key)];
-    if (englishValue != null && englishValue !== '') {
-      return englishValue;
-    }
-  }
-
-  const value = draft.contentConfig?.[key];
-  return value != null && value !== '' ? value : fallback;
 }
 
 function normalizeCustomElement(element, index) {
@@ -165,126 +147,6 @@ function buildPreviewInvitation(session, draft) {
   };
 }
 
-function applyStyleValue(node, property, value) {
-  if (!node) return;
-
-  if (value == null || value === '') {
-    node.style.removeProperty(property);
-    return;
-  }
-
-  node.style.setProperty(property, String(value), 'important');
-}
-
-function ensureIframeEditorAssets(doc) {
-  if (!doc) return;
-
-  if (!doc.querySelector('link[data-farha-react-editor-fonts="true"]')) {
-    const link = doc.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = PUBLIC_FONT_LIBRARY_STYLESHEET_PATH;
-    link.dataset.farhaReactEditorFonts = 'true';
-    doc.head.appendChild(link);
-  }
-
-  let styleTag = doc.getElementById('farha-react-studio-style');
-  if (!styleTag) {
-    styleTag = doc.createElement('style');
-    styleTag.id = 'farha-react-studio-style';
-    styleTag.textContent = `
-      [data-farha-react-text-path] {
-        cursor: text !important;
-        outline: 1px dashed transparent;
-        outline-offset: 3px;
-        transition: outline-color 0.18s ease, background-color 0.18s ease;
-      }
-      [data-farha-react-text-path]:hover {
-        outline-color: rgba(127, 42, 31, 0.45);
-        background: rgba(255, 250, 246, 0.35);
-      }
-      [data-farha-react-text-path][data-farha-selected="true"] {
-        outline-color: #7f2a1f;
-        background: rgba(255, 250, 246, 0.5);
-      }
-      #farha-react-layer {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: 2147481200;
-      }
-      .farha-react-free {
-        position: absolute;
-        pointer-events: auto;
-        cursor: grab;
-        border: 1px dashed transparent;
-        border-radius: 14px;
-        box-sizing: border-box;
-        transition: border-color 0.18s ease, box-shadow 0.18s ease;
-      }
-      .farha-react-free.is-selected {
-        border-color: #7f2a1f;
-        box-shadow: 0 0 0 2px rgba(127, 42, 31, 0.15);
-      }
-      .farha-react-free__text {
-        min-width: 80px;
-        min-height: 38px;
-        white-space: pre-wrap;
-        word-break: break-word;
-        line-height: 1.4;
-        padding: 8px 10px;
-      }
-      .farha-react-free__image {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 12px;
-      }
-      .farha-react-free__delete {
-        position: absolute;
-        top: -12px;
-        left: -12px;
-        width: 28px;
-        height: 28px;
-        border: none;
-        border-radius: 999px;
-        background: #8f2f23;
-        color: #fff;
-        font: 700 14px/1 sans-serif;
-        cursor: pointer;
-        display: none;
-      }
-      .farha-react-free.is-selected .farha-react-free__delete {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-    `;
-    doc.head.appendChild(styleTag);
-  }
-}
-
-function resolveEditorRoot(doc) {
-  if (!doc) return null;
-
-  for (const selector of ROOT_SELECTORS) {
-    const node = doc.querySelector(selector);
-    if (node) {
-      if (doc.defaultView?.getComputedStyle(node).position === 'static') {
-        node.style.position = 'relative';
-      }
-      return node;
-    }
-  }
-
-  return doc.body;
-}
-
-function getTextBindings(manifest) {
-  const bindings = manifest?.runtimeBindings?.fieldBindings || {};
-  return Object.entries(bindings).filter(([, binding]) => binding?.method === 'text' && binding?.selector);
-}
-
 function getTemplateTextValue(draft, path) {
   if (Object.prototype.hasOwnProperty.call(draft.textOverrides || {}, path)) {
     return draft.textOverrides[path];
@@ -293,201 +155,18 @@ function getTemplateTextValue(draft, path) {
   return draft.contentConfig?.[path] ?? '';
 }
 
-function getTemplateTextValueForLocale(doc, draft, path) {
-  const bilingualEnabled = Boolean(draft.uiConfig?.bilingualEnabled);
-  if (bilingualEnabled && doc?.documentElement?.lang === 'en') {
-    const englishPath = getEnglishKey(path);
-    if (Object.prototype.hasOwnProperty.call(draft.textOverrides || {}, englishPath)) {
-      return draft.textOverrides[englishPath];
-    }
-
-    const englishValue = draft.contentConfig?.[englishPath];
-    if (englishValue != null && englishValue !== '') {
-      return englishValue;
-    }
-  }
-
-  return getTemplateTextValue(draft, path);
-}
-
-function toTestIdSuffix(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function applyTemplateTextBindings(doc, manifest, draft) {
-  const catalog = [];
-
-  for (const [path, binding] of getTextBindings(manifest)) {
-    const nodes = Array.from(doc.querySelectorAll(binding.selector));
-    const styleOverride = draft.uiConfig?.textStyleOverrides?.[path] || {};
-    const nextText = String(getTemplateTextValueForLocale(doc, draft, path) ?? '');
-
-    nodes.forEach((node) => {
-      node.dataset.farhaReactTextPath = path;
-      node.dataset.farhaReactTextBound = 'true';
-      node.dataset.testid = `iframe-template-text-${toTestIdSuffix(path) || 'item'}`;
-      node.textContent = nextText;
-      applyStyleValue(node, 'color', styleOverride.color);
-      applyStyleValue(node, 'font-family', styleOverride.fontFamily ? `"${String(styleOverride.fontFamily).replace(/"/g, '')}", sans-serif` : '');
-      applyStyleValue(node, 'font-size', styleOverride.fontSize);
-      applyStyleValue(node, 'font-weight', styleOverride.fontWeight);
-      applyStyleValue(node, 'font-style', styleOverride.fontStyle);
-      applyStyleValue(node, 'text-align', styleOverride.textAlign);
-      applyStyleValue(node, 'line-height', styleOverride.lineHeight);
-      applyStyleValue(node, 'letter-spacing', styleOverride.letterSpacing);
-    });
-
-    const firstNode = nodes[0];
-    catalog.push({
-      path,
-      label: manifest?.editableFields?.find((field) => field.key === path)?.labelAr || path,
-      selector: binding.selector,
-      text: firstNode?.textContent || nextText,
-    });
-  }
-
-  return catalog;
+function getTextBindings(manifest) {
+  const bindings = manifest?.runtimeBindings?.fieldBindings || {};
+  return Object.entries(bindings).filter(([, binding]) => binding?.method === 'text' && binding?.selector);
 }
 
 function buildTemplateTextCatalog(manifest, draft) {
   return getTextBindings(manifest).map(([path, binding]) => ({
     path,
-    label: manifest?.editableFields?.find((field) => field.key === path)?.labelAr || path,
     selector: binding?.selector || path,
+    label: manifest?.editableFields?.find((field) => field.key === path)?.labelAr || path,
     text: String(getTemplateTextValue(draft, path) || ''),
   }));
-}
-
-function renderFreeElements({
-  root,
-  doc,
-  elements,
-  draft,
-  selectedId,
-  onSelect,
-  onMove,
-  onDelete,
-}) {
-  if (!root || !doc) return () => {};
-
-  let layer = doc.getElementById('farha-react-layer');
-  if (!layer) {
-    layer = doc.createElement('div');
-    layer.id = 'farha-react-layer';
-    root.appendChild(layer);
-  }
-
-  layer.innerHTML = '';
-  const cleanups = [];
-
-  elements.forEach((element) => {
-    const wrapper = doc.createElement('div');
-    const isSelected = selectedId === element.id;
-    wrapper.className = `farha-react-free ${isSelected ? 'is-selected' : ''}`;
-    wrapper.dataset.elementId = element.id;
-    wrapper.dataset.testid = `iframe-free-element-${toTestIdSuffix(element.id) || 'item'}`;
-    wrapper.style.left = `${toFiniteNumber(element.x, 40)}px`;
-    wrapper.style.top = `${toFiniteNumber(element.y, 40)}px`;
-    wrapper.style.width = element.width || (element.type === 'image' ? '180px' : '220px');
-    wrapper.style.height = element.type === 'image' ? (element.height || '180px') : 'auto';
-    wrapper.style.opacity = String(toFiniteNumber(element.opacity, 1));
-    wrapper.style.transform = `rotate(${toFiniteNumber(element.rotation, 0)}deg)`;
-    wrapper.style.zIndex = String(toFiniteNumber(element.zIndex, 10));
-
-    const deleteButton = doc.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'farha-react-free__delete';
-    deleteButton.textContent = '×';
-    deleteButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      onDelete(element.id);
-    });
-    wrapper.appendChild(deleteButton);
-
-    if (element.type === 'image') {
-      const img = doc.createElement('img');
-      img.className = 'farha-react-free__image';
-      img.dataset.testid = `iframe-free-image-${toTestIdSuffix(element.id) || 'item'}`;
-      img.src = element.content || '';
-      img.alt = element.name || 'free image';
-      wrapper.appendChild(img);
-    } else {
-      const content = doc.createElement('div');
-      content.className = 'farha-react-free__text';
-      content.dataset.testid = `iframe-free-text-${toTestIdSuffix(element.id) || 'item'}`;
-      content.textContent = getLocalizedTextValue(doc, draft, element.id, element.contentEn || '')
-        || element.content
-        || element.contentEn
-        || 'نص حر';
-      content.style.color = element.color || '#1f2937';
-      content.style.fontFamily = `"${String(element.fontFamily || 'Tajawal').replace(/"/g, '')}", sans-serif`;
-      content.style.fontSize = element.fontSize || '28px';
-      wrapper.appendChild(content);
-    }
-
-    const handlePointerDown = (event) => {
-      if (event.button !== 0) return;
-      event.preventDefault();
-      event.stopPropagation();
-
-      onSelect({
-        kind: element.type === 'image' ? 'free-image' : 'free-text',
-        key: element.id,
-      });
-
-      const startX = event.clientX;
-      const startY = event.clientY;
-      const originX = toFiniteNumber(element.x, 40);
-      const originY = toFiniteNumber(element.y, 40);
-      let nextX = originX;
-      let nextY = originY;
-
-      const move = (moveEvent) => {
-        nextX = Math.max(0, Math.round(originX + (moveEvent.clientX - startX)));
-        nextY = Math.max(0, Math.round(originY + (moveEvent.clientY - startY)));
-        wrapper.style.left = `${nextX}px`;
-        wrapper.style.top = `${nextY}px`;
-      };
-
-      const up = () => {
-        doc.removeEventListener('pointermove', move, true);
-        doc.removeEventListener('pointerup', up, true);
-        doc.removeEventListener('pointercancel', up, true);
-        onMove(element.id, { x: nextX, y: nextY });
-      };
-
-      doc.addEventListener('pointermove', move, true);
-      doc.addEventListener('pointerup', up, true);
-      doc.addEventListener('pointercancel', up, true);
-      cleanups.push(() => {
-        doc.removeEventListener('pointermove', move, true);
-        doc.removeEventListener('pointerup', up, true);
-        doc.removeEventListener('pointercancel', up, true);
-      });
-    };
-
-    wrapper.addEventListener('pointerdown', handlePointerDown, true);
-    cleanups.push(() => wrapper.removeEventListener('pointerdown', handlePointerDown, true));
-
-    wrapper.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      onSelect({
-        kind: element.type === 'image' ? 'free-image' : 'free-text',
-        key: element.id,
-      });
-    });
-
-    layer.appendChild(wrapper);
-  });
-
-  return () => {
-    cleanups.forEach((cleanup) => cleanup());
-  };
 }
 
 function FieldRenderer({ field, draft, onContentChange, onScheduleChange, onListChange }) {
@@ -649,9 +328,19 @@ export default function StudioClient({
   const [saveState, setSaveState] = useState('saved');
   const [selection, setSelection] = useState(null);
   const [nativeSelectionMeta, setNativeSelectionMeta] = useState(null);
-  const [previewNonce, setPreviewNonce] = useState(0);
-  const [iframeLoadTick, setIframeLoadTick] = useState(0);
-  const frameHostRef = useRef(null);
+  const [activeSidebarTab, setActiveSidebarTab] = useState('template-texts');
+  const [openGeneralSections, setOpenGeneralSections] = useState(() => ({
+    basic: true,
+    opening: false,
+    wording: false,
+    families: false,
+    details: false,
+    schedule: false,
+    media: false,
+    contact: false,
+    closing: false,
+    sections: false,
+  }));
   const lastSavedRef = useRef(JSON.stringify(normalizeDraftState(session.draft, initialManifest?.slug || 'classic')));
 
   const currentManifest = useMemo(
@@ -686,51 +375,23 @@ export default function StudioClient({
     }),
     [currentManifest, currentOpening, previewInvitation],
   );
-
-  const fontOptions = BUILTIN_FONT_LIBRARY;
+  const selectedTemplateText = useMemo(() => {
+    if (selection?.kind !== 'template-text' || !selection.key) return null;
+    return templateTextCatalog.find((item) => item.path === selection.key) || null;
+  }, [selection, templateTextCatalog]);
   const selectedFreeElement = useMemo(() => {
     if (!selection?.key || !selection.kind?.startsWith('free-')) return null;
     return draft.customElements.find((item) => item.id === selection.key) || null;
   }, [draft.customElements, selection]);
-  const selectedTemplateText = useMemo(() => {
-    if (selection?.kind !== 'template-text' || !selection.key) return null;
-    return templateTextCatalog.find((item) => item.path === selection.key) || {
-      path: selection.key,
-      label: currentManifest.editableFields.find((field) => field.key === selection.key)?.labelAr || selection.key,
-      text: String(getTemplateTextValue(draft, selection.key) || ''),
-    };
-  }, [currentManifest, draft, selection, templateTextCatalog]);
   const selectedNativeElement = useMemo(() => {
     if (selection?.kind !== 'native-element' || !selection.key) return null;
-    const override = draft.nativeElementOverrides?.[selection.key] || {};
     return {
-      ...(nativeSelectionMeta || {}),
-      ...override,
       id: selection.key,
+      ...(draft.nativeElementOverrides?.[selection.key] || {}),
+      ...(nativeSelectionMeta?.id === selection.key ? nativeSelectionMeta : {}),
     };
   }, [draft.nativeElementOverrides, nativeSelectionMeta, selection]);
-  const bridgeMessage = useMemo(() => {
-    if (selection?.kind === 'template-text' && selection.key) {
-      return {
-        type: 'FARHA_SELECT_TEMPLATE_TEXT',
-        payload: {
-          path: selection.key,
-          preserveNativeSelection: true,
-        },
-      };
-    }
-
-    if (selection?.kind === 'native-element' && selection.key) {
-      return {
-        type: 'FARHA_SELECT_NATIVE_ELEMENT',
-        payload: {
-          id: selection.key,
-        },
-      };
-    }
-
-    return null;
-  }, [selection]);
+  const fontOptions = BUILTIN_FONT_LIBRARY;
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -766,122 +427,6 @@ export default function StudioClient({
     return () => window.clearTimeout(timeoutId);
   }, [draft, session.id, session.name]);
 
-  useEffect(() => {
-    function handleFrameMessage(event) {
-      if (event.origin !== window.location.origin || !event.data?.type) {
-        return;
-      }
-
-      const { type, payload } = event.data;
-
-      if (type === 'FARHA_TEMPLATE_TEXT_SELECT') {
-        const nextPath = payload?.path;
-        if (!nextPath) return;
-        setNativeSelectionMeta(null);
-        setSelection((current) => (current?.kind === 'template-text' && current?.key === nextPath ? current : { kind: 'template-text', key: nextPath }));
-        return;
-      }
-
-      if (type === 'FARHA_TEXT_OVERRIDE') {
-        const nextPath = payload?.path;
-        if (!nextPath) return;
-
-        setNativeSelectionMeta(null);
-        setSelection((current) => (current?.kind === 'template-text' && current?.key === nextPath ? current : { kind: 'template-text', key: nextPath }));
-        setDraft((current) => {
-          const nextOverrides = { ...(current.textOverrides || {}) };
-          const baseValue = current.contentConfig?.[nextPath] ?? '';
-          const nextText = String(payload?.text ?? '');
-          if (nextText === baseValue) {
-            delete nextOverrides[nextPath];
-          } else {
-            nextOverrides[nextPath] = nextText;
-          }
-
-          return {
-            ...current,
-            textOverrides: nextOverrides,
-          };
-        });
-        return;
-      }
-
-      if (type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
-        const nextId = payload?.id;
-        const element = nextId ? draft.customElements.find((item) => item.id === nextId) : null;
-        setNativeSelectionMeta(null);
-        setSelection((current) => {
-          if (!element) return null;
-          const nextSelection = { kind: element.type === 'image' ? 'free-image' : 'free-text', key: nextId };
-          return current?.kind === nextSelection.kind && current?.key === nextSelection.key ? current : nextSelection;
-        });
-        return;
-      }
-
-      if (type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
-        const nextId = payload?.id;
-        const updates = payload?.updates;
-        if (!nextId || !updates) return;
-
-        setDraft((current) => ({
-          ...current,
-          customElements: current.customElements.map((item) => (item.id === nextId ? { ...item, ...updates } : item)),
-        }));
-        return;
-      }
-
-      if (type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
-        const nextId = payload?.id;
-        if (!nextId) return;
-
-        setDraft((current) => ({
-          ...current,
-          customElements: current.customElements.filter((item) => item.id !== nextId),
-        }));
-        setSelection((current) => (current?.key === nextId ? null : current));
-        return;
-      }
-
-      if (type === 'FARHA_NATIVE_ELEMENT_SELECT') {
-        if (!payload?.id) {
-          setNativeSelectionMeta(null);
-          setSelection(null);
-          return;
-        }
-
-        setNativeSelectionMeta(payload);
-        setSelection((current) => (current?.kind === 'native-element' && current?.key === payload.id ? current : { kind: 'native-element', key: payload.id }));
-        return;
-      }
-
-      if (type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
-        const nextId = payload?.id;
-        const updates = payload?.updates;
-        if (!nextId || !updates) return;
-
-        setNativeSelectionMeta((current) => (current?.id === nextId ? { ...current, ...payload, ...updates } : current));
-        setSelection((current) => (current?.kind === 'native-element' && current?.key === nextId ? current : { kind: 'native-element', key: nextId }));
-        setDraft((current) => ({
-          ...current,
-          nativeElementOverrides: {
-            ...(current.nativeElementOverrides || {}),
-            [nextId]: {
-              ...((current.nativeElementOverrides || {})[nextId] || {}),
-              label: payload?.label || (current.nativeElementOverrides || {})[nextId]?.label,
-              selector: payload?.selector || (current.nativeElementOverrides || {})[nextId]?.selector,
-              kind: payload?.kind || (current.nativeElementOverrides || {})[nextId]?.kind,
-              ...updates,
-            },
-          },
-        }));
-        return;
-      }
-    }
-
-    window.addEventListener('message', handleFrameMessage);
-    return () => window.removeEventListener('message', handleFrameMessage);
-  }, [draft.customElements]);
-
   function setContentValue(key, value) {
     setDraft((current) => ({
       ...current,
@@ -907,13 +452,19 @@ export default function StudioClient({
   function updateSelectedTemplateText(value) {
     if (!selectedTemplateText?.path) return;
 
+    updateTemplateTextValue(selectedTemplateText.path, value);
+  }
+
+  function updateTemplateTextValue(path, value) {
+    if (!path) return;
+
     setDraft((current) => {
       const nextOverrides = { ...(current.textOverrides || {}) };
-      const baseValue = current.contentConfig?.[selectedTemplateText.path] ?? '';
+      const baseValue = current.contentConfig?.[path] ?? '';
       if (value === baseValue) {
-        delete nextOverrides[selectedTemplateText.path];
+        delete nextOverrides[path];
       } else {
-        nextOverrides[selectedTemplateText.path] = value;
+        nextOverrides[path] = value;
       }
 
       return {
@@ -926,19 +477,27 @@ export default function StudioClient({
   function updateSelectedTemplateStyle(key, value) {
     if (!selectedTemplateText?.path) return;
 
+    updateTemplateTextStyles(selectedTemplateText.path, { [key]: value });
+  }
+
+  function updateTemplateTextStyles(path, styles) {
+    if (!path || !styles || typeof styles !== 'object') return;
+
     setDraft((current) => {
       const textStyleOverrides = { ...(current.uiConfig?.textStyleOverrides || {}) };
-      const nextPathStyles = { ...(textStyleOverrides[selectedTemplateText.path] || {}) };
-      if (value == null || value === '') {
-        delete nextPathStyles[key];
-      } else {
-        nextPathStyles[key] = value;
-      }
+      const nextPathStyles = { ...(textStyleOverrides[path] || {}) };
+      Object.entries(styles).forEach(([styleKey, styleValue]) => {
+        if (styleValue == null || styleValue === '') {
+          delete nextPathStyles[styleKey];
+        } else {
+          nextPathStyles[styleKey] = styleValue;
+        }
+      });
 
       if (Object.keys(nextPathStyles).length) {
-        textStyleOverrides[selectedTemplateText.path] = nextPathStyles;
+        textStyleOverrides[path] = nextPathStyles;
       } else {
-        delete textStyleOverrides[selectedTemplateText.path];
+        delete textStyleOverrides[path];
       }
 
       return {
@@ -980,26 +539,43 @@ export default function StudioClient({
   }
 
   function updateNativeElement(id, updates) {
-    if (!id) return;
+    if (!id || !updates || typeof updates !== 'object') return;
 
     setDraft((current) => ({
       ...current,
       nativeElementOverrides: {
         ...(current.nativeElementOverrides || {}),
         [id]: {
-          ...((current.nativeElementOverrides || {})[id] || {}),
+          ...((current.nativeElementOverrides && current.nativeElementOverrides[id]) || {}),
           ...updates,
         },
       },
     }));
-    setNativeSelectionMeta((current) => (current?.id === id ? { ...current, ...updates } : current));
   }
 
-  function hideNativeElement(id) {
+  function resetNativeElement(id) {
     if (!id) return;
-    updateNativeElement(id, { hidden: true });
-    setSelection(null);
+
+    setDraft((current) => {
+      const nextOverrides = { ...(current.nativeElementOverrides || {}) };
+      delete nextOverrides[id];
+      return {
+        ...current,
+        nativeElementOverrides: nextOverrides,
+      };
+    });
+  }
+
+  function selectTemplateText(path) {
+    setSelection({ kind: 'template-text', key: path });
     setNativeSelectionMeta(null);
+    setActiveSidebarTab('template-texts');
+  }
+
+  function selectFreeElement(item) {
+    setSelection({ kind: item.type === 'image' ? 'free-image' : 'free-text', key: item.id });
+    setNativeSelectionMeta(null);
+    setActiveSidebarTab('free-elements');
   }
 
   function addFreeText() {
@@ -1022,7 +598,7 @@ export default function StudioClient({
       ...current,
       customElements: [...current.customElements, nextElement],
     }));
-    setSelection({ kind: 'free-text', key: id });
+    selectFreeElement(nextElement);
   }
 
   function addFreeImage(url) {
@@ -1042,7 +618,7 @@ export default function StudioClient({
       ...current,
       customElements: [...current.customElements, nextElement],
     }));
-    setSelection({ kind: 'free-image', key: id });
+    selectFreeElement(nextElement);
   }
 
   async function createInvitation() {
@@ -1117,15 +693,123 @@ export default function StudioClient({
     ? draft.uiConfig?.textStyleOverrides?.[selectedTemplateText.path] || {}
     : {};
 
+  useEffect(() => {
+    const handleFrameMessage = (event) => {
+      if (event.origin !== window.location.origin || !event.data?.type || !String(event.data.type).startsWith('FARHA_')) {
+        return;
+      }
+
+      const { type, payload } = event.data;
+
+      if (type === 'FARHA_TEMPLATE_TEXT_SELECT') {
+        if (!payload?.path) {
+          setSelection((current) => (current?.kind === 'template-text' ? null : current));
+          return;
+        }
+
+        setSelection({ kind: 'template-text', key: payload.path });
+        setNativeSelectionMeta(null);
+        setActiveSidebarTab('template-texts');
+        return;
+      }
+
+      if (type === 'FARHA_TEXT_OVERRIDE') {
+        if (!payload?.path) return;
+        updateTemplateTextValue(payload.path, String(payload.text ?? ''));
+        setSelection({ kind: 'template-text', key: payload.path });
+        setNativeSelectionMeta(null);
+        setActiveSidebarTab('template-texts');
+        return;
+      }
+
+      if (type === 'FARHA_TEXT_STYLE_OVERRIDE') {
+        if (!payload?.path || !payload?.styles) return;
+        updateTemplateTextStyles(payload.path, payload.styles);
+        setSelection({ kind: 'template-text', key: payload.path });
+        setNativeSelectionMeta(null);
+        setActiveSidebarTab('template-texts');
+        return;
+      }
+
+      if (type === 'FARHA_EDIT_FIELD') {
+        if (!event.data.fieldKey) return;
+        selectTemplateText(event.data.fieldKey);
+        return;
+      }
+
+      if (type === 'FARHA_CUSTOM_ELEMENT_SELECT') {
+        if (!payload?.id) {
+          setSelection((current) => (current?.kind?.startsWith('free-') ? null : current));
+          return;
+        }
+
+        const item = draft.customElements.find((entry) => entry.id === payload.id);
+        if (item) {
+          setSelection({ kind: item.type === 'image' ? 'free-image' : 'free-text', key: item.id });
+          setNativeSelectionMeta(null);
+          setActiveSidebarTab('free-elements');
+        }
+        return;
+      }
+
+      if (type === 'FARHA_CUSTOM_ELEMENT_UPDATE') {
+        if (!payload?.id || !payload?.updates) return;
+        updateFreeElement(payload.id, payload.updates);
+        const item = draft.customElements.find((entry) => entry.id === payload.id);
+        if (item) {
+          setSelection({ kind: item.type === 'image' ? 'free-image' : 'free-text', key: item.id });
+          setNativeSelectionMeta(null);
+          setActiveSidebarTab('free-elements');
+        }
+        return;
+      }
+
+      if (type === 'FARHA_CUSTOM_ELEMENT_DELETE') {
+        if (!payload?.id) return;
+        setDraft((current) => ({
+          ...current,
+          customElements: current.customElements.filter((item) => item.id !== payload.id),
+        }));
+        setSelection((current) => (current?.key === payload.id ? null : current));
+        return;
+      }
+
+      if (type === 'FARHA_NATIVE_ELEMENT_SELECT') {
+        if (!payload?.id) {
+          setSelection((current) => (current?.kind === 'native-element' ? null : current));
+          setNativeSelectionMeta(null);
+          return;
+        }
+
+        setSelection({ kind: 'native-element', key: payload.id });
+        setNativeSelectionMeta(payload);
+        return;
+      }
+
+      if (type === 'FARHA_NATIVE_ELEMENT_UPDATE') {
+        if (!payload?.id || !payload?.updates) return;
+        updateNativeElement(payload.id, {
+          ...(payload.label ? { label: payload.label } : {}),
+          ...(payload.selector ? { selector: payload.selector } : {}),
+          ...(payload.kind ? { kind: payload.kind } : {}),
+          ...payload.updates,
+        });
+        setSelection({ kind: 'native-element', key: payload.id });
+        setNativeSelectionMeta(payload);
+      }
+    };
+
+    window.addEventListener('message', handleFrameMessage);
+    return () => window.removeEventListener('message', handleFrameMessage);
+  }, [draft.customElements]);
+
   return (
     <div className="studio-shell">
       <div className="studio-topbar">
         <div>
           <span className="studio-kicker">محرر الدعوات الجديد</span>
           <h1>{currentManifest.nameAr}</h1>
-          <p>
-            تم تبسيط المحرر حول اختيار واحد واضح، وتحريك موحد للعناصر الحرة، وتحرير مباشر للنصوص مع لون وخط موحدين.
-          </p>
+          <p>المعاينة الآن نظيفة بالكامل. لا يوجد أي التقاط أو تعديل من داخل المحاكي. كل التحكم يتم من اللوحة الجانبية فقط.</p>
           <label className="studio-toggle studio-toggle--top">
             <input
               data-testid="studio-bilingual-toggle"
@@ -1144,7 +828,7 @@ export default function StudioClient({
         </div>
         <div className="studio-actions">
           <span className={`studio-save ${saveState}`}>{saveState === 'saved' ? 'تم الحفظ' : saveState === 'saving' ? 'جارٍ الحفظ' : saveState === 'error' ? 'فشل الحفظ' : 'توجد تعديلات'}</span>
-          <button type="button" className="mini-btn" data-testid="studio-refresh-preview" onClick={() => setPreviewNonce((value) => value + 1)}>تحديث المعاينة</button>
+          <button type="button" className="mini-btn" data-testid="studio-refresh-preview" onClick={() => setSelection((current) => (current ? { ...current } : current))}>تحديث المعاينة</button>
           <Link className="mini-btn" data-testid="studio-open-fullscreen-preview" href={`/admin/studio/${session.id}/preview`} target="_blank">معاينة كاملة</Link>
           {mode === 'invitation' ? (
             <>
@@ -1194,29 +878,19 @@ export default function StudioClient({
             </div>
           </div>
 
-          <div className={`studio-device studio-device--${draft.devicePreview.mode}`}>
-            <div className="studio-frame-host" data-testid="studio-frame-host" ref={frameHostRef}>
-              <RenderFrame
-                key={`${draft.templateSlug}-${draft.openingSlug}-${previewNonce}-${draft.devicePreview.mode}`}
-                templateSlug={currentManifest.slug}
-                renderConfig={renderConfig}
-                manifest={currentManifest}
-                bridgeMessage={bridgeMessage}
-                className="studio-frame-wrap"
-                frameClassName="studio-frame"
-                disablePromoBar
-                disableOpening
-                onLoad={() => setIframeLoadTick((value) => value + 1)}
-              />
-            </div>
-          </div>
+          <StudioPreviewShell
+            templateSlug={currentManifest.slug}
+            manifest={currentManifest}
+            renderConfig={renderConfig}
+            deviceMode={draft.devicePreview.mode}
+          />
         </section>
 
         <aside className="studio-sidebar">
           <div className="studio-card">
             <h2>العنصر المحدد</h2>
             {!selection ? (
-              <p className="studio-empty">اختر نصًا من المعاينة أو عنصرًا حرًا من فوق القالب ليظهر تحكمه هنا.</p>
+              <p className="studio-empty">اختر نصًا من قائمة نصوص القالب أو عنصرًا حرًا من قائمة العناصر الحرة.</p>
             ) : null}
 
             {selectedTemplateText ? (
@@ -1381,9 +1055,10 @@ export default function StudioClient({
               <div className="studio-stack">
                 <div className="studio-meta">
                   <strong>{selectedNativeElement.label || selectedNativeElement.selector || selectedNativeElement.id}</strong>
-                  <span>{selectedNativeElement.kind === 'text' ? 'عنصر ثابت نصي' : selectedNativeElement.kind === 'image' ? 'عنصر ثابت صوري' : 'عنصر ثابت'}</span>
+                  <span>عنصر ثابت من القالب</span>
                 </div>
-                {selectedNativeElement.kind === 'text' ? (
+
+                {selectedNativeElement.kind === 'text' || selectedNativeElement.textContent != null ? (
                   <>
                     <label className="studio-field">
                       <span>النص</span>
@@ -1425,6 +1100,7 @@ export default function StudioClient({
                     </label>
                   </>
                 ) : null}
+
                 <div className="studio-grid">
                   <label className="studio-field">
                     <span>X</span>
@@ -1443,97 +1119,180 @@ export default function StudioClient({
                     />
                   </label>
                 </div>
-                <button
-                  type="button"
-                  className="mini-btn danger"
-                  onClick={() => hideNativeElement(selectedNativeElement.id)}
-                >
-                  حذف / إخفاء العنصر
-                </button>
+
+                <div className="studio-grid">
+                  <label className="studio-field">
+                    <span>التكبير</span>
+                    <input
+                      type="number"
+                      step="0.05"
+                      value={toFiniteNumber(selectedNativeElement.scale, 1)}
+                      onChange={(event) => updateNativeElement(selectedNativeElement.id, { scale: toFiniteNumber(event.target.value, 1) })}
+                    />
+                  </label>
+                  <label className="studio-field">
+                    <span>الدوران</span>
+                    <input
+                      type="number"
+                      value={toFiniteNumber(selectedNativeElement.rotation, 0)}
+                      onChange={(event) => updateNativeElement(selectedNativeElement.id, { rotation: toFiniteNumber(event.target.value, 0) })}
+                    />
+                  </label>
+                </div>
+
+                <div className="studio-grid">
+                  <label className="studio-toggle">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(selectedNativeElement.hidden)}
+                      onChange={(event) => updateNativeElement(selectedNativeElement.id, { hidden: event.target.checked })}
+                    />
+                    <span>{selectedNativeElement.hidden ? 'العنصر مخفي' : 'إخفاء العنصر'}</span>
+                  </label>
+                  <label className="studio-toggle">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(selectedNativeElement.locked)}
+                      onChange={(event) => updateNativeElement(selectedNativeElement.id, { locked: event.target.checked })}
+                    />
+                    <span>{selectedNativeElement.locked ? 'العنصر مقفل' : 'قفل العنصر'}</span>
+                  </label>
+                </div>
+
+                <button type="button" className="mini-btn" onClick={() => resetNativeElement(selectedNativeElement.id)}>إعادة ضبط العنصر</button>
+                <button type="button" className="mini-btn danger" onClick={() => updateNativeElement(selectedNativeElement.id, { hidden: true })}>حذف العنصر من المعاينة</button>
               </div>
             ) : null}
           </div>
 
-          <div className="studio-card">
-            <h2>نصوص القالب</h2>
-            <div className="studio-list">
-              {templateTextCatalog.map((item) => (
-                <button
-                  key={item.path}
-                  type="button"
-                  data-testid={`studio-template-text-item-${item.path}`}
-                  className={`studio-list-item ${selection?.kind === 'template-text' && selection.key === item.path ? 'active' : ''}`}
-                  onClick={() => setSelection({ kind: 'template-text', key: item.path })}
-                >
-                  <strong>{item.label}</strong>
-                  <span>{String(item.text || '').slice(0, 70) || item.path}</span>
-                </button>
-              ))}
-              {!templateTextCatalog.length ? <p className="studio-empty">سيتم فهرسة النصوص بعد اكتمال تحميل المعاينة.</p> : null}
+          <div className="studio-card studio-tabs-card">
+            <div className="studio-tabs">
+              <button
+                type="button"
+                className={`studio-tab ${activeSidebarTab === 'template-texts' ? 'active' : ''}`}
+                onClick={() => setActiveSidebarTab('template-texts')}
+              >
+                نصوص القالب
+              </button>
+              <button
+                type="button"
+                className={`studio-tab ${activeSidebarTab === 'free-elements' ? 'active' : ''}`}
+                onClick={() => setActiveSidebarTab('free-elements')}
+              >
+                العناصر الحرة
+              </button>
+              <button
+                type="button"
+                className={`studio-tab ${activeSidebarTab === 'general-fields' ? 'active' : ''}`}
+                onClick={() => setActiveSidebarTab('general-fields')}
+              >
+                الحقول العامة
+              </button>
             </div>
-          </div>
 
-          <div className="studio-card">
-            <h2>القالب والإعدادات</h2>
-            <div className="studio-stack">
-              <label className="studio-field">
-                <span>القالب</span>
-                <select
-                  value={draft.templateSlug}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, templateSlug: event.target.value }));
-                    setSelection(null);
-                  }}
-                >
-                  {manifests.map((item) => (
-                    <option key={item.slug} value={item.slug}>{item.nameAr}</option>
+            {activeSidebarTab === 'template-texts' ? (
+              <div className="studio-tab-panel">
+                <h2>نصوص القالب</h2>
+                <div className="studio-list">
+                  {templateTextCatalog.map((item) => (
+                    <button
+                      key={item.path}
+                      type="button"
+                      data-testid={`studio-template-text-item-${item.path}`}
+                      className={`studio-list-item ${selection?.kind === 'template-text' && selection.key === item.path ? 'active' : ''}`}
+                      onClick={() => selectTemplateText(item.path)}
+                    >
+                      <strong>{item.label}</strong>
+                      <span>{String(item.text || '').slice(0, 70) || item.path}</span>
+                    </button>
                   ))}
-                </select>
-              </label>
-              <label className="studio-field">
-                <span>الافتتاحية</span>
-                <select value={draft.openingSlug} onChange={(event) => setDraft((current) => ({ ...current, openingSlug: event.target.value }))}>
-                  {openings.map((item) => (
-                    <option key={item.slug} value={item.slug}>{item.nameAr || item.name}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="studio-toggle">
-                <input
-                  type="checkbox"
-                  checked={Boolean(draft.uiConfig?.bilingualEnabled)}
-                  onChange={(event) => setDraft((current) => ({
-                    ...current,
-                    uiConfig: {
-                      ...(current.uiConfig || {}),
-                      bilingualEnabled: event.target.checked,
-                    },
-                  }))}
-                />
-                <span>دعوة بلغتين</span>
-              </label>
-            </div>
-          </div>
+                  {!templateTextCatalog.length ? <p className="studio-empty">لا توجد نصوص مفهرسة لهذا القالب.</p> : null}
+                </div>
+              </div>
+            ) : null}
 
-          {TEXT_SECTION_ORDER.filter((sectionKey) => groupedFields[sectionKey]?.length).map((sectionKey) => (
-            <div key={sectionKey} className="studio-card">
-              <h2>{sectionKey}</h2>
-              <div className="studio-form">
-                {groupedFields[sectionKey].map((field) => (
-                  <label key={field.key} className="studio-field">
-                    <span>{field.labelAr}</span>
-                    <FieldRenderer
-                      field={field}
-                      draft={draft}
-                      onContentChange={setContentValue}
-                      onScheduleChange={setScheduleValue}
-                      onListChange={setListValue}
-                    />
+            {activeSidebarTab === 'free-elements' ? (
+              <div className="studio-tab-panel">
+                <h2>العناصر الحرة</h2>
+                <div className="studio-list">
+                  {draft.customElements.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`studio-list-item ${selection?.key === item.id ? 'active' : ''}`}
+                      onClick={() => selectFreeElement(item)}
+                    >
+                      <strong>{item.name}</strong>
+                      <span>{item.type === 'image' ? 'صورة حرة' : String(item.content || '').slice(0, 70) || 'نص حر'}</span>
+                    </button>
+                  ))}
+                  {!draft.customElements.length ? <p className="studio-empty">لا توجد عناصر حرة بعد.</p> : null}
+                </div>
+              </div>
+            ) : null}
+
+            {activeSidebarTab === 'general-fields' ? (
+              <div className="studio-tab-panel studio-tab-panel--stack">
+                <div className="studio-stack">
+                  <h2>القالب والإعدادات</h2>
+                  <label className="studio-field">
+                    <span>القالب</span>
+                    <select
+                      value={draft.templateSlug}
+                      onChange={(event) => {
+                        setDraft((current) => ({ ...current, templateSlug: event.target.value }));
+                        setSelection(null);
+                      }}
+                    >
+                      {manifests.map((item) => (
+                        <option key={item.slug} value={item.slug}>{item.nameAr}</option>
+                      ))}
+                    </select>
                   </label>
+                  <label className="studio-field">
+                    <span>الافتتاحية</span>
+                    <select value={draft.openingSlug} onChange={(event) => setDraft((current) => ({ ...current, openingSlug: event.target.value }))}>
+                      {openings.map((item) => (
+                        <option key={item.slug} value={item.slug}>{item.nameAr || item.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {TEXT_SECTION_ORDER.filter((sectionKey) => groupedFields[sectionKey]?.length).map((sectionKey) => (
+                  <div key={sectionKey} className="studio-section-block">
+                    <button
+                      type="button"
+                      className={`studio-accordion-trigger ${openGeneralSections[sectionKey] ? 'open' : ''}`}
+                      onClick={() => setOpenGeneralSections((current) => ({
+                        ...current,
+                        [sectionKey]: !current[sectionKey],
+                      }))}
+                    >
+                      <span>{SECTION_LABELS[sectionKey] || sectionKey}</span>
+                      <strong>{openGeneralSections[sectionKey] ? '−' : '+'}</strong>
+                    </button>
+                    {openGeneralSections[sectionKey] ? (
+                      <div className="studio-form studio-accordion-body">
+                        {groupedFields[sectionKey].map((field) => (
+                          <label key={field.key} className="studio-field">
+                            <span>{field.labelAr}</span>
+                            <FieldRenderer
+                              field={field}
+                              draft={draft}
+                              onContentChange={setContentValue}
+                              onScheduleChange={setScheduleValue}
+                              onListChange={setListValue}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                 ))}
               </div>
-            </div>
-          ))}
+            ) : null}
+          </div>
         </aside>
       </div>
 
@@ -1565,92 +1324,68 @@ export default function StudioClient({
         }
         .studio-topbar p {
           margin: 8px 0 0;
+          color: #6f5955;
           max-width: 720px;
-          color: #67524f;
-          line-height: 1.7;
+          line-height: 1.8;
         }
         .studio-actions {
           display: flex;
-          align-items: center;
-          gap: 10px;
           flex-wrap: wrap;
+          gap: 10px;
           justify-content: flex-end;
+          align-items: center;
         }
         .studio-save {
-          border-radius: 999px;
-          padding: 8px 12px;
-          font-size: 0.82rem;
-          background: #f8ece7;
-          color: #8f2f23;
+          font-size: 0.86rem;
+          color: #7d6662;
+          padding-inline: 4px;
         }
         .studio-save.saved {
-          background: #eef8f0;
-          color: #25633a;
+          color: #2f7a45;
+        }
+        .studio-save.saving {
+          color: #9a6b12;
         }
         .studio-save.error {
-          background: #fff1f1;
-          color: #8b2222;
+          color: #a12727;
         }
         .studio-layout {
           display: grid;
-          grid-template-columns: minmax(0, 1.25fr) minmax(340px, 430px);
+          grid-template-columns: minmax(0, 1.4fr) minmax(360px, 420px);
           gap: 18px;
           align-items: start;
         }
         .studio-preview,
         .studio-card {
-          border: 1px solid rgba(127, 42, 31, 0.1);
           background: #fff;
+          border: 1px solid rgba(127, 42, 31, 0.1);
           border-radius: 24px;
-          box-shadow: 0 22px 55px rgba(42, 26, 24, 0.08);
+          box-shadow: 0 18px 48px rgba(26, 14, 12, 0.06);
         }
         .studio-preview {
           padding: 18px;
-          display: grid;
-          gap: 18px;
           position: sticky;
-          top: 16px;
+          top: 20px;
         }
         .studio-preview-toolbar {
           display: flex;
           justify-content: space-between;
           gap: 12px;
           flex-wrap: wrap;
+          margin-bottom: 16px;
         }
         .studio-preview-toolbar__group {
           display: flex;
-          gap: 8px;
+          gap: 10px;
           flex-wrap: wrap;
         }
         .studio-device {
           width: 100%;
           display: grid;
-          justify-content: center;
-        }
-        .studio-device--mobile .studio-frame-host {
-          width: 390px;
-          height: 844px;
-        }
-        .studio-device--tablet .studio-frame-host {
-          width: 768px;
-          height: 1024px;
-          max-width: 100%;
-        }
-        .studio-device--desktop .studio-frame-host {
-          width: 100%;
-          height: 860px;
-        }
-        .studio-frame-host {
+          place-items: center;
+          background: radial-gradient(circle at top, rgba(255, 244, 238, 0.96), rgba(244, 235, 230, 0.82));
           border-radius: 28px;
-          overflow: hidden;
-          border: 10px solid #141112;
-          background: #141112;
-          box-shadow: 0 30px 80px rgba(20, 17, 18, 0.18);
-        }
-        .studio-frame-wrap,
-        .studio-frame {
-          width: 100%;
-          height: 100%;
+          padding: 18px;
         }
         .studio-sidebar {
           display: grid;
@@ -1667,24 +1402,92 @@ export default function StudioClient({
           font-size: 1.02rem;
           color: #311b1a;
         }
+        .studio-tabs-card {
+          gap: 16px;
+        }
+        .studio-tabs {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          background: #fff6f1;
+          border: 1px solid rgba(127, 42, 31, 0.08);
+          border-radius: 18px;
+          padding: 8px;
+        }
+        .studio-tab {
+          border: none;
+          border-radius: 14px;
+          background: transparent;
+          color: #7a5e58;
+          padding: 10px 12px;
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .studio-tab.active {
+          background: #fff;
+          color: #7f2a1f;
+          box-shadow: 0 8px 20px rgba(127, 42, 31, 0.08);
+        }
+        .studio-tab-panel {
+          display: grid;
+          gap: 14px;
+        }
+        .studio-tab-panel--stack {
+          gap: 18px;
+        }
+        .studio-section-block {
+          display: grid;
+          gap: 12px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(127, 42, 31, 0.08);
+        }
+        .studio-accordion-trigger {
+          width: 100%;
+          border: 1px solid rgba(127, 42, 31, 0.08);
+          border-radius: 16px;
+          background: #fff8f4;
+          padding: 14px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          text-align: right;
+          font: inherit;
+          color: #4f312d;
+          cursor: pointer;
+        }
+        .studio-accordion-trigger.open {
+          background: #fff1eb;
+          border-color: rgba(127, 42, 31, 0.16);
+        }
+        .studio-accordion-trigger span {
+          font-size: 0.95rem;
+          font-weight: 700;
+        }
+        .studio-accordion-trigger strong {
+          font-size: 1.1rem;
+          color: #7f2a1f;
+        }
+        .studio-accordion-body {
+          padding-inline: 4px;
+        }
         .studio-empty {
           margin: 0;
           color: #7d6662;
           line-height: 1.7;
-          font-size: 0.93rem;
         }
         .studio-stack,
         .studio-form {
           display: grid;
-          gap: 12px;
+          gap: 14px;
         }
         .studio-field {
           display: grid;
-          gap: 7px;
-          color: #503d3a;
-          font-size: 0.92rem;
+          gap: 8px;
         }
-        .studio-field > span {
+        .studio-field span {
+          font-size: 0.88rem;
           font-weight: 700;
           color: #311b1a;
         }
@@ -1809,21 +1612,8 @@ export default function StudioClient({
             position: static;
           }
         }
-        @media (max-width: 820px) {
-          .studio-topbar {
-            padding: 18px;
-            flex-direction: column;
-          }
-          .studio-frame-host,
-          .studio-device--mobile .studio-frame-host,
-          .studio-device--tablet .studio-frame-host,
-          .studio-device--desktop .studio-frame-host {
-            width: 100%;
-            height: 78vh;
-          }
-          .studio-grid,
-          .studio-schedule-grid,
-          .studio-inline-row {
+        @media (max-width: 640px) {
+          .studio-tabs {
             grid-template-columns: 1fr;
           }
         }

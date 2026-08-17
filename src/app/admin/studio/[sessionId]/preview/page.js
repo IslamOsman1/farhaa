@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/admin-session';
-import RenderFrame from '@/components/invitation/RenderFrame';
+import StudioPreviewShell from '@/components/admin/studio/StudioPreviewShell';
 import { getOpeningBySlug, getTemplateManifest } from '@/lib/template-system';
 import { buildStudioDraftFromSession, buildStudioRenderPayload } from '@/lib/studio';
 
@@ -48,14 +48,12 @@ export default async function StudioPreviewPage({ params }) {
         </Link>
       </div>
       <div className="studio-fullscreen-body">
-        <RenderFrame
+        <StudioPreviewShell
           templateSlug={manifest.slug}
-          renderConfig={renderConfig}
           manifest={manifest}
-          className="studio-fullscreen-frame-wrap"
-          frameClassName="studio-fullscreen-frame"
-          disablePromoBar
-          disableOpening
+          renderConfig={renderConfig}
+          deviceMode={draft.devicePreview?.mode || 'desktop'}
+          fullscreen
         />
       </div>
     </div>

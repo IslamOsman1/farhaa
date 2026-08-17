@@ -23,16 +23,15 @@ export default function RenderFrame({
   manifest,
   className = '',
   frameClassName = '',
-  bridgeMessage = null,
   onLoad = null,
   disablePromoBar = false,
   disableOpening = false,
 }) {
   const iframeRef = useRef(null);
   const openingIframeRef = useRef(null);
-  const [loaded, setLoaded] = useState(false);
-  const [openingLoaded, setOpeningLoaded] = useState(false);
-  const [openingVisible, setOpeningVisible] = useState(false);
+  const [loadedFrameSignature, setLoadedFrameSignature] = useState('');
+  const [loadedOpeningSignature, setLoadedOpeningSignature] = useState('');
+  const [dismissedOpeningSignature, setDismissedOpeningSignature] = useState('');
 
   const sourceTemplateSlug = renderConfig?.opening?.sourceTemplateSlug || renderConfig?.opening?.config?.sourceTemplateSlug || '';
   const sourceManifest = useMemo(
@@ -65,7 +64,7 @@ export default function RenderFrame({
 
     const query = params.toString();
     return `/${templateSlug}/index.html${query ? `?${query}` : ''}`;
-  }, [renderConfig?.opening?.slug, renderConfig?.opening?.type, renderConfig?.preview, showPromoBar, templateSlug]);
+  }, [disableOpening, renderConfig?.opening?.slug, renderConfig?.opening?.type, renderConfig?.preview, showPromoBar, templateSlug]);
   const openingFrameSrc = useMemo(() => {
     if (!sourceTemplateSlug) {
       return '';
@@ -76,6 +75,10 @@ export default function RenderFrame({
     params.set('farhaOpeningOnly', '1');
     return `/${sourceTemplateSlug}/index.html?${params.toString()}`;
   }, [sourceTemplateSlug]);
+  const frameLoaded = loadedFrameSignature === frameSrc;
+  const openingSignature = `${sourceTemplateSlug}:${renderConfig?.opening?.slug || ''}`;
+  const openingLoaded = loadedOpeningSignature === openingSignature;
+  const openingVisible = hasTemplateOpening && dismissedOpeningSignature !== openingSignature;
 
   const baseRenderConfig = useMemo(() => {
     if (!hasTemplateOpening) {
@@ -112,12 +115,7 @@ export default function RenderFrame({
   }, [hasTemplateOpening, renderConfig, sourceManifest, sourceTemplateSlug]);
 
   useEffect(() => {
-    setOpeningVisible(hasTemplateOpening);
-    setOpeningLoaded(false);
-  }, [hasTemplateOpening, sourceTemplateSlug, renderConfig?.opening?.slug]);
-
-  useEffect(() => {
-    if (!loaded || !iframeRef.current?.contentWindow || !baseRenderConfig) return;
+    if (!frameLoaded || !iframeRef.current?.contentWindow || !baseRenderConfig) return;
 
     iframeRef.current.contentWindow.postMessage(
       {
@@ -128,7 +126,7 @@ export default function RenderFrame({
       },
       window.location.origin,
     );
-  }, [baseRenderConfig, loaded, manifest]);
+  }, [baseRenderConfig, frameLoaded, manifest]);
 
   useEffect(() => {
     if (!openingVisible || !openingLoaded || !openingIframeRef.current?.contentWindow || !openingRenderConfig || !sourceManifest) {
@@ -168,14 +166,6 @@ export default function RenderFrame({
     return () => window.clearInterval(intervalId);
   }, [openingLoaded, openingVisible]);
 
-  useEffect(() => {
-    if (!loaded || !iframeRef.current?.contentWindow || !bridgeMessage) {
-      return;
-    }
-
-    iframeRef.current.contentWindow.postMessage(bridgeMessage, window.location.origin);
-  }, [bridgeMessage, loaded]);
-
   return (
     <div
       className={className}
@@ -200,10 +190,10 @@ export default function RenderFrame({
           background: '#fff',
         }}
         onLoad={() => {
-          setLoaded(true);
-          if (typeof onLoad === 'function') {
-            onLoad();
-          }
+            setLoadedFrameSignature(frameSrc);
+            if (typeof onLoad === 'function') {
+              onLoad();
+            }
         }}
       />
 
@@ -220,7 +210,7 @@ export default function RenderFrame({
         >
           <button
             type="button"
-            onClick={() => setOpeningVisible(false)}
+            onClick={() => setDismissedOpeningSignature(openingSignature)}
             style={{
               position: 'absolute',
               top: 16,
@@ -239,6 +229,7 @@ export default function RenderFrame({
           </button>
 
           <iframe
+            key={openingSignature}
             ref={openingIframeRef}
             src={openingFrameSrc}
             title="Farha Opening Preview"
@@ -248,7 +239,7 @@ export default function RenderFrame({
               border: 'none',
               background: '#fff',
             }}
-            onLoad={() => setOpeningLoaded(true)}
+            onLoad={() => setLoadedOpeningSignature(openingSignature)}
           />
         </div>
       ) : null}
