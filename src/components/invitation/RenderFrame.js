@@ -49,14 +49,18 @@ export default function RenderFrame({
     if (!showPromoBar) {
       params.set('farhaPromoBar', '0');
     }
-    if (renderConfig?.opening?.slug === 'no-opening' || renderConfig?.opening?.type === 'template-opening') {
+    if (
+      renderConfig?.preview
+      || renderConfig?.opening?.slug === 'no-opening'
+      || renderConfig?.opening?.type === 'template-opening'
+    ) {
       params.set('farhaOpening', '0');
       params.set('autoopen', '1');
     }
 
     const query = params.toString();
     return `/${templateSlug}/index.html${query ? `?${query}` : ''}`;
-  }, [renderConfig?.opening?.slug, renderConfig?.opening?.type, showPromoBar, templateSlug]);
+  }, [renderConfig?.opening?.slug, renderConfig?.opening?.type, renderConfig?.preview, showPromoBar, templateSlug]);
   const openingFrameSrc = useMemo(() => {
     if (!sourceTemplateSlug) {
       return '';
