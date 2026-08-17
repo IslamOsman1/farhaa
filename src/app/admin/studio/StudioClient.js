@@ -5002,7 +5002,7 @@ export default function StudioClient({ session, manifests, openings, inventory, 
 
                 const setText = (val) => {
                   if (isTemplateText) {
-                    updateTemplateText(selectedTemplateTextPath, val);
+                    updateTemplateTextOverride(selectedTemplateTextPath, val);
                   }
                   if (isCustom && selectedCustomElement?.type === 'text') {
                     patchCustomElement(selectedElementId, { text: val });
