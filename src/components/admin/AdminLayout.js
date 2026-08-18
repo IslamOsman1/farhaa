@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
@@ -60,10 +60,6 @@ export default function AdminLayout({ children }) {
   const isStudioWorkspace = pathname.startsWith('/admin/studio/');
 
   useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     if (!sidebarOpen) {
       return undefined;
     }
@@ -83,7 +79,7 @@ export default function AdminLayout({ children }) {
   const role = session?.user?.role || 'viewer';
   const visibleLinks = links.filter((link) => hasAnyPermission(role, link.permissions));
   const pageLabel = visibleLinks.find((link) => pathname.startsWith(link.href))?.label || 'لوحة الإدارة';
-  const mobileQuickLinks = useMemo(() => buildMobileQuickLinks(visibleLinks), [visibleLinks]);
+  const mobileQuickLinks = buildMobileQuickLinks(visibleLinks);
 
   return (
     <div className={`admin-layout ${isStudioWorkspace ? 'admin-layout--studio-focus' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>

@@ -24,6 +24,13 @@ export const authOptions = {
       async authorize(credentials, req) {
         assertAuthEnv();
         const ip = getRequestIp(req);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[auth-debug] authorize', {
+            ip,
+            username: credentials?.username || null,
+            passwordLength: typeof credentials?.password === 'string' ? credentials.password.length : null,
+          });
+        }
         return authenticateAdmin(credentials, ip);
       },
     }),

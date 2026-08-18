@@ -41,7 +41,7 @@ export async function GET() {
         invitationsCount: stored?.invitations?.length || 0,
         openingCompatibility: manifest.openingCompatibility,
       };
-    });
+    }).filter((template) => template.validationStatus === 'ok');
 
     return NextResponse.json(merged);
   } catch (error) {

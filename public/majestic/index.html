@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>دعوة زفاف</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -18,13 +17,13 @@
             }
         }
     </script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Aref+Ruqaa:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
-    
     <style>
         :root {
-            --background: #FAFAF5;
-            --foreground: #5A6B50;
+            --background: #fafaf5;
+            --foreground: #5a6b50;
+            --foreground-soft: rgba(90, 107, 80, 0.72);
+            --line: rgba(90, 107, 80, 0.14);
             --font-body: 'Tajawal', sans-serif;
             --font-script: 'Great Vibes', cursive;
             --font-heading: 'Aref Ruqaa', serif;
@@ -55,53 +54,101 @@
             opacity: 1;
             transform: translateY(0);
         }
-        /* RSVP */
         .pill {
-            flex: 1; text-align: center; padding: 10px; border: 1px solid var(--foreground);
-            border-radius: 8px; cursor: pointer; transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid var(--foreground);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
         }
         .pill.active {
             background-color: var(--foreground);
             color: #fff;
         }
+        .glass-card {
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.78);
+            border-radius: 28px;
+            box-shadow: 0 14px 36px rgba(90, 107, 80, 0.08);
+            backdrop-filter: blur(6px);
+        }
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .countdown-card {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.72);
+            padding: 16px 10px;
+            box-shadow: 0 10px 25px rgba(90, 107, 80, 0.08);
+        }
+        .countdown-value {
+            display: block;
+            font-size: 2rem;
+            line-height: 1;
+            margin-bottom: 6px;
+            font-family: var(--font-heading);
+        }
+        .countdown-label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--foreground-soft);
+        }
+        .gallery-grid img {
+            width: 100%;
+            height: 14rem;
+            object-fit: cover;
+            border-radius: 1rem;
+            box-shadow: 0 14px 32px rgba(90, 107, 80, 0.12);
+        }
+        .timeline-item:last-child .timeline-line {
+            display: none;
+        }
+        .dir-ltr {
+            direction: ltr;
+        }
+        @media (max-width: 768px) {
+            .countdown-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
     </style>
 </head>
 <body class="antialiased">
-
-    <!-- Background Music -->
     <audio id="bgMusic" loop preload="auto"></audio>
 
-    <!-- Intro Envelope Layer -->
     <div id="intro-layer" class="fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-1000 bg-background">
         <div id="poster-container" class="absolute inset-0 transition-opacity duration-500">
             <img src="./intro-poster-new.jpg" alt="Envelope" class="absolute inset-0 w-full h-full object-cover">
-            <div class="absolute inset-0 flex flex-col items-center justify-end pb-16 gap-1 animate-hint-bounce">
-                <p class="font-heading text-white/80 text-xl animate-pulse">اضغط لفتح الدعوة</p>
+            <div class="absolute inset-0 flex flex-col items-center justify-end pb-16 gap-1 animate-hint-bounce text-center px-6">
+                <p id="coverKicker" class="cover__kick font-heading text-white/80 text-base tracking-[0.25em] uppercase">دعوة زفاف</p>
+                <p id="coverNames" class="cover__names text-white font-bold text-2xl mt-1"></p>
                 <p id="env-guest-name" class="text-white font-bold text-2xl mt-2"></p>
+                <p id="coverHint" class="tap-hint text-white/80 text-lg">اضغط لفتح الدعوة</p>
             </div>
         </div>
-        <!-- Video that plays when opened -->
         <video id="intro-video" muted playsinline preload="auto" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 opacity-0" src="./intro-video-new.mp4"></video>
     </div>
 
-    <!-- Main Content Container -->
     <div id="main-content" class="transition-opacity duration-1000 opacity-0 h-screen overflow-x-hidden overflow-y-auto">
         <div class="fixed inset-0 bg-background -z-10"></div>
-        
-        <!-- Music Toggle -->
-        <button id="musicToggle" class="fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-full bg-white/80 backdrop-blur-sm border border-foreground/10 flex items-center justify-center text-foreground hover:bg-foreground hover:text-white transition-all duration-300 shadow-lg hidden">
+
+        <button id="musicToggle" class="fixed bottom-6 right-6 z-[100] hidden w-12 h-12 rounded-full bg-white/80 backdrop-blur-sm border border-foreground/10 flex items-center justify-center text-foreground hover:bg-foreground hover:text-white transition-all duration-300 shadow-lg">
             🎵
         </button>
 
-        <!-- Hero Section -->
-        <section class="relative min-h-screen flex items-start justify-center pt-[42vh] overflow-hidden bg-background" style="padding-bottom:144px">
+        <section class="relative min-h-screen flex items-start justify-center pt-[42vh] overflow-hidden bg-background" style="padding-bottom: 144px;">
             <div class="absolute inset-0">
                 <video autoplay muted loop playsinline class="w-full h-full object-cover object-center opacity-80">
                     <source src="./majestic-hero.mp4" type="video/mp4">
                 </video>
             </div>
             <div class="relative z-10 flex flex-col items-center text-center px-6 pt-[70px] reveal-on-scroll">
-                <p id="heroInvite" class="text-lg md:text-xl tracking-widest mb-4 text-foreground/80 font-heading">نتشرف بدعوتكم</p>
+                <p id="heroInvite" class="hero__eyebrow text-lg md:text-xl tracking-widest mb-4 text-foreground/80 font-heading">نتشرف بدعوتكم</p>
                 <h1 class="text-6xl md:text-8xl mb-3 text-foreground font-script flex flex-col items-center" style="font-family: var(--font-script);">
                     <span id="groomName">عريس</span>
                     <span class="text-3xl my-2 text-foreground/60">&amp;</span>
@@ -111,23 +158,21 @@
             </div>
         </section>
 
-        <!-- String Lights -->
         <div class="w-full bg-background">
-            <img src="./string-lights.png" class="w-full object-contain">
+            <img src="./string-lights.png" class="w-full object-contain" alt="">
         </div>
 
-        <!-- Welcome Text -->
         <section class="py-24 px-8 text-center max-w-2xl mx-auto bg-background">
             <div class="reveal-on-scroll">
                 <h2 class="text-5xl md:text-6xl mb-10 text-foreground font-heading">مرحباً بكم</h2>
+                <p id="openingPoem" class="cover__poem text-lg md:text-xl leading-loose text-foreground/70 font-heading mb-6"></p>
                 <p id="verseText" class="text-xl md:text-2xl leading-loose text-foreground/80 font-heading mb-4"></p>
                 <p id="invitationText" class="text-base md:text-lg leading-loose font-light text-foreground/80"></p>
             </div>
         </section>
-        
-        <!-- Families -->
+
         <section class="py-10 px-8 text-center max-w-2xl mx-auto bg-background border-t border-b border-foreground/10">
-            <div class="reveal-on-scroll flex justify-around">
+            <div class="reveal-on-scroll flex justify-around gap-6">
                 <div>
                     <h3 id="groomParentsLabel" class="family__label text-sm text-foreground/60 mb-2">عائلة العريس</h3>
                     <p id="groomParents" class="text-xl font-bold"></p>
@@ -139,12 +184,12 @@
             </div>
         </section>
 
-        <!-- Order of the day -->
         <section class="relative bg-background overflow-hidden" id="program-section">
             <div class="flex justify-center pt-16 md:pt-20">
                 <img
                     src="./couple-dancing.png"
                     id="heroPhotoImg"
+                    data-default-src="./couple-dancing.png"
                     data-farha-slot="hero-image"
                     class="w-56 md:w-72 object-contain reveal-on-scroll"
                     alt="Couple illustration"
@@ -156,13 +201,10 @@
                 </div>
             </div>
             <div class="relative mt-8 md:mt-12 pb-16 px-6">
-                <div class="flex flex-col items-center" id="timeline">
-                    <!-- Dynamic timeline items -->
-                </div>
+                <div class="flex flex-col items-center" id="timeline"></div>
             </div>
         </section>
 
-        <!-- Details -->
         <section class="bg-background">
             <div class="max-w-4xl mx-auto py-16 pt-4 pb-0 reveal-on-scroll">
                 <div class="text-center mb-0">
@@ -170,8 +212,9 @@
                 </div>
             </div>
             <div class="flex flex-col items-center px-4 mb-8">
-                <div class="relative w-full max-w-[440px] aspect-[5/6] flex items-center justify-center">
-                    <img src="./ornate-badge.png" class="absolute inset-0 w-full h-full object-contain pointer-events-none">
+                <div class="relative w-full max-w-[440px] aspect-[5/6] flex items-center justify-center overflow-hidden rounded-[32px]">
+                    <div id="venuePhoto" data-farha-slot="venue-image" class="absolute inset-0 bg-center bg-cover opacity-20"></div>
+                    <img src="./ornate-badge.png" class="absolute inset-0 w-full h-full object-contain pointer-events-none" alt="">
                     <div class="relative z-10 text-center px-10 pt-2">
                         <h3 class="text-3xl text-foreground mb-3 font-heading">الموعد والمكان</h3>
                         <span class="text-lg text-foreground block mb-3 leading-snug">
@@ -191,19 +234,66 @@
                 </div>
             </div>
         </section>
-        
-        <!-- Gallery Section -->
+
+        <section id="countdown-section" class="py-8 px-6 bg-background">
+            <div class="max-w-4xl mx-auto glass-card p-6 md:p-10 text-center reveal-on-scroll">
+                <h2 class="text-4xl md:text-5xl text-foreground mb-8 font-heading">العد التنازلي</h2>
+                <div id="countdown" class="countdown-grid">
+                    <div class="countdown-card">
+                        <span id="cdDays" class="countdown-value">٠٠</span>
+                        <span class="countdown-label">يوم</span>
+                    </div>
+                    <div class="countdown-card">
+                        <span id="cdHours" class="countdown-value">٠٠</span>
+                        <span class="countdown-label">ساعة</span>
+                    </div>
+                    <div class="countdown-card">
+                        <span id="cdMins" class="countdown-value">٠٠</span>
+                        <span class="countdown-label">دقيقة</span>
+                    </div>
+                    <div class="countdown-card">
+                        <span id="cdSecs" class="countdown-value">٠٠</span>
+                        <span class="countdown-label">ثانية</span>
+                    </div>
+                </div>
+                <p id="cdArrived" class="hidden text-foreground text-xl md:text-2xl font-heading mt-6">وصل موعد الاحتفال</p>
+            </div>
+        </section>
+
+        <section id="calendar-section" class="py-8 px-6 bg-background">
+            <div id="da3wa-cal" class="max-w-4xl mx-auto glass-card p-6 md:p-10 reveal-on-scroll">
+                <div class="text-center mb-8">
+                    <h2 class="text-4xl md:text-5xl text-foreground mb-3 font-heading">أضف الموعد إلى التقويم</h2>
+                    <p class="text-foreground/70">احتفظ بموعد المناسبة في تقويمك بسهولة</p>
+                </div>
+                <div class="grid md:grid-cols-[220px_1fr] gap-6 items-center">
+                    <div class="rounded-[24px] border border-foreground/15 bg-white/70 px-6 py-8 text-center">
+                        <p id="calendarMonthYear" class="text-lg font-heading text-foreground/80"></p>
+                        <p id="calendarDay" class="text-6xl font-heading text-foreground my-3"></p>
+                        <p id="calendarWeekday" class="text-lg text-foreground/80"></p>
+                        <p id="calendarTime" class="text-sm text-foreground/70 mt-2"></p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 justify-center md:justify-start">
+                        <a id="calendarGoogle" href="#" target="_blank" rel="noreferrer" class="inline-flex min-w-[150px] items-center justify-center bg-foreground text-white px-6 py-3 rounded-md text-sm hover:opacity-90 transition-opacity">
+                            Google Calendar
+                        </a>
+                        <a id="calendarIcs" href="#" download="farha-invitation.ics" class="inline-flex min-w-[150px] items-center justify-center border border-foreground/20 text-foreground px-6 py-3 rounded-md text-sm hover:bg-white/70 transition-opacity">
+                            تنزيل ملف ICS
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="py-12 px-8 bg-background" id="gallery-section">
             <h2 class="text-5xl md:text-6xl text-foreground mb-10 text-center font-heading">صورنا</h2>
-            <div class="max-w-4xl mx-auto grid grid-cols-2 gap-4" id="galleryGrid"></div>
+            <div class="gallery-grid max-w-4xl mx-auto grid grid-cols-2 gap-4" id="galleryGrid"></div>
         </section>
-        
-        <!-- Notes Section -->
+
         <section class="py-8 px-8 bg-background text-center" id="notes-section">
             <div id="notesList" class="max-w-2xl mx-auto text-foreground/80 text-lg space-y-2"></div>
         </section>
 
-        <!-- RSVP -->
         <section id="rsvp-section" class="pt-8 pb-16 px-6 bg-background">
             <div class="max-w-xl mx-auto">
                 <div class="text-center mb-12 reveal-on-scroll">
@@ -233,7 +323,7 @@
                         <input type="hidden" name="companions" id="compInput" value="0">
                     </div>
                     <div>
-                        <label class="text-sm text-foreground font-medium">رسالة للعرسان</label>
+                        <label class="text-sm text-foreground font-medium">رسالة للعروسين</label>
                         <textarea name="message" rows="3" class="mt-2 w-full bg-background border border-foreground/20 px-4 py-2.5 rounded-md text-foreground text-sm focus:outline-none focus:border-foreground/50 resize-none"></textarea>
                     </div>
                     <button type="submit" id="submitBtn" class="w-full flex items-center justify-center gap-2 bg-foreground text-white py-3 rounded-md text-sm font-medium hover:opacity-90">
@@ -241,10 +331,14 @@
                     </button>
                     <div id="rsvpMsg" class="mt-4 text-center font-bold"></div>
                 </form>
+                <div id="contactBox" class="mt-6 rounded-2xl border border-foreground/10 bg-white/60 p-5 text-center">
+                    <p id="contactLabel" class="text-sm text-foreground/60 mb-2">للاستفسار والتأكيد</p>
+                    <p id="contactName" class="text-xl font-heading text-foreground mb-1"></p>
+                    <p id="contactPhone" class="dir-ltr text-base text-foreground/80"></p>
+                </div>
             </div>
         </section>
 
-        <!-- Footer -->
         <footer class="relative text-center min-h-[400px] flex flex-col justify-start bg-background">
             <div class="flex flex-col items-center pt-12 reveal-on-scroll">
                 <p id="closingNote" class="text-xl text-foreground mb-4 font-heading"></p>
@@ -255,12 +349,12 @@
                 </p>
                 <p id="closingHashtag" class="text-lg text-foreground/80 mt-4 tracking-wider"></p>
                 <p id="closingFamilies" class="text-lg text-foreground/80 mt-2"></p>
-                <img src="./footer-ornament.png" class="w-80 md:w-96 mx-auto mt-8">
+                <img src="./footer-ornament.png" class="w-80 md:w-96 mx-auto mt-8" alt="">
             </div>
         </footer>
     </div>
 
     <script src="./script.js"></script>
-<script src="/generic_script.js?v=1786472929823"></script>
+    <script src="/generic_script.js?v=1786472929823"></script>
 </body>
 </html>

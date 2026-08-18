@@ -64,6 +64,14 @@ const credentialsSchema = z.object({
 
 const redactedKeyPattern = /(password|secret|token|cookie|authorization|api[-_]?key)/i;
 
+function logAuthDebug(stage, payload = {}) {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
+  console.log(`[auth-debug] ${stage}`, redactSensitiveValue(payload));
+}
+
 function getLoginKey(identifier, ip) {
   return `${identifier}::${ip || 'unknown'}`;
 }
@@ -106,16 +114,40 @@ export function assertAuthEnv() {
 
 export async function authenticateAdmin(credentials, ip = 'unknown') {
   assertAuthEnv();
+  logAuthDebug('authenticate:start', {
+    ip,
+    hasCredentials: Boolean(credentials),
+    username: credentials?.username || null,
+    passwordLength: typeof credentials?.password === 'string' ? credentials.password.length : null,
+  });
 
   const parsed = credentialsSchema.safeParse(credentials);
   if (!parsed.success) {
+    logAuthDebug('authenticate:invalid-credentials-shape', {
+      ip,
+      issues: parsed.error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      })),
+    });
     return null;
   }
 
   const { username, password } = parsed.data;
   const bucket = getAttemptBucket(getLoginKey(username, ip));
+  logAuthDebug('authenticate:bucket', {
+    ip,
+    username,
+    attempts: bucket.count,
+    startedAt: bucket.startedAt,
+  });
 
   if (bucket.count >= LOGIN_MAX_ATTEMPTS) {
+    logAuthDebug('authenticate:rate-limited', {
+      ip,
+      username,
+      attempts: bucket.count,
+    });
     throw new Error('Too many login attempts. Please try again later.');
   }
 
@@ -127,16 +159,35 @@ export async function authenticateAdmin(credentials, ip = 'unknown') {
 
   if (!admin || !admin.isActive) {
     bucket.count += 1;
+    logAuthDebug('authenticate:user-missing-or-inactive', {
+      ip,
+      username,
+      attempts: bucket.count,
+      foundUser: Boolean(admin),
+      active: admin?.isActive || false,
+    });
     return null;
   }
 
   const matches = await compare(password, admin.passwordHash);
   if (!matches) {
     bucket.count += 1;
+    logAuthDebug('authenticate:password-mismatch', {
+      ip,
+      username,
+      attempts: bucket.count,
+      adminId: admin.id,
+    });
     return null;
   }
 
   loginAttempts.delete(getLoginKey(username, ip));
+  logAuthDebug('authenticate:success', {
+    ip,
+    username,
+    adminId: admin.id,
+    role: admin.role,
+  });
 
   await prisma.adminUser.update({
     where: { id: admin.id },

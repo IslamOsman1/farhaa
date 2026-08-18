@@ -12,6 +12,7 @@ export default function StudioTemplateChooser({ templates, inventory }) {
   const filtered = useMemo(() => {
     const normalized = search.trim().toLowerCase();
     if (!normalized) return templates;
+
     return templates.filter((template) =>
       [template.name, template.nameAr, template.slug, template.description]
         .filter(Boolean)
@@ -19,9 +20,12 @@ export default function StudioTemplateChooser({ templates, inventory }) {
     );
   }, [search, templates]);
 
+  const availableTemplatesCount = templates.length;
+
   async function createSession(template) {
     setBusySlug(template.slug);
     setError('');
+
     try {
       const response = await fetch('/api/studio/sessions', {
         method: 'POST',
@@ -31,7 +35,9 @@ export default function StudioTemplateChooser({ templates, inventory }) {
           name: `جلسة ${template.nameAr}`,
         }),
       });
+
       const payload = await response.json();
+
       if (!response.ok || !payload.success) {
         throw new Error(payload.message || 'تعذر إنشاء الجلسة.');
       }
@@ -51,7 +57,7 @@ export default function StudioTemplateChooser({ templates, inventory }) {
       <div className="admin-page-header">
         <div>
           <h2>استوديو الدعوات</h2>
-          <p>اختر قالبًا أساسيًا ليتم إنشاء نسخة عمل مستقلة يمكن تعديلها دون المساس بالأصل.</p>
+          <p>اختر قالبًا جاهزًا ليتم إنشاء نسخة عمل مستقلة يمكن تعديلها دون المساس بالأصل.</p>
         </div>
       </div>
 
@@ -63,7 +69,7 @@ export default function StudioTemplateChooser({ templates, inventory }) {
           onChange={(event) => setSearch(event.target.value)}
         />
         <div className="studio-inline-metrics">
-          <span>{inventory.summary.templates} قالب</span>
+          <span>{availableTemplatesCount} قالب جاهز</span>
           <span>{inventory.summary.images} صورة</span>
           <span>{inventory.summary.videos} فيديو</span>
           <span>{inventory.summary.audio} صوت</span>
@@ -71,6 +77,9 @@ export default function StudioTemplateChooser({ templates, inventory }) {
       </div>
 
       {error ? <div className="admin-alert error">{error}</div> : null}
+      {!filtered.length ? (
+        <div className="admin-alert">لا توجد قوالب جاهزة مطابقة للبحث الحالي.</div>
+      ) : null}
 
       <div className="admin-grid-cards">
         {filtered.map((template) => (
@@ -85,10 +94,22 @@ export default function StudioTemplateChooser({ templates, inventory }) {
             <div className="stack-sm">
               <h3>{template.nameAr}</h3>
               <p>{template.description}</p>
-              <div className="meta-pair"><strong>Slug:</strong><span dir="ltr">{template.slug}</span></div>
-              <div className="meta-pair"><strong>الأقسام:</strong><span>{template.sections.length}</span></div>
-              <div className="meta-pair"><strong>الحقول القابلة للتعديل:</strong><span>{template.editableFields.length}</span></div>
-              <div className="meta-pair"><strong>الافتتاحيات:</strong><span>{template.openingCompatibility.length}</span></div>
+              <div className="meta-pair">
+                <strong>Slug:</strong>
+                <span dir="ltr">{template.slug}</span>
+              </div>
+              <div className="meta-pair">
+                <strong>الأقسام:</strong>
+                <span>{template.sections.length}</span>
+              </div>
+              <div className="meta-pair">
+                <strong>الحقول القابلة للتعديل:</strong>
+                <span>{template.editableFields.length}</span>
+              </div>
+              <div className="meta-pair">
+                <strong>الافتتاحيات:</strong>
+                <span>{template.openingCompatibility.length}</span>
+              </div>
             </div>
             <button
               type="button"

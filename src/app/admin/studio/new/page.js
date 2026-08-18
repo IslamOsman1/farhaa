@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { requirePermission } from '@/lib/admin-session';
-import { getAllTemplateManifests } from '@/lib/template-system';
 import { scanTemplateStudioInventory } from '@/lib/studio-inventory';
 import { getMergedOpenings } from '@/lib/template-records';
+import { getLaunchableTemplateManifests } from '@/lib/template-diagnostics';
 import StudioTemplateChooser from '../StudioTemplateChooser';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export default async function NewStudioSessionPage() {
     redirect('/admin/login');
   }
 
-  const templates = getAllTemplateManifests();
+  const templates = getLaunchableTemplateManifests();
   const openings = await getMergedOpenings();
   const inventory = scanTemplateStudioInventory({ openings });
 

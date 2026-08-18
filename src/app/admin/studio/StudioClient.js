@@ -378,6 +378,7 @@ export default function StudioClient({
     sections: false,
   }));
   const lastSavedRef = useRef(JSON.stringify(normalizeDraftState(session.draft, initialManifest?.slug || 'classic')));
+  const draftRef = useRef(draft);
 
   const currentManifest = useMemo(
     () => manifests.find((item) => item.slug === draft.templateSlug) || initialManifest,
@@ -411,6 +412,10 @@ export default function StudioClient({
     }),
     [currentManifest, currentOpening, previewInvitation],
   );
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
   const selectedTemplateText = useMemo(() => {
     if (selection?.kind !== 'template-text' || !selection.key) return null;
     return templateTextCatalog.find((item) => item.path === selection.key) || null;
@@ -442,6 +447,12 @@ export default function StudioClient({
       type,
       payload,
       token: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    });
+  }
+
+  function syncCustomElementsToPreview(elements) {
+    sendPreviewBridgeMessage('FARHA_CUSTOM_ELEMENTS_SYNC', {
+      elements: Array.isArray(elements) ? elements : [],
     });
   }
 
@@ -480,15 +491,24 @@ export default function StudioClient({
       }
 
       if (eventName === 'custom-element-update' && payload?.id && payload?.updates) {
-        updateFreeElement(payload.id, payload.updates);
+        const nextCustomElements = (draftRef.current.customElements || []).map((item) => (
+          item.id === payload.id ? { ...item, ...(payload.updates || {}) } : item
+        ));
+        setDraft((current) => ({
+          ...current,
+          customElements: nextCustomElements,
+        }));
+        sendPreviewBridgeMessage('FARHA_CUSTOM_ELEMENTS_SYNC', { elements: nextCustomElements });
         return;
       }
 
       if (eventName === 'custom-element-delete' && payload?.id) {
+        const nextCustomElements = (draftRef.current.customElements || []).filter((item) => item.id !== payload.id);
         setDraft((current) => ({
           ...current,
-          customElements: current.customElements.filter((item) => item.id !== payload.id),
+          customElements: nextCustomElements,
         }));
+        sendPreviewBridgeMessage('FARHA_CUSTOM_ELEMENTS_SYNC', { elements: nextCustomElements });
         setSelection((current) => (current?.key === payload.id ? null : current));
         return;
       }
@@ -509,12 +529,52 @@ export default function StudioClient({
       }
 
       if (eventName === 'text-override' && payload?.path) {
-        updateTemplateTextValue(payload.path, String(payload.text || ''));
+        setDraft((current) => {
+          const nextOverrides = { ...(current.textOverrides || {}) };
+          const baseValue = current.contentConfig?.[payload.path] ?? '';
+          const nextValue = String(payload.text || '');
+
+          if (nextValue === baseValue) {
+            delete nextOverrides[payload.path];
+          } else {
+            nextOverrides[payload.path] = nextValue;
+          }
+
+          return {
+            ...current,
+            textOverrides: nextOverrides,
+          };
+        });
         return;
       }
 
       if (eventName === 'text-style-override' && payload?.path && payload?.styles) {
-        updateTemplateTextStyles(payload.path, payload.styles);
+        setDraft((current) => {
+          const textStyleOverrides = { ...(current.uiConfig?.textStyleOverrides || {}) };
+          const nextPathStyles = { ...(textStyleOverrides[payload.path] || {}) };
+
+          Object.entries(payload.styles || {}).forEach(([styleKey, styleValue]) => {
+            if (styleValue == null || styleValue === '') {
+              delete nextPathStyles[styleKey];
+            } else {
+              nextPathStyles[styleKey] = styleValue;
+            }
+          });
+
+          if (Object.keys(nextPathStyles).length) {
+            textStyleOverrides[payload.path] = nextPathStyles;
+          } else {
+            delete textStyleOverrides[payload.path];
+          }
+
+          return {
+            ...current,
+            uiConfig: {
+              ...(current.uiConfig || {}),
+              textStyleOverrides,
+            },
+          };
+        });
       }
     }
 
@@ -661,10 +721,14 @@ export default function StudioClient({
   }
 
   function updateFreeElement(id, updates) {
+    const nextCustomElements = (draftRef.current.customElements || []).map((item) => (
+      item.id === id ? { ...item, ...updates } : item
+    ));
     setDraft((current) => ({
       ...current,
-      customElements: current.customElements.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+      customElements: nextCustomElements,
     }));
+    syncCustomElementsToPreview(nextCustomElements);
   }
 
   function updateNativeElement(id, updates) {
@@ -726,10 +790,12 @@ export default function StudioClient({
       color: '#1f2937',
     }, draft.customElements.length);
 
+    const nextCustomElements = [...(draftRef.current.customElements || []), nextElement];
     setDraft((current) => ({
       ...current,
-      customElements: [...current.customElements, nextElement],
+      customElements: nextCustomElements,
     }));
+    syncCustomElementsToPreview(nextCustomElements);
     selectFreeElement(nextElement);
   }
 
@@ -746,10 +812,12 @@ export default function StudioClient({
       height: '180px',
     }, draft.customElements.length);
 
+    const nextCustomElements = [...(draftRef.current.customElements || []), nextElement];
     setDraft((current) => ({
       ...current,
-      customElements: [...current.customElements, nextElement],
+      customElements: nextCustomElements,
     }));
+    syncCustomElementsToPreview(nextCustomElements);
     selectFreeElement(nextElement);
   }
 
@@ -1062,10 +1130,12 @@ export default function StudioClient({
                   data-testid="studio-delete-selected-element"
                   className="mini-btn danger"
                   onClick={() => {
+                    const nextCustomElements = (draftRef.current.customElements || []).filter((item) => item.id !== selectedFreeElement.id);
                     setDraft((current) => ({
                       ...current,
-                      customElements: current.customElements.filter((item) => item.id !== selectedFreeElement.id),
+                      customElements: nextCustomElements,
                     }));
+                    syncCustomElementsToPreview(nextCustomElements);
                     setSelection(null);
                   }}
                 >

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getTemplateManifest } from '@/lib/template-system';
 
 const OPENING_LAYER_SELECTORS = '#envelope-screen, #intro-layer, #popup-overlay, #preloader, #opening-screen, #cover, #gate, #envelope, #env';
+const GENERIC_RUNTIME_SCRIPT_SELECTOR = 'script[data-farha-runtime-script="true"]';
+
 function isElementVisible(node) {
   if (!node) return false;
 
@@ -15,6 +17,45 @@ function isElementVisible(node) {
     && style.opacity !== '0'
     && !node.hidden
   );
+}
+
+async function ensureFarhaRuntime(frame) {
+  const frameWindow = frame?.contentWindow;
+  const frameDocument = frame?.contentDocument;
+
+  if (!frameWindow || !frameDocument) {
+    return;
+  }
+
+  if (frameWindow.__FARHA_GENERIC_SCRIPT_READY__) {
+    return;
+  }
+
+  const existingRuntimeScript = frameDocument.querySelector(GENERIC_RUNTIME_SCRIPT_SELECTOR);
+  if (existingRuntimeScript) {
+    await new Promise((resolve) => {
+      if (frameWindow.__FARHA_GENERIC_SCRIPT_READY__) {
+        resolve();
+        return;
+      }
+
+      const finish = () => resolve();
+      existingRuntimeScript.addEventListener('load', finish, { once: true });
+      existingRuntimeScript.addEventListener('error', finish, { once: true });
+    });
+    return;
+  }
+
+  await new Promise((resolve) => {
+    const script = frameDocument.createElement('script');
+    script.src = `/generic_script.js?v=${Date.now()}`;
+    script.async = false;
+    script.dataset.farhaRuntimeScript = 'true';
+    const finish = () => resolve();
+    script.addEventListener('load', finish, { once: true });
+    script.addEventListener('error', finish, { once: true });
+    (frameDocument.body || frameDocument.documentElement).appendChild(script);
+  });
 }
 
 export default function RenderFrame({
@@ -198,7 +239,8 @@ export default function RenderFrame({
           border: 'none',
           background: '#fff',
         }}
-        onLoad={() => {
+        onLoad={async () => {
+            await ensureFarhaRuntime(iframeRef.current);
             setLoadedFrameSignature(frameSrc);
             if (typeof onLoad === 'function') {
               onLoad();
@@ -248,7 +290,10 @@ export default function RenderFrame({
               border: 'none',
               background: '#fff',
             }}
-            onLoad={() => setLoadedOpeningSignature(openingSignature)}
+            onLoad={async () => {
+              await ensureFarhaRuntime(openingIframeRef.current);
+              setLoadedOpeningSignature(openingSignature);
+            }}
           />
         </div>
       ) : null}

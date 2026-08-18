@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import '../../../styles/admin.css';
 
 export default function LoginPage() {
@@ -10,23 +9,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const router = useRouter();
 
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
     setErrorMessage('');
+    const formData = new FormData(event.currentTarget);
+    const submittedUsername = String(formData.get('username') || '').trim();
+    const submittedPassword = String(formData.get('password') || '');
 
     const result = await signIn('credentials', {
       redirect: false,
-      username,
-      password,
+      username: submittedUsername,
+      password: submittedPassword,
+      callbackUrl: '/admin/dashboard',
     });
 
     setSubmitting(false);
 
     if (result?.ok) {
-      router.push('/admin/dashboard');
+      window.location.assign('/admin/dashboard');
       return;
     }
 
@@ -46,6 +48,7 @@ export default function LoginPage() {
             <label className="form-label">اسم المستخدم أو البريد الإلكتروني</label>
             <input
               type="text"
+              name="username"
               required
               className="form-control"
               value={username}
@@ -56,6 +59,7 @@ export default function LoginPage() {
             <label className="form-label">كلمة المرور</label>
             <input
               type="password"
+              name="password"
               required
               className="form-control"
               value={password}
