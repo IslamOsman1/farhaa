@@ -8,7 +8,6 @@ import StudioPreviewShell from '@/components/admin/studio/StudioPreviewShell';
 import {
   BUILTIN_FONT_LIBRARY,
 } from '@/lib/font-library';
-import { parseStudioBridgeMessage, STUDIO_BRIDGE_EVENT } from '@/lib/studio-bridge';
 import { buildInvitationRenderConfig, getOpeningBySlug } from '@/lib/template-system';
 
 const DEVICE_PRESETS = {
@@ -328,7 +327,6 @@ export default function StudioClient({
   const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState('saved');
   const [selection, setSelection] = useState(null);
-  const [nativeSelectionMeta, setNativeSelectionMeta] = useState(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState('template-texts');
   const [openGeneralSections, setOpenGeneralSections] = useState(() => ({
     basic: true,
@@ -372,7 +370,7 @@ export default function StudioClient({
       invitation: previewInvitation,
       manifest: currentManifest,
       opening: currentOpening,
-      preview: true,
+      preview: false,
     }),
     [currentManifest, currentOpening, previewInvitation],
   );
@@ -384,14 +382,7 @@ export default function StudioClient({
     if (!selection?.key || !selection.kind?.startsWith('free-')) return null;
     return draft.customElements.find((item) => item.id === selection.key) || null;
   }, [draft.customElements, selection]);
-  const selectedNativeElement = useMemo(() => {
-    if (selection?.kind !== 'native-element' || !selection.key) return null;
-    return {
-      id: selection.key,
-      ...(draft.nativeElementOverrides?.[selection.key] || {}),
-      ...(nativeSelectionMeta?.id === selection.key ? nativeSelectionMeta : {}),
-    };
-  }, [draft.nativeElementOverrides, nativeSelectionMeta, selection]);
+  const selectedNativeElement = null;
   const fontOptions = BUILTIN_FONT_LIBRARY;
 
   useEffect(() => {
@@ -539,43 +530,17 @@ export default function StudioClient({
     }));
   }
 
-  function updateNativeElement(id, updates) {
-    if (!id || !updates || typeof updates !== 'object') return;
+  function updateNativeElement() {}
 
-    setDraft((current) => ({
-      ...current,
-      nativeElementOverrides: {
-        ...(current.nativeElementOverrides || {}),
-        [id]: {
-          ...((current.nativeElementOverrides && current.nativeElementOverrides[id]) || {}),
-          ...updates,
-        },
-      },
-    }));
-  }
-
-  function resetNativeElement(id) {
-    if (!id) return;
-
-    setDraft((current) => {
-      const nextOverrides = { ...(current.nativeElementOverrides || {}) };
-      delete nextOverrides[id];
-      return {
-        ...current,
-        nativeElementOverrides: nextOverrides,
-      };
-    });
-  }
+  function resetNativeElement() {}
 
   function selectTemplateText(path) {
     setSelection({ kind: 'template-text', key: path });
-    setNativeSelectionMeta(null);
     setActiveSidebarTab('template-texts');
   }
 
   function selectFreeElement(item) {
     setSelection({ kind: item.type === 'image' ? 'free-image' : 'free-text', key: item.id });
-    setNativeSelectionMeta(null);
     setActiveSidebarTab('free-elements');
   }
 
@@ -693,121 +658,6 @@ export default function StudioClient({
   const selectedTemplateTextStyles = selectedTemplateText
     ? draft.uiConfig?.textStyleOverrides?.[selectedTemplateText.path] || {}
     : {};
-
-  useEffect(() => {
-    const handleFrameMessage = (event) => {
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
-      const message = parseStudioBridgeMessage(event.data);
-      if (!message) {
-        return;
-      }
-
-      const { event: bridgeEvent, payload } = message;
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.templateTextSelect) {
-        if (!payload?.path) {
-          setSelection((current) => (current?.kind === 'template-text' ? null : current));
-          return;
-        }
-
-        setSelection({ kind: 'template-text', key: payload.path });
-        setNativeSelectionMeta(null);
-        setActiveSidebarTab('template-texts');
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.textOverride) {
-        if (!payload?.path) return;
-        updateTemplateTextValue(payload.path, String(payload.text ?? ''));
-        setSelection({ kind: 'template-text', key: payload.path });
-        setNativeSelectionMeta(null);
-        setActiveSidebarTab('template-texts');
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.textStyleOverride) {
-        if (!payload?.path || !payload?.styles) return;
-        updateTemplateTextStyles(payload.path, payload.styles);
-        setSelection({ kind: 'template-text', key: payload.path });
-        setNativeSelectionMeta(null);
-        setActiveSidebarTab('template-texts');
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.editField) {
-        if (!payload?.fieldKey) return;
-        selectTemplateText(payload.fieldKey);
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.customElementSelect) {
-        if (!payload?.id) {
-          setSelection((current) => (current?.kind?.startsWith('free-') ? null : current));
-          return;
-        }
-
-        const item = draft.customElements.find((entry) => entry.id === payload.id);
-        if (item) {
-          setSelection({ kind: item.type === 'image' ? 'free-image' : 'free-text', key: item.id });
-          setNativeSelectionMeta(null);
-          setActiveSidebarTab('free-elements');
-        }
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.customElementUpdate) {
-        if (!payload?.id || !payload?.updates) return;
-        updateFreeElement(payload.id, payload.updates);
-        const item = draft.customElements.find((entry) => entry.id === payload.id);
-        if (item) {
-          setSelection({ kind: item.type === 'image' ? 'free-image' : 'free-text', key: item.id });
-          setNativeSelectionMeta(null);
-          setActiveSidebarTab('free-elements');
-        }
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.customElementDelete) {
-        if (!payload?.id) return;
-        setDraft((current) => ({
-          ...current,
-          customElements: current.customElements.filter((item) => item.id !== payload.id),
-        }));
-        setSelection((current) => (current?.key === payload.id ? null : current));
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.nativeElementSelect) {
-        if (!payload?.id) {
-          setSelection((current) => (current?.kind === 'native-element' ? null : current));
-          setNativeSelectionMeta(null);
-          return;
-        }
-
-        setSelection({ kind: 'native-element', key: payload.id });
-        setNativeSelectionMeta(payload);
-        return;
-      }
-
-      if (bridgeEvent === STUDIO_BRIDGE_EVENT.nativeElementUpdate) {
-        if (!payload?.id || !payload?.updates) return;
-        updateNativeElement(payload.id, {
-          ...(payload.label ? { label: payload.label } : {}),
-          ...(payload.selector ? { selector: payload.selector } : {}),
-          ...(payload.kind ? { kind: payload.kind } : {}),
-          ...payload.updates,
-        });
-        setSelection({ kind: 'native-element', key: payload.id });
-        setNativeSelectionMeta(payload);
-      }
-    };
-
-    window.addEventListener('message', handleFrameMessage);
-    return () => window.removeEventListener('message', handleFrameMessage);
-  }, [draft.customElements]);
 
   return (
     <div className="studio-shell">
