@@ -33,6 +33,7 @@ export default function StudioPreviewShell({
   renderConfig,
   deviceMode = 'mobile',
   fullscreen = false,
+  bridgeMessage = null,
 }) {
   const [loadedSignature, setLoadedSignature] = useState('');
   const device = DEVICE_SPECS[deviceMode] || DEVICE_SPECS.mobile;
@@ -67,6 +68,7 @@ export default function StudioPreviewShell({
               templateSlug={templateSlug}
               renderConfig={renderConfig}
               manifest={manifest}
+              bridgeMessage={bridgeMessage}
               className="studio-preview-shell__frame-wrap"
               frameClassName="studio-preview-shell__frame"
               disablePromoBar

@@ -42,6 +42,18 @@ const SECTION_LABELS = {
   sections: 'الأقسام الإضافية',
 };
 
+const STUDIO_BRIDGE_MESSAGE_TYPE = 'FARHA_STUDIO_BRIDGE';
+const STUDIO_BRIDGE_LEGACY_EVENT_MAP = {
+  FARHA_TEMPLATE_TEXT_SELECT: 'template-text-select',
+  FARHA_NATIVE_ELEMENT_SELECT: 'native-element-select',
+  FARHA_CUSTOM_ELEMENT_SELECT: 'custom-element-select',
+  FARHA_CUSTOM_ELEMENT_UPDATE: 'custom-element-update',
+  FARHA_CUSTOM_ELEMENT_DELETE: 'custom-element-delete',
+  FARHA_NATIVE_ELEMENT_UPDATE: 'native-element-update',
+  FARHA_TEXT_OVERRIDE: 'text-override',
+  FARHA_TEXT_STYLE_OVERRIDE: 'text-style-override',
+};
+
 function arrayValue(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -115,6 +127,29 @@ function normalizeDraftState(sessionDraft, templateSlug) {
       ...(safe.devicePreview || {}),
     },
     customElements: arrayValue(safe.customElements).map(normalizeCustomElement),
+  };
+}
+
+function normalizeStudioMessage(data) {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  if (data.type === STUDIO_BRIDGE_MESSAGE_TYPE) {
+    return {
+      event: data.event || '',
+      payload: data.payload || {},
+    };
+  }
+
+  const legacyEvent = STUDIO_BRIDGE_LEGACY_EVENT_MAP[data.type];
+  if (!legacyEvent) {
+    return null;
+  }
+
+  return {
+    event: legacyEvent,
+    payload: data.payload || {},
   };
 }
 
@@ -327,6 +362,8 @@ export default function StudioClient({
   const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState('saved');
   const [selection, setSelection] = useState(null);
+  const [previewBridgeMessage, setPreviewBridgeMessage] = useState(null);
+  const [selectedNativeElementMeta, setSelectedNativeElementMeta] = useState(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState('template-texts');
   const [openGeneralSections, setOpenGeneralSections] = useState(() => ({
     basic: true,
@@ -370,7 +407,7 @@ export default function StudioClient({
       invitation: previewInvitation,
       manifest: currentManifest,
       opening: currentOpening,
-      preview: false,
+      preview: true,
     }),
     [currentManifest, currentOpening, previewInvitation],
   );
@@ -382,8 +419,108 @@ export default function StudioClient({
     if (!selection?.key || !selection.kind?.startsWith('free-')) return null;
     return draft.customElements.find((item) => item.id === selection.key) || null;
   }, [draft.customElements, selection]);
-  const selectedNativeElement = null;
+  const selectedNativeElement = useMemo(() => {
+    if (selection?.kind !== 'native-element' || !selection.key) {
+      return null;
+    }
+
+    const override = draft.nativeElementOverrides?.[selection.key] || {};
+    if (!selectedNativeElementMeta && !Object.keys(override).length) {
+      return null;
+    }
+
+    return {
+      id: selection.key,
+      ...(selectedNativeElementMeta || {}),
+      ...override,
+    };
+  }, [draft.nativeElementOverrides, selectedNativeElementMeta, selection]);
   const fontOptions = BUILTIN_FONT_LIBRARY;
+
+  function sendPreviewBridgeMessage(type, payload = {}) {
+    setPreviewBridgeMessage({
+      type,
+      payload,
+      token: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    });
+  }
+
+  useEffect(() => {
+    function handleStudioMessage(event) {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const message = normalizeStudioMessage(event.data);
+      if (!message) {
+        return;
+      }
+
+      const { event: eventName, payload } = message;
+
+      if (eventName === 'template-text-select' && payload?.path) {
+        setSelectedNativeElementMeta(null);
+        setSelection({ kind: 'template-text', key: payload.path });
+        setActiveSidebarTab('template-texts');
+        return;
+      }
+
+      if (eventName === 'native-element-select' && payload?.id) {
+        setSelectedNativeElementMeta(payload);
+        setSelection({ kind: 'native-element', key: payload.id });
+        return;
+      }
+
+      if (eventName === 'custom-element-select' && payload?.id) {
+        const kind = payload.kind === 'image' ? 'free-image' : 'free-text';
+        setSelectedNativeElementMeta(null);
+        setSelection({ kind, key: payload.id });
+        setActiveSidebarTab('free-elements');
+        return;
+      }
+
+      if (eventName === 'custom-element-update' && payload?.id && payload?.updates) {
+        updateFreeElement(payload.id, payload.updates);
+        return;
+      }
+
+      if (eventName === 'custom-element-delete' && payload?.id) {
+        setDraft((current) => ({
+          ...current,
+          customElements: current.customElements.filter((item) => item.id !== payload.id),
+        }));
+        setSelection((current) => (current?.key === payload.id ? null : current));
+        return;
+      }
+
+      if (eventName === 'native-element-update' && payload?.id && payload?.updates) {
+        setDraft((current) => ({
+          ...current,
+          nativeElementOverrides: {
+            ...(current.nativeElementOverrides || {}),
+            [payload.id]: {
+              ...((current.nativeElementOverrides || {})[payload.id] || {}),
+              ...(selectedNativeElementMeta?.id === payload.id ? selectedNativeElementMeta : {}),
+              ...(payload.updates || {}),
+            },
+          },
+        }));
+        return;
+      }
+
+      if (eventName === 'text-override' && payload?.path) {
+        updateTemplateTextValue(payload.path, String(payload.text || ''));
+        return;
+      }
+
+      if (eventName === 'text-style-override' && payload?.path && payload?.styles) {
+        updateTemplateTextStyles(payload.path, payload.styles);
+      }
+    }
+
+    window.addEventListener('message', handleStudioMessage);
+    return () => window.removeEventListener('message', handleStudioMessage);
+  }, [selectedNativeElementMeta]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -530,13 +667,42 @@ export default function StudioClient({
     }));
   }
 
-  function updateNativeElement() {}
+  function updateNativeElement(id, updates) {
+    if (!id || !updates || typeof updates !== 'object') return;
 
-  function resetNativeElement() {}
+    setDraft((current) => ({
+      ...current,
+      nativeElementOverrides: {
+        ...(current.nativeElementOverrides || {}),
+        [id]: {
+          ...((current.nativeElementOverrides || {})[id] || {}),
+          ...(selectedNativeElementMeta?.id === id ? selectedNativeElementMeta : {}),
+          ...updates,
+        },
+      },
+    }));
+    sendPreviewBridgeMessage('FARHA_NATIVE_ELEMENT_UPDATE', { id, updates });
+  }
+
+  function resetNativeElement(id) {
+    if (!id) return;
+
+    setDraft((current) => {
+      const nextOverrides = { ...(current.nativeElementOverrides || {}) };
+      delete nextOverrides[id];
+      return {
+        ...current,
+        nativeElementOverrides: nextOverrides,
+      };
+    });
+    sendPreviewBridgeMessage('FARHA_NATIVE_ELEMENT_UPDATE', { id, updates: {} });
+  }
 
   function selectTemplateText(path) {
     setSelection({ kind: 'template-text', key: path });
     setActiveSidebarTab('template-texts');
+    setSelectedNativeElementMeta(null);
+    sendPreviewBridgeMessage('FARHA_SELECT_TEMPLATE_TEXT', { path });
   }
 
   function selectFreeElement(item) {
@@ -739,6 +905,7 @@ export default function StudioClient({
             manifest={currentManifest}
             renderConfig={renderConfig}
             deviceMode={draft.devicePreview.mode}
+            bridgeMessage={previewBridgeMessage}
           />
         </section>
 
