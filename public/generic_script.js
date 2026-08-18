@@ -4885,6 +4885,20 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
           background: rgba(255,255,255,0.18) !important;
           border-radius: 8px;
         }
+        .farha-studio-editable::after {
+          content: '\\062A\\0639\\062F\\064A\\0644' !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          min-height: 20px !important;
+          line-height: 1 !important;
+          max-width: max-content !important;
+          writing-mode: horizontal-tb !important;
+          text-orientation: mixed !important;
+        }
+        .farha-studio-editable[data-farha-locked="true"]::after {
+          content: '\\0645\\0642\\0641\\0648\\0644' !important;
+        }
         .farha-studio-editing {
           outline: 2px solid #7f2a1f !important;
           outline-offset: 4px !important;
