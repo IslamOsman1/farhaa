@@ -1,4 +1,4 @@
-window.renderFarhaTemplate = function() {
+document.addEventListener('DOMContentLoaded', () => {
     
     // --- Data Binding ---
     function populateData() {
@@ -137,8 +137,6 @@ window.renderFarhaTemplate = function() {
     setupScrollReveal();
 
     // --- Envelope Animation ---
-    if (window.farhaEnvelopeBound) return;
-    window.farhaEnvelopeBound = true;
     const introLayer = document.getElementById('intro-layer');
     const introVideo = document.getElementById('intro-video');
     const posterContainer = document.getElementById('poster-container');
@@ -224,8 +222,6 @@ window.renderFarhaTemplate = function() {
         });
     }
 
-    if (window.farhaFormsHijacked) return;
-    window.farhaFormsHijacked = true;
     const rsvpForm = document.getElementById('rsvp-form');
     if (rsvpForm) {
         rsvpForm.addEventListener('submit', async (e) => {
@@ -276,12 +272,5 @@ window.renderFarhaTemplate = function() {
             btn.disabled = false;
             btn.innerText = 'إرسال التأكيد';
         });
-    }
-};
-document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
-window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
-        setTimeout(window.renderFarhaTemplate, 60);
     }
 });

@@ -1,4 +1,3 @@
-window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب vangogh «ليلة النجوم» — مستوحى من فان كوخ
    الدخول: فيديو فان كوخ يعزف بين دوّار الشمس + شريط تحميل (محرّك classic)
@@ -784,13 +783,3 @@ fillContent();
 loadImages();
 setupReveal();
 setupCountdown();
-
-};
-
-document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
-window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
-        setTimeout(window.renderFarhaTemplate, 60);
-    }
-});

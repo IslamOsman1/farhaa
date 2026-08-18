@@ -517,3 +517,13 @@ export function getLaunchableTemplateManifests() {
 
   return getAllTemplateManifests().filter((manifest) => diagnosticsMap.get(manifest.slug) === 'ok');
 }
+
+export function getStudioTemplateManifests() {
+  const diagnostics = getAllTemplateDiagnostics();
+  const diagnosticsMap = new Map(diagnostics.map((item) => [item.slug, item]));
+
+  return getAllTemplateManifests().filter((manifest) => {
+    const diagnostic = diagnosticsMap.get(manifest.slug);
+    return Boolean(diagnostic) && diagnostic.status !== 'error';
+  });
+}

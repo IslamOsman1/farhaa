@@ -1,4 +1,3 @@
-window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب «هديل» (hadeel)
    لمسة → يحلّق الهديل عبر رواق الورد → يحطّ على النافورة →
@@ -359,13 +358,3 @@ fillContent(); loadImages(); setupCountdown();
     arrive();
   }
 })();
-
-};
-
-document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
-window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
-        setTimeout(window.renderFarhaTemplate, 60);
-    }
-});

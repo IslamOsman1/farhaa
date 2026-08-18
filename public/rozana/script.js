@@ -1,4 +1,3 @@
-window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب rozana «روزنة» — أعراس/خطوبة
    الدخولية: ختم شمعي وزهور مجفّفة (فيديو) ← عند اللمس يسقط الختم
@@ -523,13 +522,3 @@ fillContent();
 setupReveal();
 setupCountdown();
 setupWipe();
-
-};
-
-document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
-window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
-        setTimeout(window.renderFarhaTemplate, 60);
-    }
-});

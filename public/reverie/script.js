@@ -1,4 +1,3 @@
-window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب «البجعة» (reverie)
    دخولية: فيديو مظروف حقيقي بختم ذهبي يُفتح عند الضغط
@@ -230,13 +229,3 @@ fillContent(); loadImages(); setupCountdown();
   buildCoverFx();
   if (/[?&]autoopen=1/.test(location.search)) setTimeout(openInvite, 900);
 })();
-
-};
-
-document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
-window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
-        setTimeout(window.renderFarhaTemplate, 60);
-    }
-});

@@ -1,193 +1,156 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>دعوة زفاف ملكية</title>
-  <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>دعوة زفاف</title>
+    <!-- خطوط جوجل: Aref Ruqaa للخطوط الكلاسيكية و Tajawal للخطوط العادية -->
+    <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <audio id="bgMusic" loop preload="auto"></audio>
 
-  <div id="envelope-screen" class="envelope-screen">
-    <div class="envelope-wrapper" id="envelope" role="button" tabindex="0" aria-label="افتح الدعوة">
-      <div class="envelope-back"></div>
-      <div class="envelope-flap"></div>
-      <div class="envelope-front"></div>
-      <div class="seal">
-        <span>افتح الدعوة</span>
-      </div>
-      <div class="envelope-text">
-        <p id="coverKicker" class="cover-kicker">دعوة زفاف</p>
-        <p id="coverNames" class="cover-names">العريس والعروس</p>
-        <p id="env-guest-name">ضيفنا العزيز</p>
-        <p class="tap-hint">انقر لفتح الدعوة</p>
-      </div>
-    </div>
-  </div>
+    <!-- موسيقى الخلفية -->
+    <audio id="bgMusic" loop preload="auto"></audio>
 
-  <div id="invitation-container" class="invitation-container hidden">
-    <div class="inv-card">
-      <div class="ornament top-ornament"></div>
-
-      <section class="hero-section">
-        <img id="heroPhotoImg" class="hero-photo hidden" data-farha-slot="hero-image" alt="">
-        <p class="hero__eyebrow">بسم الله الرحمن الرحيم</p>
-        <h1 class="welcome-text" id="heroInvite">نتشرف بدعوتكم لحضور حفل زفافنا</h1>
-        <div class="couple-names">
-          <span id="groomName">العريس</span>
-          <span class="and-text">و</span>
-          <span id="brideName">العروس</span>
-        </div>
-        <div class="date-highlight" id="heroDate"></div>
-        <p class="cover__poem" id="openingPoem"></p>
-      </section>
-
-      <section class="verse-section invitation">
-        <h2 class="section-title">بطاقة الدعوة</h2>
-        <p id="verseText" class="verse"></p>
-        <p id="invitationText" class="inv-text"></p>
-      </section>
-
-      <section class="families-section">
-        <div class="family">
-          <h3 id="groomParentsLabel" class="family__label">عائلة العريس</h3>
-          <p id="groomParents"></p>
-        </div>
-        <div class="family">
-          <h3 id="brideParentsLabel" class="family__label">عائلة العروس</h3>
-          <p id="brideParents"></p>
-        </div>
-      </section>
-
-      <section class="details-section venue">
-        <h2 class="section-title">المكان والزمان</h2>
-        <div class="detail-box">
-          <div class="icon">📅</div>
-          <div class="info">
-            <p id="weddingDate"></p>
-            <p id="weddingTime" class="time-text"></p>
-          </div>
-        </div>
-        <div class="detail-box">
-          <div class="icon">📍</div>
-          <div class="info">
-            <p id="venueName" class="venue-name"></p>
-            <p id="venueAddr" class="venue-addr"></p>
-            <a href="#" id="mapBtn" target="_blank" rel="noopener" class="map-link">رابط الموقع</a>
-          </div>
-        </div>
-        <div id="venuePhoto" class="venue-photo hidden" data-farha-slot="venue-image"></div>
-      </section>
-
-      <section class="countdown-section when" id="countdown-section">
-        <h2 class="section-title">العد التنازلي</h2>
-        <div class="countdown-grid" id="countdown" role="timer" aria-label="الوقت المتبقي">
-          <div class="countdown-cell">
-            <span class="countdown-num" id="cdDays">00</span>
-            <span class="countdown-label">يوم</span>
-          </div>
-          <div class="countdown-cell">
-            <span class="countdown-num" id="cdHours">00</span>
-            <span class="countdown-label">ساعة</span>
-          </div>
-          <div class="countdown-cell">
-            <span class="countdown-num" id="cdMins">00</span>
-            <span class="countdown-label">دقيقة</span>
-          </div>
-          <div class="countdown-cell">
-            <span class="countdown-num" id="cdSecs">00</span>
-            <span class="countdown-label">ثانية</span>
-          </div>
-        </div>
-        <p id="cdArrived" class="countdown-arrived hidden">وصل موعد الاحتفال</p>
-      </section>
-
-      <section class="gallery-section" id="gallery-section">
-        <h2 class="section-title">صورنا</h2>
-        <div class="gallery-grid" id="galleryGrid"></div>
-      </section>
-
-      <section class="program-section" id="program-section">
-        <h2 class="section-title">برنامج الحفل</h2>
-        <div class="timeline" id="timeline"></div>
-      </section>
-
-      <section class="notes-section notes" id="notes-section">
-        <h2 class="section-title">ملاحظات</h2>
-        <div class="notes-list" id="notesList"></div>
-      </section>
-
-      <section class="rsvp-section" id="rsvp-section">
-        <h2 class="section-title">تأكيد الحضور</h2>
-        <p class="rsvp-sub">يسعدنا تأكيد حضوركم</p>
-        <form id="rsvp-form" class="rsvp-form">
-          <div class="form-group">
-            <label>الاسم الكريم</label>
-            <input type="text" name="guestName" required placeholder="الاسم">
-          </div>
-          <div class="form-group">
-            <label>هل ستحضر؟</label>
-            <div class="pills">
-              <button type="button" class="pill active" data-val="confirmed">نعم</button>
-              <button type="button" class="pill" data-val="declined">لا</button>
-              <button type="button" class="pill" data-val="maybe">ربما</button>
+    <!-- واجهة المظروف -->
+    <div id="envelope-screen" class="envelope-screen">
+        <div class="envelope-wrapper" id="envelope">
+            <div class="envelope-back"></div>
+            <div class="envelope-flap" id="flap"></div>
+            <div class="envelope-front"></div>
+            
+            <div class="seal" id="sealBtn">
+                <span>افتح الدعوة</span>
             </div>
-            <input type="hidden" name="status" id="statusInput" value="confirmed">
-          </div>
-          <div class="form-group">
-            <label>عدد المرافقين</label>
-            <div class="counter">
-              <button type="button" id="comp-minus">-</button>
-              <span id="comp-count">0</span>
-              <button type="button" id="comp-plus">+</button>
+            
+            <!-- نص ترحيبي فوق المظروف -->
+            <div class="envelope-text">
+                <p id="env-guest-name">ضيفنا العزيز</p>
+                <p class="tap-hint">انقر لفتح الدعوة</p>
             </div>
-            <input type="hidden" name="companions" id="compInput" value="0">
-          </div>
-          <div class="form-group">
-            <label>كلمة للعروسين</label>
-            <textarea name="message" rows="3" placeholder="ألف مبروك"></textarea>
-          </div>
-          <button type="submit" class="submit-btn" id="submitBtn">إرسال التأكيد</button>
-          <div id="rsvpMsg" class="form-msg"></div>
-        </form>
-      </section>
-
-      <section class="calendar-section" id="calendar-section">
-        <h2 class="section-title">احفظ الموعد</h2>
-        <div class="calendar-card" id="da3wa-cal">
-          <div class="calendar-head" id="calendarMonthYear">-</div>
-          <div class="calendar-body">
-            <p class="calendar-weekday" id="calendarWeekday">-</p>
-            <p class="calendar-day" id="calendarDay">-</p>
-            <p class="calendar-time" id="calendarTime">-</p>
-          </div>
-          <div class="calendar-actions">
-            <a id="calendarGoogle" href="#" target="_blank" rel="noopener">تقويم جوجل</a>
-            <a id="calendarIcs" href="#" target="_blank" rel="noopener">رابط التقويم</a>
-          </div>
         </div>
-      </section>
-
-      <section class="footer-section">
-        <div class="contact-box" id="contactBox">
-          <p id="contactLabel" class="contact-label">للاستفسار والتأكيد</p>
-          <p id="contactName" class="contact-name"></p>
-          <p id="contactPhone" class="contact-phone"></p>
-        </div>
-        <p id="closingNote" class="closing-note"></p>
-        <p id="closingHashtag" class="closing-hashtag"></p>
-        <p id="closingFamilies" class="closing-families"></p>
-      </section>
-
-      <div class="ornament bottom-ornament"></div>
     </div>
-  </div>
 
-  <button id="musicToggle" class="music-btn hidden" type="button" aria-label="التحكم بالموسيقى">🎵</button>
+    <!-- محتوى الدعوة (تظهر بعد فتح المظروف) -->
+    <div id="invitation-container" class="invitation-container hidden">
+        <div class="inv-card">
+            
+            <!-- الزخرفة العلوية -->
+            <div class="ornament top-ornament"></div>
 
-  <script src="./script.js"></script>
-  <script src="/generic_script.js?v=1786472929823"></script>
+            <section class="hero-section">
+                <h1 class="welcome-text" id="heroInvite">نتشرف بدعوتكم لحضور حفل زفافنا</h1>
+                <div class="couple-names">
+                    <span id="groomName">العريس</span>
+                    <span class="and-text">و</span>
+                    <span id="brideName">العروس</span>
+                </div>
+                <div class="date-highlight" id="heroDate"></div>
+            </section>
+
+            <section class="verse-section">
+                <p id="verseText" class="verse"></p>
+                <p id="invitationText" class="inv-text"></p>
+            </section>
+
+            <section class="families-section">
+                <div class="family">
+                    <h3 id="groomParentsLabel" class="family__label">عائلة العريس</h3>
+                    <p id="groomParents"></p>
+                </div>
+                <div class="family">
+                    <h3 id="brideParentsLabel" class="family__label">عائلة العروس</h3>
+                    <p id="brideParents"></p>
+                </div>
+            </section>
+
+            <section class="details-section">
+                <div class="detail-box">
+                    <div class="icon">📅</div>
+                    <div class="info">
+                        <p id="weddingDate"></p>
+                        <p id="weddingTime" class="time-text"></p>
+                    </div>
+                </div>
+                <div class="detail-box">
+                    <div class="icon">📍</div>
+                    <div class="info">
+                        <p id="venueName" class="venue-name"></p>
+                        <p id="venueAddr" class="venue-addr"></p>
+                        <a href="#" id="mapBtn" target="_blank" class="map-link">رابط الموقع</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- قسم المعرض -->
+            <section class="gallery-section" id="gallery-section">
+                <h2 class="section-title">صورنا</h2>
+                <div class="gallery-grid" id="galleryGrid"></div>
+            </section>
+
+            <!-- قسم البرنامج -->
+            <section class="program-section" id="program-section">
+                <h2 class="section-title">برنامج الحفل</h2>
+                <div class="timeline" id="timeline"></div>
+            </section>
+
+            <!-- الملاحظات -->
+            <section class="notes-section" id="notes-section">
+                <div class="notes-list" id="notesList"></div>
+            </section>
+
+            <!-- تأكيد الحضور (RSVP) -->
+            <section class="rsvp-section" id="rsvp-section">
+                <h2 class="section-title">تأكيد الحضور</h2>
+                <p class="rsvp-sub">يسعدنا تأكيد حضوركم</p>
+                <form id="rsvp-form" class="rsvp-form">
+                    <div class="form-group">
+                        <label>الاسم الكريم</label>
+                        <input type="text" name="guestName" required placeholder="الاسم" />
+                    </div>
+                    <div class="form-group">
+                        <label>هل ستحضر؟</label>
+                        <div class="pills">
+                            <button type="button" class="pill active" data-val="confirmed">نعم</button>
+                            <button type="button" class="pill" data-val="declined">لا</button>
+                            <button type="button" class="pill" data-val="maybe">ربما</button>
+                        </div>
+                        <input type="hidden" name="status" id="statusInput" value="confirmed">
+                    </div>
+                    <div class="form-group">
+                        <label>عدد المرافقين (إن وُجد)</label>
+                        <div class="counter">
+                            <button type="button" id="comp-minus">-</button>
+                            <span id="comp-count">0</span>
+                            <button type="button" id="comp-plus">+</button>
+                        </div>
+                        <input type="hidden" name="companions" id="compInput" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة للعرسان</label>
+                        <textarea name="message" rows="3" placeholder="ألف مبروك..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn" id="submitBtn">إرسال التأكيد</button>
+                    <div id="rsvpMsg" class="form-msg"></div>
+                </form>
+            </section>
+
+            <section class="footer-section">
+                <p id="closingNote" class="closing-note"></p>
+                <p id="closingHashtag" class="closing-hashtag"></p>
+                <p id="closingFamilies" class="closing-families"></p>
+            </section>
+            
+            <!-- الزخرفة السفلية -->
+            <div class="ornament bottom-ornament"></div>
+        </div>
+    </div>
+
+    <!-- أزرار التحكم بالصوت -->
+    <button id="musicToggle" class="music-btn hidden">🎵</button>
+
+    <script src="./script.js"></script>
+<script src="/generic_script.js"></script>
 </body>
 </html>

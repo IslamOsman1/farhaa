@@ -1,4 +1,3 @@
-window.renderFarhaTemplate = function() {
 /* ============================================================
    قالب disney «ديزني» — خطوبة سحرية
    الدخول + الهيرو: محرّك مُجرّب (بوّابة ← تحميل ← توهّج كبير ← قصر)
@@ -567,13 +566,3 @@ if (/[?&]debug=1/.test(location.search)) {
     d.textContent = "t=" + b.currentTime.toFixed(2) + " paused=" + b.paused + " rs=" + b.readyState + " err=" + (b.error ? b.error.code : 0) + " src=" + (b.currentSrc.split("/").pop() || "-");
   }, 400);
 }
-
-};
-
-document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
-window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
-        setTimeout(window.renderFarhaTemplate, 60);
-    }
-});

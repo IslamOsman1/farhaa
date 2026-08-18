@@ -548,12 +548,13 @@ export default function StudioClient({
         return;
       }
 
-      if (eventName === 'text-style-override' && payload?.path && payload?.styles) {
+      if (eventName === 'text-style-override' && payload?.path && (payload?.styles || payload?.style)) {
         setDraft((current) => {
           const textStyleOverrides = { ...(current.uiConfig?.textStyleOverrides || {}) };
           const nextPathStyles = { ...(textStyleOverrides[payload.path] || {}) };
+          const incomingStyles = payload.styles || payload.style || {};
 
-          Object.entries(payload.styles || {}).forEach(([styleKey, styleValue]) => {
+          Object.entries(incomingStyles).forEach(([styleKey, styleValue]) => {
             if (styleValue == null || styleValue === '') {
               delete nextPathStyles[styleKey];
             } else {

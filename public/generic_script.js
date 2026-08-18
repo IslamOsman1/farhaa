@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   window.__FARHA_GENERIC_SCRIPT_READY__ = true;
 
   const initialSearchParams = new URLSearchParams(window.location.search);
@@ -111,27 +111,27 @@
   }
 
   const TEMPLATE_META = {
-    jathuandthanu: { arabicName: 'Ã˜Â¬Ã˜Â§Ã˜Â«Ã™Ë† Ã™Ë†Ã˜Â«Ã˜Â§Ã™â€ Ã™Ë†' },
-    royal: { arabicName: 'Ã˜Â§Ã™â€žÃ™â€¦Ã™â€žÃ™Æ’Ã™Å ' },
-    majestic: { arabicName: 'Ã™â€¦Ã˜Â§Ã˜Â¬Ã˜Â³Ã˜ÂªÃ™Å Ã™Æ’' },
-    twilight: { arabicName: 'Ã˜ÂªÃ™Ë†Ã™Å Ã™â€žÃ˜Â§Ã™Å Ã˜Âª' },
-    imperial: { arabicName: 'Ã˜Â¥Ã™â€¦Ã˜Â¨Ã˜Â±Ã™Å Ã˜Â§Ã™â€ž' },
-    toscana: { arabicName: 'Ã˜ÂªÃ™Ë†Ã˜Â³Ã™Æ’Ã˜Â§Ã™â€ Ã˜Â§' },
-    sacredgarden: { arabicName: 'Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¯Ã™Å Ã™â€šÃ˜Â© Ã˜Â§Ã™â€žÃ™â€¦Ã™â€šÃ˜Â¯Ã˜Â³Ã˜Â©' },
-    blossomoud: { arabicName: 'Ã˜Â¨Ã™â€žÃ™Ë†Ã˜Â³Ã™Ë†Ã™â€¦ Ã˜Â¹Ã™Ë†Ã˜Â¯' },
-    dolcevita: { arabicName: 'Ã˜Â¯Ã™Ë†Ã™â€žÃ˜ÂªÃ˜Â´Ã™Å  Ã™ÂÃ™Å Ã˜ÂªÃ˜Â§' },
-    destinationlove: { arabicName: 'Ã˜Â­Ã˜Â¨ Ã˜Â§Ã™â€žÃ˜Â³Ã™ÂÃ˜Â±' },
-    classic: { arabicName: 'Ã™Æ’Ã™â€žÃ˜Â§Ã˜Â³Ã™Å Ã™Æ’' },
-    bab: { arabicName: 'Ã˜Â¨Ã˜Â§Ã˜Â¨ Ã˜Â§Ã™â€žÃ™ÂÃ˜Â±Ã˜Â­' },
-    reverie: { arabicName: 'Ã˜Â­Ã™ÂÃ™â€žÃ™â€¦ Ã™Ë†Ã˜Â±Ã˜Â¯Ã™Å ' },
-    ring: { arabicName: 'Ã˜Â§Ã™â€žÃ˜Â®Ã˜Â§Ã˜ÂªÃ™â€¦' },
-    letter: { arabicName: 'Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€žÃ˜Â©' },
-    disney: { arabicName: 'Ã˜Â¯Ã™Å Ã˜Â²Ã™â€ Ã™Å ' },
-    rozana: { arabicName: 'Ã˜Â±Ã™Ë†Ã˜Â²Ã™â€ Ã˜Â©' },
-    hadeel: { arabicName: 'Ã™â€¡Ã˜Â¯Ã™Å Ã™â€ž' },
-    wisal: { arabicName: 'Ã™Ë†Ã™ÂÃ˜ÂµÃ˜Â§Ã™â€ž' },
-    vangogh: { arabicName: 'Ã™â€žÃ™Å Ã™â€žÃ˜Â© Ã˜Â§Ã™â€žÃ™â€ Ã˜Â¬Ã™Ë†Ã™â€¦' },
-    blush: { arabicName: 'Ã™Ë†Ã˜Â±Ã˜Â¯Ã˜Â©' },
+    jathuandthanu: { arabicName: 'جاثو وثانو' },
+    royal: { arabicName: 'الملكي' },
+    majestic: { arabicName: 'ماجستيك' },
+    twilight: { arabicName: 'تويلايت' },
+    imperial: { arabicName: 'إمبريال' },
+    toscana: { arabicName: 'توسكانا' },
+    sacredgarden: { arabicName: 'الحديقة المقدسة' },
+    blossomoud: { arabicName: 'بلوسوم عود' },
+    dolcevita: { arabicName: 'دولتشي فيتا' },
+    destinationlove: { arabicName: 'حب السفر' },
+    classic: { arabicName: 'كلاسيك' },
+    bab: { arabicName: 'باب الفرح' },
+    reverie: { arabicName: 'حلم وردي' },
+    ring: { arabicName: 'الخاتم' },
+    letter: { arabicName: 'رسالة' },
+    disney: { arabicName: 'ديزني' },
+    rozana: { arabicName: 'روزانا' },
+    hadeel: { arabicName: 'هديل' },
+    wisal: { arabicName: 'وصال' },
+    vangogh: { arabicName: 'فان جوخ' },
+    blush: { arabicName: 'بلش' },
   };
 
   const MUSIC_SELECTORS = [
@@ -424,24 +424,24 @@
 
   const STATIC_TEXT_TRANSLATIONS = {
     en: {
-      'Ã˜Â¨Ã˜Â·Ã˜Â§Ã™â€šÃ˜Â© Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Invitation Card',
-      'Ã˜Â¨Ã˜Â§Ã˜Â¨ Ã˜Â¹Ã™â€žÃ™â€° Ã™ÂÃ˜Â±Ã˜Â­Ã™â€ Ã˜Â§': 'A Door to Our Joy',
-      'Ã™â€¦Ã™Æ’Ã˜Â§Ã™â€  Ã˜Â§Ã™â€žÃ˜Â­Ã™ÂÃ™â€ž': 'Venue',
-      'Ã˜Â§Ã™â€žÃ™â€¦Ã™Æ’Ã˜Â§Ã™â€ ': 'Venue',
-      'Ã˜Â§Ã™â€žÃ™â€¦Ã™Æ’Ã˜Â§Ã™â€  Ã™Ë†Ã˜Â§Ã™â€žÃ˜Â²Ã™â€¦Ã˜Â§Ã™â€ ': 'Venue & Time',
-      'Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â¯ Ã˜Â§Ã™â€žÃ˜ÂªÃ™â€ Ã˜Â§Ã˜Â²Ã™â€žÃ™Å ': 'Countdown',
-      'Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â§Ã˜Â¦Ã™â€žÃ˜Â§Ã˜Âª': 'Families',
-      'Ã˜Â¹Ã˜Â§Ã˜Â¦Ã™â€žÃ˜Â§Ã˜ÂªÃ™â€ Ã˜Â§': 'Our Families',
-      'Ã˜Â§Ã™â€žÃ˜Â¨Ã˜Â±Ã™â€ Ã˜Â§Ã™â€¦Ã˜Â¬': 'Event Schedule',
-      'Ã˜ÂªÃ™ÂÃ˜Â§Ã˜ÂµÃ™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Invitation Details',
-      'Ã˜ÂªÃ˜Â£Ã™Æ’Ã™Å Ã˜Â¯ Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¶Ã™Ë†Ã˜Â±': 'RSVP',
-      'Ã™â€žÃ™â€žÃ˜ÂªÃ™Ë†Ã˜Â§Ã˜ÂµÃ™â€ž Ã™Ë†Ã˜Â§Ã™â€žÃ˜ÂªÃ˜Â£Ã™Æ’Ã™Å Ã˜Â¯': 'Contact & RSVP',
-      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Tap to open the invitation',
-      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©...': 'Tap to open the invitation',
-      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã˜Â¹Ã™â€žÃ™â€° Ã˜Â§Ã™â€žÃ˜Â´Ã˜Â§Ã˜Â´Ã˜Â©': 'Tap the screen',
-      'Ã˜Â§Ã˜Â¶Ã˜ÂºÃ˜Â· Ã˜Â¹Ã™â€žÃ™â€° Ã˜Â§Ã™â€žÃ˜Â¸Ã˜Â±Ã™Â': 'Tap the envelope',
-      'Ã˜Â¯Ã™â€š Ã™â€žÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¯Ã˜Â¹Ã™Ë†Ã˜Â©': 'Knock to open the invitation',
-      'Ã˜Â§Ã™Æ’Ã˜ÂªÃ˜Â´Ã™Â Ã˜Â§Ã™â€žÃ˜ÂªÃ™ÂÃ˜Â§Ã˜ÂµÃ™Å Ã™â€ž': 'Discover the details',
+      'بطاقة دعوة': 'Invitation Card',
+      'باب على فرحنا': 'A Door to Our Joy',
+      'مكان الحفل': 'Venue',
+      'المكان': 'Venue',
+      'المكان والزمان': 'Venue & Time',
+      'العد التنازلي': 'Countdown',
+      'العائلات': 'Families',
+      'عائلاتنا': 'Our Families',
+      'البرنامج': 'Event Schedule',
+      'تفاصيل الدعوة': 'Invitation Details',
+      'تأكيد الحضور': 'RSVP',
+      'للتواصل والتأكيد': 'Contact & RSVP',
+      'اضغط لفتح الدعوة': 'Tap to open the invitation',
+      'اضغط لفتح الدعوة...': 'Tap to open the invitation',
+      'اضغط على الشاشة': 'Tap the screen',
+      'اضغط على الظرف': 'Tap the envelope',
+      'دق لفتح الدعوة': 'Knock to open the invitation',
+      'اكتشف التفاصيل': 'Discover the details',
     },
   };
 
@@ -1342,7 +1342,7 @@
       kind === 'text'
       && (
         classTokens.some((item) => item.includes('ornament') || item.includes('divider') || item.includes('amp'))
-        || /^[&♦❖✦✧✩✪✫✬✭✮✯❋❊✤✣❀❁❂❃❈❉❦❧☙❧]+$/u.test(normalizedText)
+        || /^[&ΓÖªΓ¥ûΓ£ªΓ£ºΓ£⌐Γ£¬Γ£½Γ£¼Γ£¡Γ£«Γ£»Γ¥ïΓ¥èΓ£ñΓ£úΓ¥ÇΓ¥üΓ¥éΓ¥âΓ¥êΓ¥ëΓ¥ªΓ¥ºΓÿÖΓ¥º]+$/u.test(normalizedText)
         || (textLength > 0 && textLength <= 2 && !/[\p{L}\p{N}]/u.test(normalizedText))
       );
 
@@ -2199,7 +2199,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       overlay.dataset.visible = 'false';
       overlay.innerHTML = `
         <div class="farha-native-overlay__toolbar" data-farha-native-role="toolbar">
-          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--primary" data-farha-native-action="edit" aria-label="تعديل النص">✍️ تعديل</button>
+          <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--primary" data-farha-native-action="edit" aria-label="تعديل النص">✏️ تعديل</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--primary" data-farha-native-action="replace" aria-label="استبدال الصورة">🔄 استبدال</button>
           <button type="button" class="farha-native-overlay__btn farha-native-overlay__btn--danger" data-farha-native-action="delete" aria-label="حذف أو إخفاء">✕</button>
         </div>
@@ -2412,25 +2412,25 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
     selection.addRange(range);
   }
 
-  function closeFloatingTextEditor(commit = true) {
+  function closeFloatingTextEditor(commit = false) {
     const active = runtimeState.activeTextEditor;
     if (!active) return;
-    
-    active.cleanup();
+
+    if (commit && active.saveHandler) {
+      active.saveHandler();
+    }
+
+    if (active.cleanup) {
+      active.cleanup();
+    }
+
     if (active.target && !active.editor) {
-        active.target.classList.remove('farha-studio-editing');
-        active.target.removeAttribute('contenteditable');
-        active.target.removeAttribute('data-farha-editing');
-        active.target.spellcheck = true;
+      active.target.classList.remove('farha-studio-editing');
+      active.target.removeAttribute('contenteditable');
+      active.target.removeAttribute('data-farha-editing');
+      active.target.spellcheck = true;
     }
-    
-    if (commit && active.onCommit) {
-      const finalValue = active.editor ? active.editor.innerText : active.target.innerText;
-      if (finalValue !== active.initialValue) {
-        active.onCommit(finalValue);
-      }
-    }
-    
+
     runtimeState.activeTextEditor = null;
   }
 
@@ -2441,108 +2441,425 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       return;
     }
 
-    closeFloatingTextEditor(true);
+    closeFloatingTextEditor(false);
 
-    const safeInitial = initialValue || target.innerText || target.textContent || '';
-    const safeCommit = onCommit || ((nextVal) => {
-      const normalized = (nextVal || '').trim();
-      const fieldKey = target.dataset?.farhaStudioField || target.dataset?.farhaTextPath;
+    const safeInitial = (initialValue || target.innerText || target.textContent || '').trim();
+    
+    // Resolve target element and path
+    const fieldKey = target.dataset?.farhaStudioField || target.dataset?.farhaTextPath || getNativeTextPathForNode(target) || '';
+    const nativeTarget = resolveNativeElementTarget(target) || target;
+    const nativeId = buildNativeElementId(nativeTarget);
+    const customWrapper = target.closest('.farha-custom-element');
+
+    // Get current styles
+    const computedStyle = window.getComputedStyle(target);
+    const initialColor = cssColorToHex(target.style.color || computedStyle.color || '#1f2937');
+    const initialFontFamily = target.style.fontFamily || computedStyle.fontFamily || 'Tajawal';
+    const initialFontSize = parseInt(target.style.fontSize || computedStyle.fontSize || '20', 10) || 20;
+
+    let container = document.getElementById('farha-floating-editor-modal');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'farha-floating-editor-modal';
+      document.body.appendChild(container);
+    }
+
+    container.innerHTML = `
+      <div class="farha-fedit-backdrop"></div>
+      <div class="farha-fedit-card" dir="rtl">
+        <div class="farha-fedit-header">
+          <span class="farha-fedit-title">✏️ تعديل النص والتنسيق</span>
+          <button type="button" class="farha-fedit-close-btn" id="fedit-close-x" aria-label="إغلاق">✕</button>
+        </div>
+        
+        <div class="farha-fedit-body">
+          <label class="farha-fedit-label">نص الدعوة:</label>
+          <textarea id="fedit-textarea" rows="3" class="farha-fedit-textarea" placeholder="اكتب النص هنا...">${safeInitial}</textarea>
+
+          <div class="farha-fedit-controls-grid">
+            <div class="farha-fedit-col">
+              <label class="farha-fedit-label">نوع الخط:</label>
+              <select id="fedit-font-select" class="farha-fedit-select"></select>
+            </div>
+
+            <div class="farha-fedit-col">
+              <label class="farha-fedit-label">حجم الخط:</label>
+              <div class="farha-fedit-size-row">
+                <button type="button" id="fedit-size-minus" class="farha-fedit-step-btn">−</button>
+                <span id="fedit-size-val" class="farha-fedit-size-badge">${initialFontSize}px</span>
+                <button type="button" id="fedit-size-plus" class="farha-fedit-step-btn">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="farha-fedit-color-section">
+            <label class="farha-fedit-label">لون الخط:</label>
+            <div class="farha-fedit-color-row">
+              <input type="color" id="fedit-color-picker" class="farha-fedit-color-input" value="${initialColor}" />
+              <div class="farha-fedit-swatches" id="fedit-swatches">
+                <button type="button" class="farha-fedit-swatch" style="background:#C9A86A" data-c="#C9A86A" title="ذهبي"></button>
+                <button type="button" class="farha-fedit-swatch" style="background:#5A0F1B" data-c="#5A0F1B" title="نبيذي"></button>
+                <button type="button" class="farha-fedit-swatch" style="background:#1B3B2B" data-c="#1B3B2B" title="زمردي"></button>
+                <button type="button" class="farha-fedit-swatch" style="background:#1B2A4A" data-c="#1B2A4A" title="كحلي"></button>
+                <button type="button" class="farha-fedit-swatch" style="background:#1F2937" data-c="#1F2937" title="داكن"></button>
+                <button type="button" class="farha-fedit-swatch" style="background:#FFFFFF;border:1px solid #ddd" data-c="#FFFFFF" title="أبيض"></button>
+                <button type="button" class="farha-fedit-swatch" style="background:#8C643C" data-c="#8C643C" title="ترابي"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="farha-fedit-footer">
+          <button type="button" id="fedit-save-btn" class="farha-fedit-save-btn">💾 حفظ التعديل</button>
+          <button type="button" id="fedit-cancel-btn" class="farha-fedit-cancel-btn">إلغاء</button>
+        </div>
+      </div>
+    `;
+
+    // Ensure styles
+    if (!document.getElementById('farha-fedit-styles')) {
+      const st = document.createElement('style');
+      st.id = 'farha-fedit-styles';
+      st.textContent = `
+        #farha-floating-editor-modal {
+          position: fixed;
+          inset: 0;
+          z-index: 2147483640;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          font-family: 'Tajawal', system-ui, sans-serif;
+        }
+        .farha-fedit-backdrop {
+          position: absolute;
+          inset: 0;
+          background: rgba(15, 23, 42, 0.4);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+        }
+        .farha-fedit-card {
+          position: relative;
+          z-index: 2;
+          width: 100%;
+          max-width: 440px;
+          background: rgba(255, 255, 255, 0.98);
+          border: 1px solid rgba(200, 168, 106, 0.35);
+          border-radius: 20px;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.8);
+          overflow: hidden;
+          animation: feditIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes feditIn {
+          from { opacity: 0; transform: scale(0.92) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .farha-fedit-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 20px;
+          background: linear-gradient(135deg, #faf7f2, #f3ece1);
+          border-bottom: 1px solid rgba(200, 168, 106, 0.2);
+        }
+        .farha-fedit-title {
+          font-weight: 800;
+          font-size: 15px;
+          color: #4a3427;
+        }
+        .farha-fedit-close-btn {
+          background: none;
+          border: none;
+          font-size: 18px;
+          color: #8c7365;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 8px;
+          line-height: 1;
+        }
+        .farha-fedit-close-btn:hover {
+          background: rgba(0,0,0,0.06);
+          color: #111;
+        }
+        .farha-fedit-body {
+          padding: 18px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .farha-fedit-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 700;
+          color: #634f43;
+          margin-bottom: 5px;
+        }
+        .farha-fedit-textarea {
+          width: 100%;
+          border: 1.5px solid #dfd5c6;
+          border-radius: 12px;
+          padding: 10px 12px;
+          font-size: 14px;
+          line-height: 1.6;
+          color: #1f2937;
+          background: #fffdfa;
+          outline: none;
+          box-sizing: border-box;
+          resize: vertical;
+          transition: border-color 0.2s;
+        }
+        .farha-fedit-textarea:focus {
+          border-color: #c9a86a;
+          box-shadow: 0 0 0 3px rgba(201, 168, 106, 0.18);
+        }
+        .farha-fedit-controls-grid {
+          display: grid;
+          grid-template-columns: 1.3fr 0.9fr;
+          gap: 12px;
+          align-items: center;
+        }
+        .farha-fedit-select {
+          width: 100%;
+          border: 1.5px solid #dfd5c6;
+          border-radius: 10px;
+          padding: 8px 10px;
+          font-size: 13px;
+          background: #fffdfa;
+          outline: none;
+          box-sizing: border-box;
+        }
+        .farha-fedit-select:focus {
+          border-color: #c9a86a;
+        }
+        .farha-fedit-size-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #f8f4ed;
+          border: 1.5px solid #dfd5c6;
+          border-radius: 10px;
+          padding: 3px 6px;
+        }
+        .farha-fedit-step-btn {
+          width: 28px;
+          height: 28px;
+          border: none;
+          background: #fff;
+          border-radius: 6px;
+          font-size: 16px;
+          font-weight: 800;
+          color: #4a3427;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .farha-fedit-step-btn:hover {
+          background: #c9a86a;
+          color: #fff;
+        }
+        .farha-fedit-size-badge {
+          font-weight: 800;
+          font-size: 13px;
+          color: #4a3427;
+        }
+        .farha-fedit-color-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .farha-fedit-color-input {
+          width: 40px;
+          height: 36px;
+          border: 1.5px solid #dfd5c6;
+          border-radius: 8px;
+          padding: 2px;
+          background: #fff;
+          cursor: pointer;
+        }
+        .farha-fedit-swatches {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .farha-fedit-swatch {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          border: 2px solid #fff;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+          cursor: pointer;
+          transition: transform 0.15s;
+        }
+        .farha-fedit-swatch:hover {
+          transform: scale(1.18);
+        }
+        .farha-fedit-footer {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          padding: 14px 20px;
+          background: #fdfbf8;
+          border-top: 1px solid rgba(200, 168, 106, 0.15);
+        }
+        .farha-fedit-save-btn {
+          background: linear-gradient(135deg, #c9a86a, #a67d2b);
+          color: #fff;
+          border: none;
+          padding: 10px 22px;
+          border-radius: 12px;
+          font-weight: 800;
+          font-size: 13.5px;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(166, 125, 43, 0.35);
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .farha-fedit-save-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(166, 125, 43, 0.45);
+        }
+        .farha-fedit-cancel-btn {
+          background: none;
+          border: 1px solid #dfd5c6;
+          color: #634f43;
+          padding: 9px 18px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 13px;
+          cursor: pointer;
+        }
+        .farha-fedit-cancel-btn:hover {
+          background: #f5efe6;
+        }
+      `;
+      document.head.appendChild(st);
+    }
+
+    // Populate fonts
+    const fontSelect = document.getElementById('fedit-font-select');
+    populateNativeOverlayFontSelect(fontSelect, initialFontFamily);
+
+    let currentFontSize = initialFontSize;
+    const sizeVal = document.getElementById('fedit-size-val');
+    document.getElementById('fedit-size-minus').addEventListener('click', () => {
+      currentFontSize = Math.max(10, currentFontSize - 2);
+      sizeVal.textContent = currentFontSize + 'px';
+    });
+    document.getElementById('fedit-size-plus').addEventListener('click', () => {
+      currentFontSize = Math.min(120, currentFontSize + 2);
+      sizeVal.textContent = currentFontSize + 'px';
+    });
+
+    const colorPicker = document.getElementById('fedit-color-picker');
+    container.querySelectorAll('.farha-fedit-swatch').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const c = btn.dataset.c;
+        if (c && colorPicker) colorPicker.value = c;
+      });
+    });
+
+    const textarea = document.getElementById('fedit-textarea');
+    setTimeout(() => {
+      textarea.focus();
+      textarea.select();
+    }, 50);
+
+    const saveHandler = () => {
+      const newText = (textarea.value || '').trim();
+      const selectedFont = fontSelect ? fontSelect.value : initialFontFamily;
+      const selectedColor = colorPicker ? colorPicker.value : initialColor;
+      const selectedSize = currentFontSize + 'px';
+
+      // 1. Update text locally on target
+      if (newText) {
+        target.innerText = newText;
+      }
+
+      // 2. Apply styles locally to target with !important
+      if (selectedFont) {
+        target.style.setProperty('font-family', `"${selectedFont}", sans-serif`, 'important');
+      }
+      if (selectedColor) {
+        target.style.setProperty('color', selectedColor, 'important');
+        target.querySelectorAll?.('p, span, b, strong, em, i, font').forEach((child) => {
+          child.style.setProperty('color', selectedColor, 'important');
+        });
+      }
+      if (selectedSize) {
+        target.style.setProperty('font-size', selectedSize, 'important');
+      }
+
+      // 3. Persist and broadcast to StudioClient & Sidebar
       if (fieldKey) {
         postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.textOverride, {
           path: fieldKey,
-          text: normalized,
+          text: newText,
           label: getStudioFieldLabel(fieldKey),
           preserveNativeSelection: true,
         });
-      } else if (target.closest('.farha-custom-element')) {
-        const wrapper = target.closest('.farha-custom-element');
-        if (wrapper?.dataset?.id) {
-          persistUpdate(wrapper.dataset.id, { content: normalized });
-        }
+
+        postStudioBridgeEvent(STUDIO_BRIDGE_EVENT.textStyleOverride, {
+          path: fieldKey,
+          style: {
+            fontFamily: selectedFont,
+            color: selectedColor,
+            fontSize: selectedSize,
+          },
+        });
+      } else if (customWrapper?.dataset?.id) {
+        persistUpdate(customWrapper.dataset.id, {
+          content: newText,
+          color: selectedColor,
+          fontFamily: selectedFont,
+          fontSize: selectedSize,
+        });
       } else {
-        const nativeTarget = resolveNativeElementTarget(target) || target;
-        const id = buildNativeElementId(nativeTarget);
-        const currentOverride = runtimeState.nativeElementOverrides?.[id] || {};
+        const currentOverride = runtimeState.nativeElementOverrides?.[nativeId] || {};
         const nextOverride = {
           ...currentOverride,
-          textContent: normalized,
+          textContent: newText,
+          color: selectedColor,
+          fontFamily: selectedFont,
+          fontSize: selectedSize,
         };
-        applyLocalNativeOverride(id, nativeTarget, nextOverride);
-        persistNativeUpdate(id, nativeTarget, nextOverride);
+        applyLocalNativeOverride(nativeId, nativeTarget, nextOverride);
+        persistNativeUpdate(nativeId, nativeTarget, nextOverride);
+      }
+
+      container.remove();
+      runtimeState.activeTextEditor = null;
+    };
+
+    const cancelHandler = () => {
+      container.remove();
+      runtimeState.activeTextEditor = null;
+    };
+
+    document.getElementById('fedit-save-btn').addEventListener('click', saveHandler);
+    document.getElementById('fedit-cancel-btn').addEventListener('click', cancelHandler);
+    document.getElementById('fedit-close-x').addEventListener('click', cancelHandler);
+    container.querySelector('.farha-fedit-backdrop').addEventListener('click', cancelHandler);
+
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        saveHandler();
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelHandler();
       }
     });
 
-    let editor = document.getElementById('farha-glass-editor');
-    if (!editor) {
-      editor = document.createElement('div');
-      editor.id = 'farha-glass-editor';
-      editor.contentEditable = 'true';
-      editor.style.cssText = `
-        position: absolute;
-        z-index: 2147483005;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(99, 102, 241, 0.4);
-        border-radius: 12px;
-        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15), 0 0 0 4px rgba(99, 102, 241, 0.1);
-        outline: none;
-        padding: 12px 16px;
-        font: 600 16px/1.5 system-ui, -apple-system, sans-serif;
-        color: #0f172a;
-        min-width: 240px;
-        max-width: 85vw;
-        direction: auto;
-      `;
-      document.body.appendChild(editor);
-    }
-
-    const rect = target.getBoundingClientRect();
-    editor.style.top = (rect.top + window.scrollY - 10) + 'px';
-    editor.style.left = Math.max(10, rect.left + window.scrollX - 10) + 'px';
-    
-    editor.innerText = safeInitial;
-    editor.style.display = 'block';
-
-    target.style.opacity = '0.3';
-    target.style.transition = 'opacity 0.2s ease';
-
-    const handleKeydown = (event) => {
-      event.stopPropagation();
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeFloatingTextEditor(false);
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        event.preventDefault();
-        closeFloatingTextEditor(true);
-      }
-    };
-
-    const cleanup = () => {
-      editor.removeEventListener('keydown', handleKeydown);
-      target.style.opacity = '';
-      editor.style.display = 'none';
-    };
-
-    editor.addEventListener('keydown', handleKeydown);
-
     runtimeState.activeTextEditor = {
       target,
-      editor,
-      onCommit: safeCommit,
-      cleanup,
-      initialValue: safeInitial,
+      saveHandler,
+      cleanup: () => {
+        container.remove();
+      },
     };
-
-    setTimeout(() => {
-      editor.focus();
-      const range = document.createRange();
-      range.selectNodeContents(editor);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }, 10);
   }
 
   function installMessageBridge() {
@@ -3417,7 +3734,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         img.src = imageUrl;
         img.loading = 'lazy';
         img.decoding = 'async';
-        img.alt = `Ã˜Â°Ã™Æ’Ã˜Â±Ã™â€° ${index + 1}`;
+        img.alt = `صورة ${index + 1}`;
         figure.appendChild(img);
         host.appendChild(figure);
       });
@@ -3646,7 +3963,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       'farha-dynamic-countdown',
       String(fields.titleCountdown || 'العد التنازلي'),
       `
-        <p>باقي على موعد الحفل</p>
+        <p>باقٍ على موعد الحفل</p>
         <div class="farha-dynamic-grid" id="farha-dynamic-countdown-grid">
           <div class="farha-dynamic-box"><strong data-unit="days">00</strong><span>يوم</span></div>
           <div class="farha-dynamic-box"><strong data-unit="hours">00</strong><span>ساعة</span></div>
@@ -3923,7 +4240,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
 
   function syncAudioToggleState(audio) {
     if (!audio || !runtimeState.audioToggle) return;
-    runtimeState.audioToggle.textContent = audio.paused ? 'Ã˜ÂªÃ˜Â´Ã˜ÂºÃ™Å Ã™â€ž Ã˜Â§Ã™â€žÃ˜ÂµÃ™Ë†Ã˜Âª' : 'Ã™Æ’Ã˜ÂªÃ™â€¦ Ã˜Â§Ã™â€žÃ˜ÂµÃ™Ë†Ã˜Âª';
+    runtimeState.audioToggle.textContent = audio.paused ? 'تشغيل' : 'كتم';
     runtimeState.audioToggle.setAttribute('aria-pressed', audio.paused ? 'false' : 'true');
   }
 
@@ -4187,8 +4504,8 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
     overlay.innerHTML = `
       <div class="fmo-card">
         <div class="fmo-mark">FARHA</div>
-        <p class="fmo-text">Ã™â€žÃ˜Â­Ã˜Â¸Ã˜Â© Ã™Ë†Ã˜Â§Ã˜Â­Ã˜Â¯Ã˜Â©... Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜ÂªÃ™Æ’Ã™â€¦ Ã˜ÂªÃ™ÂÃ™ÂÃ˜ÂªÃ˜Â­ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€ </p>
-        <button type="button" class="fmo-skip">Ã˜ÂªÃ˜Â®Ã˜Â·Ã™Å </button>
+        <p class="fmo-text">لحظة واحدة لتجهيز الدعوة...</p>
+        <button type="button" class="fmo-skip">تخطي</button>
       </div>
     `;
 
@@ -4263,7 +4580,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
     const interactionMode = String(config.interactionMode || (config.requiresUserInteraction ? 'tap-button' : 'auto'));
     const requiredKnocks = Math.max(Number(config.requiredKnocks || 3), 1);
     const title = String(fields.openingNames || fields.groomName || '').trim();
-    const hint = String(fields.openingHint || config.interactionHint || 'اضغط لفتح الافتتاحية').trim();
+    const hint = String(fields.openingHint || config.interactionHint || 'اضغط لفتح الدعوة').trim();
     const kicker = String(fields.openingKicker || '').trim();
     const buttonLabel = String(fields.openButtonLabel || 'فتح الدعوة').trim();
     const videoUrl = String(fields.openingVideo || '').trim();
@@ -4276,7 +4593,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
     overlay.innerHTML = `
       ${videoUrl ? `<video class="fio-video" src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} muted playsinline preload="auto"></video>` : ''}
       <div class="fio-scrim"></div>
-      ${(interactionMode === 'knock' || interactionMode === 'tap-anywhere') ? '<button type="button" class="fio-hitarea" aria-label="التفاعل مع الافتتاحية"></button>' : ''}
+        ${(interactionMode === 'knock' || interactionMode === 'tap-anywhere') ? '<button type="button" class="fmo-action">اضغط لفتح الدعوة</button>' : ''}
       <div class="fio-card">
         ${kicker ? `<div class="fio-mark">${kicker}</div>` : ''}
         ${title ? `<h2 class="fio-title">${title}</h2>` : ''}
@@ -4484,12 +4801,12 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
 
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = runtimeState.preview ? 'Ã™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â©...' : 'Ã˜Â¬Ã˜Â§Ã˜Â±Ã™Å  Ã˜Â§Ã™â€žÃ˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž...';
+          submitButton.textContent = runtimeState.preview ? 'معاينة فقط...' : 'جارٍ الإرسال...';
         }
 
         try {
           if (runtimeState.preview) {
-            showFeedback(feedback, 'Ã™â€¡Ã˜Â°Ã™â€¡ Ã™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â© Ã™ÂÃ™â€šÃ˜Â·. Ã˜ÂªÃ™â€¦ Ã˜Â­Ã™ÂÃ˜Â¸ Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯ Ã˜ÂªÃ˜Â¬Ã˜Â±Ã™Å Ã˜Â¨Ã™Å Ã™â€¹Ã˜Â§ Ã˜Â¯Ã˜Â§Ã˜Â®Ã™â€ž Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã™â€ Ã˜Â©.', true);
+            showFeedback(feedback, 'هذه معاينة فقط. تم حفظ الرد تجريبياً داخل وضع المعاينة.', true);
             form.reset();
             return;
           }
@@ -4502,19 +4819,19 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
           const result = await response.json();
 
           if (!response.ok) {
-            throw new Error(result.error || 'Ã˜ÂªÃ˜Â¹Ã˜Â°Ã˜Â± Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯');
+            throw new Error(result.error || 'تعذر إرسال الرد');
           }
 
-          showFeedback(feedback, result.message || 'Ã˜ÂªÃ™â€¦ Ã˜Â§Ã˜Â³Ã˜ÂªÃ™â€žÃ˜Â§Ã™â€¦ Ã˜Â±Ã˜Â¯Ã™Æ’Ã™â€¦ Ã˜Â¨Ã™â€ Ã˜Â¬Ã˜Â§Ã˜Â­.', true);
+          showFeedback(feedback, result.message || 'تم استلام ردكم بنجاح.', true);
           renderRsvpQrTicket(form, result);
           form.reset();
         } catch (error) {
           console.error('RSVP submit failed:', error);
-          showFeedback(feedback, error.message || 'Ã˜Â­Ã˜Â¯Ã˜Â« Ã˜Â®Ã˜Â·Ã˜Â£ Ã˜Â£Ã˜Â«Ã™â€ Ã˜Â§Ã˜Â¡ Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž Ã˜Â§Ã™â€žÃ˜Â±Ã˜Â¯.', false);
+          showFeedback(feedback, error.message || 'حدث خطأ أثناء إرسال الرد.', false);
         } finally {
           if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = originalText || 'Ã˜Â¥Ã˜Â±Ã˜Â³Ã˜Â§Ã™â€ž';
+            submitButton.textContent = originalText || 'إرسال';
           }
         }
       }, true);
@@ -4633,10 +4950,10 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       ['Invitation not found.', 'لم يتم العثور على الدعوة الحالية.'],
       ['Failed to submit RSVP.', 'تعذر إرسال تأكيد الحضور.'],
       ['Invalid RSVP payload.', 'بيانات تأكيد الحضور غير مكتملة.'],
-      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح. حاول مرة أخرى لاحقًا.'],
-      ['تم استلام ردكم بنجاح. نشكركم على التأكيد.', 'تم استلام تأكيد الحضور بنجاح.'],
-      ['ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø±Ø¯ÙƒÙ… Ø¨Ù†Ø¬Ø§Ø­. Ù†Ø´ÙƒØ±ÙƒÙ… Ø¹Ù„Ù‰ Ø§Ù„ØªØ£ÙƒÙŠØ¯.', 'تم استلام تأكيد الحضور بنجاح.'],
-      ['ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¯Ø¹ÙˆØ© Ø§Ù„Ø­Ø§Ù„ÙŠØ©. Ø£Ø¹Ø¯ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙØ­Ø© Ø«Ù… Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.', 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.'],
+      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح بها. حاول لاحقاً.'],
+      ['تم استلام ردكم بنجاح. نشكركم على التأكيد.', 'تم استلام ردكم بنجاح.'],
+      ['تم استلام ردكم بنجاح.', 'تم استلام ردكم بنجاح.'],
+      ['تعذر تحديد الدعوة الحالية.', 'تعذر تحديد الدعوة الحالية.'],
     ]);
 
     if (dictionary.has(value)) {
@@ -4647,9 +4964,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       return 'تعذر تحديد الدعوة الحالية. أعد تحميل الصفحة ثم حاول مرة أخرى.';
     }
 
-    if (/[ÃØÙ]/.test(value)) {
-      return 'تم تنفيذ العملية، لكن النص الوارد من القالب قديم الترميز.';
-    }
+    if (/[\u0080-\u00FF]/.test(value)) { return 'تمت العملية بنجاح.'; }
 
     return value;
   }
@@ -4734,14 +5049,14 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
     host.style.color = '';
 
     host.innerHTML = `
-      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">QR Code الخاص بحضورك</div>
+      <div style="font-weight:800;color:#7f2a1f;font-size:16px;margin-bottom:10px;">رمز QR الخاص بالدخول</div>
       <img
         src="${result.qrCodeDataUrl}"
         alt="RSVP QR Code"
         style="width:min(72vw,220px);height:auto;display:block;margin:0 auto 12px;background:#fff;padding:10px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.08)"
       />
       <div style="font-size:13px;color:#6b7280;line-height:1.8;margin-bottom:12px;">
-        هذا الكود فريد لهذا المستخدم فقط ويمكن تنزيله والاحتفاظ به.
+        هذا الكود فريد لهذا الضيف فقط ويمكن تنزيله والاحتفاظ به.
       </div>
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
         <a
@@ -4763,10 +5078,10 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
     `;
 
     host.innerHTML = host.innerHTML
-      .replace('QR Code Ø§Ù„Ø®Ø§Øµ Ø¨Ø­Ø¶ÙˆØ±Ùƒ', 'رمز QR الخاص بحضورك')
-      .replace('Ù‡Ø°Ø§ Ø§Ù„ÙƒÙˆØ¯ ÙØ±ÙŠØ¯ Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙÙ‚Ø· ÙˆÙŠÙ…ÙƒÙ† ØªÙ†Ø²ÙŠÙ„Ù‡ ÙˆØ§Ù„Ø§Ø­ØªÙØ§Ø¸ Ø¨Ù‡.', 'هذا الرمز خاص بحضورك فقط، ويمكنك تنزيله والاحتفاظ به.')
-      .replace('ØªØ­Ù…ÙŠÙ„ QR', 'تحميل QR')
-      .replace('ÙØªØ­ Ø§Ù„ÙƒÙˆØ¯', 'فتح الكود');
+      .replace('QR Code الخاص بحضوركم', 'رمز QR الخاص بحضوركم')
+      .replace('هذا الكود فريد لهذا الضيف', 'هذا الكود فريد لهذا الضيف')
+      .replace('تحميل QR', 'تحميل QR')
+      .replace('فتح الكود', 'فتح الكود');
 
     persistRsvpTicket(result);
 
@@ -4812,9 +5127,9 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
 
     const publicData = await loadPublicTemplateBarData();
     const whatsappNumber = publicData.whatsapp || '201001473345';
-    const priceLabel = publicData.minPriceLabel ? `Ã˜ÂªÃ˜Â¨Ã˜Â¯Ã˜Â£ Ã™â€¦Ã™â€  ${publicData.minPriceLabel} - ` : '';
+    const priceLabel = publicData.minPriceLabel ? `تبدأ من ${publicData.minPriceLabel} — ` : '';
     const whatsappText = encodeURIComponent(
-      `Ã™â€¦Ã˜Â±Ã˜Â­Ã˜Â¨Ã˜Â§Ã™â€¹Ã˜Å’ Ã˜Â£Ã˜Â¹Ã˜Â¬Ã˜Â¨Ã™â€ Ã™Å  Ã™â€šÃ˜Â§Ã™â€žÃ˜Â¨ Ã‚Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Ã‚Â» Ã™Ë†Ã˜Â£Ã˜Â±Ã˜ÂºÃ˜Â¨ Ã™ÂÃ™Å  Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã™â€¦Ã™â€  FARHA.`,
+        `مرحباً! أعجبني قالب ${templateName} وأريد الاستفسار عنه`
     );
     const orderUrl = `/order?tpl=${runtimeState.templateSlug}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappText}`;
@@ -4941,18 +5256,18 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
     bar.id = 'farha-template-bar';
     bar.innerHTML = `
       <div class="ftb-copy">
-        <p class="ftb-title">Ã˜Â£Ã˜Â¹Ã˜Â¬Ã˜Â¨Ã™Æ’ Ã™â€šÃ˜Â§Ã™â€žÃ˜Â¨ Ã‚Â«${TEMPLATE_META[runtimeState.templateSlug].arabicName}Ã‚Â»Ã˜Å¸</p>
-        <p class="ftb-sub">${priceLabel}Ã˜Â§Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€  Ã™â€¦Ã™â€  FARHA Ã™Ë†Ã™â€ Ã˜Â¬Ã™â€¡Ã˜Â²Ã™â€¡ Ã™â€žÃ™Å Ã˜ÂªÃ™â€ Ã˜Â§Ã˜Â³Ã˜Â¨ Ã™â€¦Ã˜Â¹ Ã™â€¦Ã™â€ Ã˜Â§Ã˜Â³Ã˜Â¨Ã˜ÂªÃ™Æ’Ã™â€¦</p>
-        <p class="ftb-note">Ã™â€¡Ã˜Â°Ã˜Â§ Ã˜Â§Ã™â€žÃ˜Â´Ã˜Â±Ã™Å Ã˜Â· Ã™â€žÃ™â€žÃ˜Â¹Ã˜Â±Ã˜Â¶ Ã™ÂÃ™â€šÃ˜Â· - Ã˜Â¯Ã˜Â¹Ã™Ë†Ã˜ÂªÃ™Æ’Ã™â€¦ Ã˜Â§Ã™â€žÃ™â€ Ã™â€¡Ã˜Â§Ã˜Â¦Ã™Å Ã˜Â© Ã˜ÂªÃ˜ÂµÃ™â€žÃ™Æ’Ã™â€¦ Ã™â€ Ã˜Â¸Ã™Å Ã™ÂÃ˜Â© Ã˜Â¨Ã˜Â¯Ã™Ë†Ã™â€ Ã™â€¡</p>
+        <p class="ftb-title">أعجبك هذا التصميم؟</p>
+        <p class="ftb-sub">${priceLabel}اطلبه الآن ويصير لمناسبتك خلال ساعات</p>
+        <p class="ftb-note">هذا الشريط للعرض فقط — دعوتكم تصلكم نظيفة بدونه</p>
       </div>
       <div class="ftb-actions">
-        <button class="ftb-close" type="button" aria-label="Ã˜Â¥Ã˜ÂºÃ™â€žÃ˜Â§Ã™â€š">Ãƒâ€”</button>
-        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="Ã™Ë†Ã˜Â§Ã˜ÂªÃ˜Â³Ã˜Â§Ã˜Â¨">
+        <button class="ftb-close" type="button" aria-label="إغلاق">✕</button>
+        <a class="ftb-wa" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="اطلب عبر واتساب">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
           </svg>
         </a>
-        <a class="ftb-order" href="${orderUrl}">Ã˜Â§Ã˜Â·Ã™â€žÃ˜Â¨Ã™â€¡ Ã˜Â§Ã™â€žÃ˜Â¢Ã™â€ </a>
+        <a class="ftb-order" href="${orderUrl}">اطلب الآن 🎉</a>
       </div>
     `;
 
@@ -4998,7 +5313,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
             .sort((a, b) => a.price - b.price)[0];
 
           if (cheapest) {
-            const currencyLabel = cheapest.currency === 'EGP' ? 'Ã˜Â¬.Ã™â€¦' : cheapest.currency || '';
+            const currencyLabel = cheapest.currency === 'EGP' ? 'ج.م' : cheapest.currency || '';
             defaults.minPriceLabel = `${cheapest.price} ${currencyLabel}`.trim();
           }
         }
@@ -5043,7 +5358,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
           filter: saturate(0.86);
         }
         .farha-studio-editable::after {
-          content: 'ØªØ¹Ø¯ÙŠÙ„';
+          content: 'تعديل';
           position: absolute;
           top: -24px;
           right: 0;
@@ -5066,7 +5381,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
           opacity: 1;
         }
         .farha-studio-editable[data-farha-locked="true"]::after {
-          content: 'مقفول';
+          content: 'مقفل';
           background: #7f2a1f;
         }
         .farha-studio-editable[contenteditable="true"]:focus {
@@ -7112,7 +7427,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         };
 
         if (el.type === 'text') {
-          controlsRoot.appendChild(makeActionButton({ label: '✍️ تعديل', action: 'edit', primary: true, ariaLabel: 'تحرير النص' }));
+          controlsRoot.appendChild(makeActionButton({ label: '✏️ تعديل', action: 'edit', primary: true, ariaLabel: 'تعديل النص' }));
         }
 
         if (el.type === 'image') {
@@ -7120,14 +7435,14 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         }
 
         controlsRoot.appendChild(makeActionButton({
-          label: '✕',
+          label: 'Γ£ò',
           action: 'delete',
           danger: true,
           ariaLabel: 'حذف العنصر',
         }));
 
         resizeHandle.className = 'farha-native-overlay__handle';
-        resizeHandle.textContent = '⤡';
+        resizeHandle.textContent = 'Γñí';
         resizeHandle.style.display = 'none';
       } else {
         controlsRoot.style.display = 'none';
@@ -7169,7 +7484,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
 
         try {
           if (runtimeState.preview) {
-            showFeedback(feedback, 'هذه معاينة فقط. تم حفظ الرد تجريبيًا داخل وضع المعاينة.', true);
+            showFeedback(feedback, 'هذه معاينة فقط. تم حفظ الرد تجريبياً داخل وضع المعاينة.', true);
             form.reset();
             return;
           }
@@ -7211,8 +7526,8 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       ['Invitation not found.', 'لم يتم العثور على الدعوة الحالية.'],
       ['Failed to submit RSVP.', 'تعذر إرسال تأكيد الحضور.'],
       ['Invalid RSVP payload.', 'بيانات تأكيد الحضور غير مكتملة.'],
-      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح. حاول مرة أخرى لاحقًا.'],
-      ['Invitation is not accepting RSVP responses right now.', 'هذه الدعوة لا تستقبل تأكيدات حضور الآن.'],
+      ['Too many RSVP attempts. Please try again later.', 'تم تجاوز عدد المحاولات المسموح بها. حاول لاحقاً.'],
+      ['Invitation is not accepting RSVP responses right now.', 'هذه الدعوة لا تستقبل تأكيدات حضور حالياً.'],
       ['تم استلام تأكيد الحضور بنجاح.', 'تم استلام تأكيد الحضور بنجاح.'],
       ['تم استلام ردكم بنجاح.', 'تم استلام ردكم بنجاح.'],
       ['This RSVP does not have an active entry pass.', 'لا توجد بطاقة دخول نشطة لهذا الرد.'],
@@ -7230,9 +7545,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
       return 'لم يتم العثور على الدعوة الحالية.';
     }
 
-    if (/[ÃØÙ]/.test(value)) {
-      return 'تمت العملية بنجاح، لكن النص القديم في القالب كان بترميز غير صحيح.';
-    }
+    if (/[\u0080-\u00FF]/.test(value)) { return 'تمت العملية بنجاح.'; }
 
     return value;
   }
@@ -7272,7 +7585,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         style="width:min(72vw,220px);height:auto;display:block;margin:0 auto 12px;background:#fff;padding:10px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.08)"
       />
       <div style="font-size:13px;color:#6b7280;line-height:1.8;margin-bottom:12px;">
-        ${entryPass ? `الكود: ${entryPass.passCode || '-'}${remainingEntries != null ? ` • المتبقي: ${remainingEntries}` : ''}` : 'هذا الرمز خاص بحضورك فقط، ويمكنك تنزيله والاحتفاظ به.'}
+        ${entryPass ? `الكود: ${entryPass.passCode || '-'}${remainingEntries != null ? ` • المتبقي: ${remainingEntries}` : ''}` : ''}
       </div>
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
         <a
@@ -7376,17 +7689,17 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
               <div style="font-weight:800;color:#111827;font-size:20px">QR الدخول</div>
               <div style="color:#6b7280;font-size:13px">${entryPass.passCode || ''}</div>
             </div>
-            <button type="button" class="close" aria-label="إغلاق">×</button>
+            <button type="button" class="close" aria-label="إغلاق">✕</button>
           </div>
           <img src="${entryPass.qrCodeDataUrl}" alt="Entry QR Code" style="width:min(74vw,240px);height:auto;display:block;margin:0 auto 14px;background:#fff;padding:10px;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.08)" />
           <div style="font-size:14px;color:#374151;line-height:1.9;margin-bottom:14px">
-            ${entryPass.guestName ? `<div><strong>الاسم:</strong> ${entryPass.guestName}</div>` : ''}
+            ${entryPass.guestName ? `هذه البطاقة مخصصة لـ ${entryPass.guestName}. ` : ''}
             <div><strong>المسموح:</strong> ${entryPass.allowedEntries || 0}</div>
             <div><strong>المتبقي:</strong> ${entryPass.remainingEntries || 0}</div>
             ${entryPass.tableNumber ? `<div><strong>الطاولة:</strong> ${entryPass.tableNumber}</div>` : ''}
           </div>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-            <a href="${entryPass.qrCodeDownloadUrl || entryPass.qrCodeViewUrl || '#'}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#7f2a1f;color:#fff;text-decoration:none;font-weight:700">فتح / تحميل QR</a>
+        <a href="${entryPass.qrCodeDownloadUrl || entryPass.qrCodeViewUrl || '#'}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;font-weight:700;font-size:12px">تحميل QR</a>
             ${entryPass.publicLink ? `<a href="${entryPass.publicLink}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:#f6efe8;color:#7f2a1f;text-decoration:none;font-weight:700;border:1px solid rgba(127,42,31,.18)">الرابط الفردي</a>` : ''}
           </div>
         </div>
@@ -7452,7 +7765,7 @@ applyInlineStyle(node, 'color', override.color, node.dataset.farhaNativeBaseColo
         return btn;
       };
 
-      menu.appendChild(createBtn('✍️ إضافة نص', 'add-text'));
+      menu.appendChild(createBtn('✏️ إضافة نص', 'add-text'));
       menu.appendChild(createBtn('🖼️ إضافة صورة', 'add-image'));
       
       document.body.appendChild(menu);

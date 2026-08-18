@@ -225,7 +225,7 @@ setupReveal();
 setupCountdown();
 
 
-window.renderFarhaTemplate = function() {
+document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('.rsvp-form');
   if (form) {
     form.addEventListener('submit', async (e) => {
@@ -261,11 +261,4 @@ window.renderFarhaTemplate = function() {
       if(btn) btn.innerText = 'تأكيد الحضور';
     });
   }
-};
-document.addEventListener('DOMContentLoaded', window.renderFarhaTemplate);
-window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (event.data && event.data.type === 'FARHA_RENDER_CONFIG') {
-        setTimeout(window.renderFarhaTemplate, 60);
-    }
 });
